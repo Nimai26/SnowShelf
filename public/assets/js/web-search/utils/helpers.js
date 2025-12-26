@@ -64,6 +64,8 @@ export function getTranslations() {
         camera_btn_title: __('web_search.camera_btn_title', 'Prendre une photo pour reconnaissance'),
         scan_btn: __('web_search.scan_btn', 'Scan'),
         scan_btn_title: __('web_search.scan_btn_title', 'Scanner un code-barres'),
+        use_local_db_label: __('web_search.use_local_db_label', 'Utiliser la BDD SnowShelf'),
+        use_local_db_tooltip: __('web_search.use_local_db_tooltip', 'Utilise les données en cache. Désactiver pour forcer une recherche fraîche depuis les sources externes'),
         auto_translate_label: __('web_search.auto_translate_label', 'Auto-traduction'),
         auto_translate_tooltip: __('web_search.auto_translate_tooltip', 'Si la réponse n\'est pas disponible dans votre langue, une traduction automatique sera effectuée'),
         auto_translate_premium_hint: __('web_search.auto_translate_premium_hint', 'Fonctionnalité réservée aux utilisateurs Premium'),

@@ -317,6 +317,7 @@ function handleSearch(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin, str
     
     $query = trim($input['query'] ?? '');
     $providerIds = $input['providers'] ?? [];
+    $refresh = !empty($input['refresh']); // Force le rafraîchissement depuis les sources externes
     
     if (empty($query)) {
         http_response_code(400);
@@ -421,7 +422,8 @@ function handleSearch(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin, str
             $locale,
             $apiKey,
             $clientId,
-            $autoTrad
+            $autoTrad,
+            $refresh
         );
         
         $results[] = [
@@ -501,6 +503,7 @@ function handleGetDetails(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin,
 {
     $provider = $_GET['provider'] ?? '';
     $productId = $_GET['product_id'] ?? '';
+    $refresh = !empty($_GET['refresh']); // Force le rafraîchissement depuis les sources externes
     
     if (empty($provider) || empty($productId)) {
         http_response_code(400);
@@ -613,6 +616,12 @@ function handleGetDetails(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin,
     if ($autoTrad) {
         $separator = str_contains($url, '?') ? '&' : '?';
         $url .= $separator . 'autoTrad=1';
+    }
+    
+    // Ajouter refresh=true si demandé (force le rafraîchissement depuis les sources externes)
+    if ($refresh) {
+        $separator = str_contains($url, '?') ? '&' : '?';
+        $url .= $separator . 'refresh=true';
     }
     
     loger('web_search_api', 'INFO', 'Fetching product details', [
@@ -974,7 +983,7 @@ function searchLocalPlatformDb(string $query, int $maxResults, string $locale): 
 /**
  * Appeler l'API toys_api pour un fournisseur donné
  */
-function callToysApi(string $providerName, string $query, int $maxResults, string $locale, ?string $apiKey = null, ?string $clientId = null, bool $autoTrad = false): array
+function callToysApi(string $providerName, string $query, int $maxResults, string $locale, ?string $apiKey = null, ?string $clientId = null, bool $autoTrad = false, bool $refresh = false): array
 {
     // Cas spécial : providers locaux (base de données interne)
     // if ($providerName === 'snow_vg_db_plat') {
@@ -986,6 +995,11 @@ function callToysApi(string $providerName, string $query, int $maxResults, strin
     
     // Construire les paramètres harmonisés
     $params = buildApiParams($providerName, $query, $maxResults, $locale);
+    
+    // Ajouter refresh=true si demandé (force le rafraîchissement depuis les sources externes)
+    if ($refresh) {
+        $params['refresh'] = 'true';
+    }
     
     // Construire l'URL selon le type de provider
     if ($providerName === 'barcode') {

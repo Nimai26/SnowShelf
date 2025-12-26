@@ -26,6 +26,7 @@ export const state = {
     selectedImages: new Set(),
     selectedInstructions: new Map(), // Map<url, {url, name}>
     autoTranslate: window.userInfo?.autoTrad ?? false,
+    useLocalDatabase: true, // Utiliser la BDD locale SnowShelf (si false, refresh=true sera envoyé)
     currentImage: null,
 };
 

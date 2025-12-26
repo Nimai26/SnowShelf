@@ -1438,6 +1438,13 @@ return [
         'select_result' => 'Select',
         'view_source' => 'View source',
 
+        // Options
+        'use_local_db_label' => 'Use SnowShelf database',
+        'use_local_db_tooltip' => 'Uses cached data. Disable to force a fresh search from external sources',
+        'auto_translate_label' => 'Auto-translate',
+        'auto_translate_tooltip' => 'If the response is not available in your language, an automatic translation will be performed',
+        'auto_translate_premium_hint' => 'Feature reserved for Premium users',
+
         // States
         'no_results_yet' => 'Start a search to see results',
         'no_results' => 'No results found',

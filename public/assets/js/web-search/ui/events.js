@@ -27,6 +27,7 @@ export function initModalElements() {
     elements.cameraBtn = document.getElementById('wsCameraBtn');
     elements.scanBtn = document.getElementById('wsScanBtn');
     elements.imageSearchBtn = document.getElementById('wsImageSearchBtn');
+    elements.useLocalDbToggle = document.getElementById('wsUseLocalDb');
     elements.autoTranslateToggle = document.getElementById('wsAutoTranslate');
     elements.resultsContainer = document.getElementById('wsResultsContainer');
     elements.resultsCount = document.getElementById('wsResultsCount');
@@ -53,6 +54,12 @@ export function setupEventListeners() {
                 label.classList.remove('active');
             }
         }
+    });
+    
+    // Toggle utiliser BDD locale SnowShelf
+    elements.useLocalDbToggle?.addEventListener('change', (e) => {
+        state.useLocalDatabase = e.target.checked;
+        console.log('[WebSearch] Use local database:', state.useLocalDatabase);
     });
     
     // Toggle auto-traduction (persisté en base)

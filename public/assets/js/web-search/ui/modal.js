@@ -134,6 +134,26 @@ export function buildModalContent() {
                     </div>
                 </div>
                 
+                <!-- Option utiliser la BDD SnowShelf -->
+                <div class="web-search-section web-search-option">
+                    <label class="web-search-toggle">
+                        <span class="toggle-label">
+                            ${t.use_local_db_label}
+                            <span class="toggle-info" title="${t.use_local_db_tooltip}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M12 16v-4"></path>
+                                    <path d="M12 8h.01"></path>
+                                </svg>
+                            </span>
+                        </span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="wsUseLocalDb" ${state.useLocalDatabase ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
+                </div>
+                
                 <!-- Option auto-traduction (Premium) -->
                 <div class="web-search-section web-search-option">
                     <label class="web-search-toggle ${!canUsePremium ? 'disabled' : ''}" ${!canUsePremium ? `title="${t.auto_translate_premium_hint}"` : ''}>

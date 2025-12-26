@@ -87,7 +87,9 @@ export async function loadPrimaryTypeFields(typeId) {
  * @returns {Promise<Object|null>} - { data: détails, webapi_id: ID } ou null
  */
 export async function loadProductDetails(provider, detailUrl) {
-    const apiUrl = `${config.apiEndpoint}?action=details&provider=${encodeURIComponent(provider)}&product_id=${encodeURIComponent(detailUrl)}`;
+    // Ajouter refresh=true si on n'utilise pas la BDD locale
+    const refreshParam = !state.useLocalDatabase ? '&refresh=true' : '';
+    const apiUrl = `${config.apiEndpoint}?action=details&provider=${encodeURIComponent(provider)}&product_id=${encodeURIComponent(detailUrl)}${refreshParam}`;
     console.log('[WebSearch] Appel API détails:', apiUrl);
     
     const response = await fetch(apiUrl);
@@ -112,6 +114,11 @@ export async function loadProductDetails(provider, detailUrl) {
  * @returns {Promise<Object>} - Résultats de la recherche
  */
 export async function executeSearchApi(params) {
+    // Ajouter refresh=true si on n'utilise pas la BDD locale
+    if (!state.useLocalDatabase) {
+        params.refresh = true;
+    }
+    
     console.log('[WebSearch] Envoi requête API:', config.apiEndpoint + '?action=search');
     console.log('[WebSearch] Paramètres:', JSON.stringify(params, null, 2));
     

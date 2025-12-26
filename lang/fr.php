@@ -1438,6 +1438,13 @@ return [
         'select_result' => 'Sélectionner',
         'view_source' => 'Voir la source',
 
+        // Options
+        'use_local_db_label' => 'Utiliser la BDD SnowShelf',
+        'use_local_db_tooltip' => 'Utilise les données en cache. Désactiver pour forcer une recherche fraîche depuis les sources externes',
+        'auto_translate_label' => 'Auto-traduction',
+        'auto_translate_tooltip' => 'Si la réponse n\'est pas disponible dans votre langue, une traduction automatique sera effectuée',
+        'auto_translate_premium_hint' => 'Fonctionnalité réservée aux utilisateurs Premium',
+
         // États
         'no_results_yet' => 'Lancez une recherche pour voir les résultats',
         'no_results' => 'Aucun résultat trouvé',
