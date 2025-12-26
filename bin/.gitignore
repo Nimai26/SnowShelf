@@ -1,0 +1,5 @@
+# Binaires FFmpeg volumineux (à télécharger manuellement)
+# Utiliser setup-ffmpeg.sh pour les installer
+ffmpeg
+ffprobe
+*.tar.xz

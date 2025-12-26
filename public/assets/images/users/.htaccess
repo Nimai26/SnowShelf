@@ -1,0 +1,78 @@
+# =============================================================================
+# SÉCURITÉ IMAGES USERS - Empêcher l'exécution de code malveillant
+# =============================================================================
+
+# Désactiver complètement l'exécution PHP dans ce dossier
+<FilesMatch "\.php$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Désactiver les handlers PHP pour les extensions dangereuses
+<FilesMatch "\.(php|php3|php4|php5|php7|phtml|phar|phps|cgi|pl|py|sh|bash|exe|dll|bat|cmd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Désactiver le moteur PHP
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Supprimer les handlers d'exécution
+<IfModule mod_mime.c>
+    RemoveHandler .php .php3 .php4 .php5 .php7 .phtml .phar
+    RemoveType .php .php3 .php4 .php5 .php7 .phtml .phar
+</IfModule>
+
+# Désactiver le listing des répertoires
+Options -Indexes -ExecCGI
+
+# Autoriser UNIQUEMENT les fichiers images
+<FilesMatch "\.(?i)(jpe?g|png|gif|webp|svg|ico)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+</FilesMatch>
+
+# Bloquer tout autre fichier par défaut
+<FilesMatch "^(?!.*\.(jpe?g|png|gif|webp|svg|ico)$).*$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Empêcher l'accès aux fichiers cachés
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

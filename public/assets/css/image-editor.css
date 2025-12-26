@@ -1,0 +1,484 @@
+/**
+ * ImageEditor - Styles CSS
+ * 
+ * Utilise les variables CSS du système de thèmes SnowShelf.
+ * Compatible mobile-first avec design responsive.
+ * 
+ * @author SnowShelf
+ * @version 1.0.0
+ */
+
+/* === MODAL SPÉCIFIQUE === */
+.modal-image-editor .modal-content {
+    max-width: 90vw;
+    max-height: 95vh;
+    width: 900px;
+}
+
+.modal-image-editor .modal-body {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* === CONTENEUR PRINCIPAL === */
+.image-editor {
+    display: flex;
+    flex-direction: column;
+    height: 70vh;
+    max-height: 600px;
+    background: var(--card-bg);
+}
+
+/* === ZONE DE CANVAS === */
+.image-editor-canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--main-bg-color);
+    min-height: 200px;
+    touch-action: none;
+    user-select: none;
+}
+
+.image-editor-canvas-container.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid rgba(var(--accent-color), 0.3);
+    border-top-color: rgb(var(--accent-color));
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#imageEditorCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* === APERÇU === */
+.image-editor-preview-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+}
+
+.preview-frame {
+    padding: 3px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+#imageEditorPreview {
+    display: block;
+    border-radius: 2px;
+    background: #2a2a2a;
+}
+
+.preview-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* === INDICATEUR DE MODE === */
+.image-editor-mode-indicator {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 10;
+}
+
+.image-editor-mode-indicator.active {
+    opacity: 1;
+    visibility: visible;
+    color: rgb(var(--accent-color));
+}
+
+.image-editor-mode-indicator .mode-icon {
+    display: flex;
+    align-items: center;
+}
+
+.image-editor-mode-indicator .mode-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* === HINTS === */
+.image-editor-hints {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.image-editor-hints span {
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+}
+
+/* === PANNEAU DES FILTRES === */
+.image-editor-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--modal-bg-color);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 150px;
+    max-width: 300px;
+}
+
+.filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: default;
+}
+
+.filter-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+}
+
+.filter-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.filter-name {
+    flex: 1;
+}
+
+.filter-value {
+    min-width: 32px;
+    text-align: right;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Style des sliders */
+.filter-group input[type="range"] {
+    width: 100%;
+    height: 6px;
+    margin: 0;
+    padding: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--input-bg);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.filter-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: rgb(var(--accent-color));
+    border: 2px solid var(--card-bg);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s;
+}
+
+.filter-group input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.filter-group input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: rgb(var(--accent-color));
+    border: 2px solid var(--card-bg);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.filter-group input[type="range"]:focus {
+    outline: none;
+}
+
+.filter-group input[type="range"]:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(var(--accent-color), 0.3);
+}
+
+/* === BARRE D'OUTILS === */
+.image-editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 16px;
+    background: var(--card-bg);
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 8px;
+    border-right: 1px solid var(--border-color);
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+/* === BOUTONS === */
+.image-editor-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.image-editor-btn:hover {
+    background: rgba(var(--accent-color), 0.1);
+    border-color: rgba(var(--accent-color), 0.3);
+    color: rgb(var(--accent-color));
+}
+
+.image-editor-btn:active {
+    transform: scale(0.95);
+}
+
+.image-editor-btn.active {
+    background: rgba(var(--accent-color), 0.2);
+    border-color: rgb(var(--accent-color));
+    color: rgb(var(--accent-color));
+}
+
+.image-editor-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Bouton recadrage */
+.image-editor-btn.crop-toggle.active {
+    background: rgba(var(--accent-color), 0.3);
+}
+
+/* Indicateur de zoom */
+.zoom-indicator {
+    min-width: 50px;
+    padding: 0 4px;
+    font-size: 12px;
+    font-family: monospace;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* === RESPONSIVE MOBILE === */
+@media (max-width: 600px) {
+    .modal-image-editor .modal-content {
+        max-width: 100vw;
+        max-height: 100vh;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    .image-editor {
+        height: calc(100vh - 60px);
+        max-height: none;
+    }
+    
+    /* Réduire l'aperçu */
+    .preview-frame {
+        padding: 2px;
+    }
+    
+    #imageEditorPreview {
+        width: 60px;
+        height: 60px;
+    }
+    
+    /* Cacher les hints sur mobile */
+    .image-editor-hints {
+        display: none;
+    }
+    
+    /* Filtres empilés */
+    .image-editor-filters {
+        flex-direction: column;
+        gap: 12px;
+        padding: 10px 12px;
+    }
+    
+    .filter-group {
+        max-width: none;
+        min-width: auto;
+    }
+    
+    /* Toolbar compacte */
+    .image-editor-toolbar {
+        justify-content: space-around;
+        gap: 2px;
+        padding: 8px 4px;
+    }
+    
+    .toolbar-group {
+        padding: 0 4px;
+    }
+    
+    .image-editor-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .zoom-indicator {
+        min-width: 40px;
+        font-size: 11px;
+    }
+}
+
+/* === TRÈS PETITS ÉCRANS === */
+@media (max-width: 400px) {
+    .toolbar-group {
+        border-right: none;
+        padding: 0 2px;
+    }
+    
+    .image-editor-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .image-editor-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .zoom-indicator {
+        display: none;
+    }
+    
+    /* Filtres encore plus compacts */
+    .filter-group label {
+        font-size: 11px;
+    }
+    
+    .filter-group input[type="range"] {
+        height: 8px;
+    }
+    
+    .filter-group input[type="range"]::-webkit-slider-thumb {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* === MODE PAYSAGE MOBILE === */
+@media (max-height: 500px) and (orientation: landscape) {
+    .image-editor {
+        flex-direction: row;
+        flex-wrap: wrap;
+        height: calc(100vh - 60px);
+    }
+    
+    .image-editor-canvas-container {
+        flex: 1 1 60%;
+        min-height: 100%;
+    }
+    
+    .image-editor-filters {
+        flex: 0 0 40%;
+        flex-direction: column;
+        border-top: none;
+        border-left: 1px solid var(--border-color);
+        max-height: calc(100% - 50px);
+        overflow-y: auto;
+    }
+    
+    .image-editor-toolbar {
+        flex: 0 0 100%;
+        order: 3;
+    }
+}
+
+/* === ACCESSIBILITÉ === */
+@media (prefers-reduced-motion: reduce) {
+    .image-editor-canvas-container.loading::after {
+        animation: none;
+    }
+    
+    .image-editor-btn,
+    .filter-group input[type="range"]::-webkit-slider-thumb {
+        transition: none;
+    }
+}
+
+/* Mode contraste élevé */
+@media (prefers-contrast: high) {
+    .image-editor-btn {
+        border: 2px solid var(--border-color);
+    }
+    
+    .image-editor-btn.active,
+    .image-editor-btn:hover {
+        border-color: rgb(var(--accent-color));
+    }
+    
+    .preview-frame {
+        border-width: 2px;
+    }
+}

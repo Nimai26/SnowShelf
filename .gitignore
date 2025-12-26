@@ -1,0 +1,37 @@
+# Dépendances
+/vendor/
+node_modules/
+
+# Environnements
+.env
+.env.*
+!.env.example
+
+# Logs & cache
+storage/logs/
+storage/cache/
+storage/framework/
+storage/sessions/
+storage/temp/
+storage/users/
+storage/VG_DB/
+
+# Uploads / runtime
+storage/app/
+public/uploads/
+
+# Backups & debug
+back_up/
+img de debug/
+logs/
+
+docs/ideas.txt
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db

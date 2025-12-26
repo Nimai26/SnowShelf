@@ -1,0 +1,423 @@
+<?php
+/**
+ * Proxy de téléchargement pour contourner les restrictions CORS
+ * Permet de télécharger des images/documents depuis des serveurs externes
+ * 
+ * @endpoint POST /api/proxy-download.php
+ * @param string url - URL du fichier à télécharger
+ * @param string type - Type de fichier attendu ('image' ou 'document')
+ * @return JSON avec le fichier en base64 ou erreur
+ */
+
+// Augmenter la limite mémoire pour les gros fichiers (PDFs jusqu'à 100 Mo)
+// Le fichier en mémoire + conversion base64 peut nécessiter 2-3x la taille du fichier
+// Pour un PDF de 100 Mo : ~100 Mo (fichier) + ~133 Mo (base64) = ~250 Mo
+ini_set('memory_limit', '512M');
+
+// Headers CORS et JSON
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Authorization');
+
+// Gérer les requêtes OPTIONS (preflight CORS)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../core/ApiAuth.php';
+require_once __DIR__ . '/../../core/i18n.php';
+require_once __DIR__ . '/../../core/logger.php';
+
+// Initialisation
+try {
+    $db = getDbConnection();
+    $auth = new ApiAuth($db);
+} catch (Exception $e) {
+    loger('proxy-download', 'ERROR', 'Erreur initialisation', ['error' => $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Erreur serveur']);
+    exit;
+}
+
+// Vérifier l'authentification
+$currentUser = $auth->authenticate();
+if (!$currentUser) {
+    $auth->sendUnauthorized('Authentification requise');
+}
+
+// Uniquement POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'error' => 'Méthode non autorisée']);
+    exit;
+}
+
+// Récupérer les données
+$input = json_decode(file_get_contents('php://input'), true);
+$url = $input['url'] ?? null;
+$type = $input['type'] ?? 'image';
+
+if (!$url) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'URL manquante']);
+    exit;
+}
+
+// Nettoyer et valider l'URL
+// Certaines URLs peuvent contenir des espaces non encodés
+$url = str_replace(' ', '%20', $url);
+
+// Valider l'URL
+if (!filter_var($url, FILTER_VALIDATE_URL)) {
+    loger('proxy-download', 'WARNING', 'URL invalide', ['url' => $url]);
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'URL invalide']);
+    exit;
+}
+
+// Limiter aux protocoles HTTP/HTTPS
+$parsedUrl = parse_url($url);
+if (!in_array($parsedUrl['scheme'] ?? '', ['http', 'https'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Protocole non supporté']);
+    exit;
+}
+
+// Liste blanche de domaines autorisés (pour la sécurité)
+$allowedDomains = [
+    // Albums/Stickers - Paninimania
+    'paninimania.com',
+    'www.paninimania.com',
+    
+    // Livres - Google Books
+    'books.google.com',
+    'books.googleusercontent.com',
+    
+    // Livres - OpenLibrary
+    'covers.openlibrary.org',
+    'openlibrary.org',
+    
+    // Livres - Amazon (couvertures)
+    'images-na.ssl-images-amazon.com',
+    'images-eu.ssl-images-amazon.com',
+    'm.media-amazon.com',
+    
+    // Livres - ComicVine
+    'comicvine.gamespot.com',
+    'www.gamespot.com',
+    
+    // Livres/Manga - MangaDex
+    'uploads.mangadex.org',
+    'mangadex.org',
+    
+    // Livres/BD - Bédéthèque
+    'www.bedetheque.com',
+    'bedetheque.com',
+    
+    // Anime/Manga - Jikan (MyAnimeList)
+    'cdn.myanimelist.net',
+    'myanimelist.net',
+    
+    // Jeux vidéo - RAWG
+    'media.rawg.io',
+    
+    // Jeux vidéo - IGDB
+    'images.igdb.com',
+    
+    // Jeux vidéo / Consoles - ConsoleVariations
+    'consolevariations.com',
+    'cdn.consolevariations.com',
+    
+    // Jeux vidéo - JeuxVideo.com
+    'www.jeuxvideo.com',
+    'jeuxvideo.com',
+    'image.jeuxvideo.com',
+    
+    // Films/Séries - TMDB
+    'image.tmdb.org',
+    
+    // Films/Séries - TheTVDB
+    'artworks.thetvdb.com',
+    'thetvdb.com',
+    
+    // Films/Séries - IMDB
+    'www.imdb.com',
+    'imdb.com',
+    'm.media-amazon.com',
+    'ia.media-imdb.com',
+    
+    // LEGO Official
+    'www.lego.com',
+    'lego.com',
+    'sh-s7-live-s.legocdn.com',
+    'assets.lego.com',
+    
+    // LEGO - Rebrickable
+    'cdn.rebrickable.com',
+    'rebrickable.com',
+    'www.rebrickable.com',
+    
+    // LEGO - Brickset/Bricklink
+    'images.brickset.com',
+    'brickset.com',
+    'img.bricklink.com',
+    'bricklink.com',
+    
+    // LEGO - Mega Construx
+    'megaconstrux.com',
+    'www.megaconstrux.com',
+    
+    // Figurines/Jouets - Coleka
+    'www.coleka.com',
+    'coleka.com',
+    'static.coleka.com',
+    'thumbs.coleka.com',
+    
+    // Figurines/Jouets - Lulu-Berlu
+    'www.lulu-berlu.com',
+    'lulu-berlu.com',
+    
+    // Figurines/Jouets - Transformerland
+    'www.transformerland.com',
+    'transformerland.com',
+    
+    // Musique - MusicBrainz/CoverArtArchive
+    'coverartarchive.org',
+    'archive.org',
+    'musicbrainz.org',
+    
+    // CDN génériques / CloudFront
+    'cloudfront.net',
+    'd1w7fb2mkkr3kw.cloudfront.net',
+    
+    // YouTube (thumbnails)
+    'i.ytimg.com',
+    'img.youtube.com',
+    
+    // Générique / Wikimedia
+    'i.imgur.com',
+    'imgur.com',
+    'upload.wikimedia.org',
+    'commons.wikimedia.org',
+];
+
+$host = strtolower($parsedUrl['host'] ?? '');
+$isAllowed = false;
+foreach ($allowedDomains as $domain) {
+    if ($host === $domain || str_ends_with($host, '.' . $domain)) {
+        $isAllowed = true;
+        break;
+    }
+}
+
+if (!$isAllowed) {
+    loger('proxy-download', 'WARNING', 'Domaine non autorisé', ['url' => $url, 'host' => $host]);
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Domaine non autorisé: ' . $host]);
+    exit;
+}
+
+// Limite de taille selon le type
+// Les PDFs d'instructions font généralement 10-50 Mo, mais certains très gros sets peuvent dépasser 100 Mo
+// Note: Au-delà de 100 Mo, le navigateur risque de manquer de mémoire lors du décodage base64
+$maxSize = ($type === 'document') ? 100 * 1024 * 1024 : 20 * 1024 * 1024;
+
+// Types MIME autorisés selon le type demandé
+$allowedMimeTypes = [
+    'image' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp'],
+    'document' => ['application/pdf', 'application/zip', 'text/plain', 'application/msword', 
+                   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                   'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+];
+
+try {
+    // Initialiser cURL
+    $ch = curl_init();
+    
+    // Déterminer le User-Agent et Referer selon le domaine source
+    // Certains sites (ComicVine, etc.) bloquent les requêtes sans User-Agent de navigateur
+    $host = $parsedUrl['host'] ?? '';
+    $userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    $referer = $parsedUrl['scheme'] . '://' . $host . '/';
+    
+    // Timeout plus long pour les gros documents
+    $timeout = ($type === 'document') ? 120 : 30;
+    
+    // Options cURL
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 5,
+        CURLOPT_TIMEOUT => $timeout,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_USERAGENT => $userAgent,
+        CURLOPT_REFERER => $referer,
+        CURLOPT_HTTPHEADER => [
+            'Accept: */*',
+            'Accept-Language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Cache-Control: no-cache',
+            'Pragma: no-cache',
+        ],
+        // Limiter la taille du téléchargement
+        CURLOPT_PROGRESSFUNCTION => function($resource, $downloadSize, $downloaded, $uploadSize, $uploaded) use ($maxSize) {
+            if ($downloaded > $maxSize) {
+                return 1; // Annuler le téléchargement
+            }
+            return 0;
+        },
+        CURLOPT_NOPROGRESS => false,
+    ]);
+    
+    // Exécuter la requête
+    $content = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    $downloadedSize = curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD);
+    $error = curl_error($ch);
+    
+    curl_close($ch);
+    
+    // Détecter si le téléchargement a été annulé car fichier trop volumineux
+    $isAborted = (strpos($error, 'Callback aborted') !== false || $error === 'Callback aborted');
+    
+    // Vérifier les erreurs
+    if ($content === false || ($httpCode !== 200 && !$isAborted) || $isAborted) {
+        $errorMsg = 'Échec du téléchargement: HTTP ' . $httpCode;
+        $responseCode = 502;
+        
+        // Message plus explicite selon le type d'erreur
+        if ($isAborted) {
+            $sizeMo = round($downloadedSize / 1024 / 1024, 1);
+            $limitMo = round($maxSize / 1024 / 1024);
+            $errorMsg = "Fichier trop volumineux ({$sizeMo} Mo). Limite: {$limitMo} Mo. Téléchargez ce document manuellement depuis le site officiel.";
+            $responseCode = 413; // Payload Too Large
+            loger('proxy-download', 'WARNING', 'Fichier trop volumineux', [
+                'url' => $url,
+                'downloaded' => round($downloadedSize / 1024 / 1024, 2) . ' Mo',
+                'max_size' => round($maxSize / 1024 / 1024) . ' Mo'
+            ]);
+        } elseif ($httpCode === 404) {
+            $errorMsg = 'Fichier non trouvé (404)';
+            $responseCode = 404;
+            loger('proxy-download', 'WARNING', 'Fichier non trouvé', ['url' => $url]);
+        } else {
+            loger('proxy-download', 'ERROR', 'Échec du téléchargement', [
+                'url' => $url,
+                'http_code' => $httpCode,
+                'error' => $error
+            ]);
+        }
+        
+        http_response_code($responseCode);
+        echo json_encode(['success' => false, 'error' => $errorMsg]);
+        exit;
+    }
+    
+    // Vérifier la taille
+    $size = strlen($content);
+    if ($size > $maxSize) {
+        loger('proxy-download', 'WARNING', 'Fichier trop volumineux après téléchargement', [
+            'url' => $url,
+            'size' => round($size / 1024 / 1024, 2) . ' Mo',
+            'max_size' => round($maxSize / 1024 / 1024) . ' Mo'
+        ]);
+        http_response_code(413);
+        echo json_encode(['success' => false, 'error' => 'Fichier trop volumineux (' . round($size / 1024 / 1024, 1) . ' Mo)']);
+        exit;
+    }
+    
+    // Extraire le type MIME de base (sans charset)
+    $mimeType = explode(';', $contentType)[0];
+    $mimeType = trim(strtolower($mimeType));
+    
+    // Si le type MIME n'est pas détecté, essayer de le déduire de l'extension
+    if (empty($mimeType) || $mimeType === 'application/octet-stream') {
+        $extension = strtolower(pathinfo($parsedUrl['path'] ?? '', PATHINFO_EXTENSION));
+        $extensionMap = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            'bmp' => 'image/bmp',
+            'pdf' => 'application/pdf',
+            'zip' => 'application/zip',
+        ];
+        $mimeType = $extensionMap[$extension] ?? 'application/octet-stream';
+    }
+    
+    // Vérifier le type MIME
+    $allowedForType = $allowedMimeTypes[$type] ?? $allowedMimeTypes['image'];
+    if (!in_array($mimeType, $allowedForType)) {
+        // Pour les images, vérifier si c'est bien une image en analysant le contenu
+        if ($type === 'image') {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $detectedMime = $finfo->buffer($content);
+            if (!in_array($detectedMime, $allowedForType)) {
+                loger('proxy-download', 'WARNING', 'Type MIME non autorisé', [
+                    'url' => $url,
+                    'content_type' => $contentType,
+                    'detected_mime' => $detectedMime
+                ]);
+                http_response_code(415);
+                echo json_encode(['success' => false, 'error' => 'Type de fichier non autorisé: ' . $detectedMime]);
+                exit;
+            }
+            $mimeType = $detectedMime;
+        }
+    }
+    
+    // Générer le nom de fichier
+    $pathInfo = pathinfo($parsedUrl['path'] ?? '');
+    $filename = $pathInfo['basename'] ?? 'file';
+    // Nettoyer le nom (retirer les query strings si présent dans le basename)
+    $filename = explode('?', $filename)[0];
+    
+    // Décoder les caractères URL
+    $filename = urldecode($filename);
+    
+    // Ajouter une extension si manquante
+    if (empty($pathInfo['extension'])) {
+        $extMap = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            'application/pdf' => 'pdf',
+            'application/zip' => 'zip',
+        ];
+        $filename .= '.' . ($extMap[$mimeType] ?? 'bin');
+    }
+    
+    // Encoder en base64
+    $base64 = base64_encode($content);
+    
+    loger('proxy-download', 'INFO', 'Fichier téléchargé avec succès', [
+        'url' => $url,
+        'size' => $size,
+        'mime_type' => $mimeType,
+        'filename' => $filename
+    ]);
+    
+    echo json_encode([
+        'success' => true,
+        'data' => $base64,
+        'mimeType' => $mimeType,
+        'filename' => $filename,
+        'size' => $size
+    ]);
+    
+} catch (Exception $e) {
+    loger('proxy-download', 'ERROR', 'Exception lors du téléchargement', [
+        'url' => $url,
+        'error' => $e->getMessage()
+    ]);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Erreur interne: ' . $e->getMessage()]);
+}

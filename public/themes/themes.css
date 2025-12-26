@@ -1,0 +1,2355 @@
+/**
+ * SnowShelf - Système de Thèmes
+ * 
+ * Fichier centralisant tous les thèmes visuels disponibles.
+ * Inspiré de theme.park (https://docs.theme-park.dev)
+ * 
+ * Usage: Ajouter l'attribut data-theme sur <html> ou <body>
+ * Exemple: <html data-theme="dracula">
+ * 
+ * Variables CSS disponibles pour personnalisation :
+ * - Arrière-plans (main-bg-color, modal-bg-color, etc.)
+ * - Boutons (button-color, button-text, etc.)
+ * - Couleurs d'accent et liens
+ * - Textes et états
+ */
+
+/* ============================================
+   THÈME PAR DÉFAUT - Dark (Base)
+   ============================================ */
+:root,
+[data-theme="dark"] {
+  /* Arrière-plans */
+  --main-bg-color: radial-gradient(circle, #3a3a3a, #2d2d2d, #202020, #141414, #000000) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(135deg, #3a3a3a, #2d2d2d, #202020, #141414, #000000) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(135deg, #3a3a3a, #2d2d2d, #202020, #141414, #000000) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(135deg, #3a3a3a, #2d2d2d, #202020, #141414, #000000) center center/cover no-repeat fixed;
+  --dropdown-bg: #2d2d2d;
+  --card-bg: rgba(45, 45, 45, 0.7);
+  --sidebar-bg: #1a1a1a;
+  --navbar-bg: #1a1a1a;
+
+  /* Boutons */
+  --button-color: #7a7a7a;
+  --button-color-hover: #9b9b9b;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #4a90d9;
+  --button-primary-hover: #5ba0e9;
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  /* Couleurs d'accent */
+  --accent-color: 170, 170, 170;
+  --accent-color-hover: rgba(255, 255, 255, 0.45);
+  --accent-rgb: 170, 170, 170;
+
+  /* Liens */
+  --link-color: #7a7a7a;
+  --link-color-hover: #fff;
+
+  /* Labels et badges */
+  --label-text-color: #000;
+  --badge-bg: rgba(var(--accent-color), 0.2);
+
+  /* Textes */
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  /* Bordures et ombres */
+  --border-color: #444;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --box-shadow-hover: 0 8px 12px rgba(0, 0, 0, 0.4);
+
+  /* États spéciaux */
+  --success-color: #6b5;
+  --success-color-rgb: 102, 187, 85;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #f39c12;
+  --warning-color-rgb: 243, 156, 18;
+  --info-color: #3498db;
+
+  /* Formulaires */
+  --input-bg: #333;
+  --input-border: #555;
+  --input-focus-border: rgb(var(--accent-color));
+  --input-text: #eee;
+  --placeholder-color: #888;
+
+  /* Overlays et viewers (pour media-list, modals, etc.) */
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --overlay-text: #fff;
+  --viewer-bg: #000;
+  --shadow-color: 0, 0, 0;
+
+  /* Scrollbar */
+  --scrollbar-bg: #1a1a1a;
+  --scrollbar-thumb: #555;
+  --scrollbar-thumb-hover: #777;
+}
+
+/* ============================================
+   THÈME DRACULA
+   Palette violet/rose inspirée du thème Dracula
+   ============================================ */
+[data-theme="dracula"] {
+  --main-bg-color: #282a36;
+  --modal-bg-color: #1e2029;
+  --modal-header-color: #1e2029;
+  --modal-footer-color: #1e2029;
+  --dropdown-bg: #1e2029;
+  --card-bg: rgba(40, 42, 54, 0.7);
+  --sidebar-bg: #21222c;
+  --navbar-bg: #21222c;
+
+  --button-color: #bd93f9;
+  --button-color-hover: #ff79c6;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #bd93f9;
+  --button-primary-hover: #caa4fa;
+  --button-success: #50fa7b;
+  --button-danger: #ff5555;
+  --button-warning: #ffb86c;
+
+  --accent-color: 80, 250, 123;
+  --accent-color-hover: rgba(80, 250, 123, 0.8);
+  --accent-rgb: 80, 250, 123;
+
+  --link-color: #ff79c6;
+  --link-color-hover: #8be9fd;
+
+  --label-text-color: #282a36;
+
+  --text: #f8f8f2;
+  --text-hover: #fff;
+  --text-muted: #6272a4;
+  --text-heading: #f8f8f2;
+
+  --border-color: #44475a;
+
+  --success-color: #50fa7b;
+  --success-color-rgb: 80, 250, 123;
+  --error-color: #ff5555;
+  --error-color-rgb: 255, 85, 85;
+  --warning-color: #ffb86c;
+  --warning-color-rgb: 255, 184, 108;
+  --info-color: #8be9fd;
+
+  --input-bg: #44475a;
+  --input-border: #6272a4;
+}
+
+/* ============================================
+   THÈME NORD
+   Palette arctique inspirée de Nord
+   ============================================ */
+[data-theme="nord"] {
+  --main-bg-color: #2E3440;
+  --modal-bg-color: #3B4252;
+  --modal-header-color: #434C5E;
+  --modal-footer-color: #434C5E;
+  --dropdown-bg: #333947;
+  --card-bg: rgba(59, 66, 82, 0.7);
+  --sidebar-bg: #2E3440;
+  --navbar-bg: #2E3440;
+
+  --button-color: #79b8ca;
+  --button-color-hover: #6a9daf;
+  --button-text: #2E3440;
+  --button-text-hover: #D8DEE9;
+  --button-primary: #5E81AC;
+  --button-primary-hover: #81A1C1;
+  --button-success: #A3BE8C;
+  --button-danger: #BF616A;
+  --button-warning: #D08770;
+
+  --accent-color: 121, 184, 202;
+  --accent-color-hover: rgba(121, 184, 202, 0.8);
+  --accent-rgb: 121, 184, 202;
+
+  --link-color: #81A1C1;
+  --link-color-hover: #88C0D0;
+
+  --label-text-color: #222730;
+
+  --text: #D8DEE9;
+  --text-hover: #ECEFF4;
+  --text-muted: #81A1C1;
+  --text-heading: #ECEFF4;
+
+  --border-color: #4C566A;
+
+  --success-color: #A3BE8C;
+  --success-color-rgb: 163, 190, 140;
+  --error-color: #BF616A;
+  --error-color-rgb: 191, 97, 106;
+  --warning-color: #D08770;
+  --warning-color-rgb: 208, 135, 112;
+  --info-color: #88C0D0;
+
+  --input-bg: #3B4252;
+  --input-border: #4C566A;
+}
+
+/* ============================================
+   THÈME AQUAMARINE
+   Tons bleu-vert océan
+   ============================================ */
+[data-theme="aquamarine"] {
+  --main-bg-color: radial-gradient(ellipse at center, #47918a 0%, #0b3161 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(-90deg, #47918a 0%, #0b3161 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(-90deg, #47918a 0%, #0b3161 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(-90deg, #47918a 0%, #0b3161 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: #265c74;
+  --card-bg: rgba(38, 92, 116, 0.7);
+  --sidebar-bg: #0b3161;
+  --navbar-bg: #0b3161;
+
+  --button-color: #009688;
+  --button-color-hover: #12afa0;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #009688;
+  --button-primary-hover: #12afa0;
+  --button-success: #12afa0;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 18, 175, 160;
+  --accent-color-hover: rgba(18, 175, 160, 0.8);
+  --accent-rgb: 18, 175, 160;
+
+  --link-color: #0ed2bf;
+  --link-color-hover: #36e7d6;
+
+  --label-text-color: #fff;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #8dcfc9;
+  --text-heading: #fff;
+
+  --border-color: #47918a;
+
+  --success-color: #009688;
+  --success-color-rgb: 0, 150, 136;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #f39c12;
+  --warning-color-rgb: 243, 156, 18;
+  --info-color: #12afa0;
+
+  --input-bg: rgba(11, 49, 97, 0.6);
+  --input-border: #47918a;
+}
+
+/* ============================================
+   THÈME PLEX
+   Style orange/noir de Plex
+   ============================================ */
+[data-theme="plex"] {
+  --main-bg-color: radial-gradient(circle farthest-side at 0% 100%, rgb(47, 47, 47) 0%, rgba(47, 47, 47, 0) 100%), radial-gradient(circle farthest-side at 100% 100%, rgb(63, 63, 63) 0%, rgba(63, 63, 63, 0) 100%), radial-gradient(circle farthest-side at 100% 0%, rgb(76, 76, 76) 0%, rgba(76, 76, 76, 0) 100%), radial-gradient(circle farthest-side at 0% 0%, rgb(58, 58, 58) 0%, rgba(58, 58, 58, 0) 100%), black center center/cover no-repeat fixed;
+  --modal-bg-color: #282828;
+  --modal-header-color: #323232;
+  --modal-footer-color: #323232;
+  --dropdown-bg: #191a1c;
+  --card-bg: rgba(40, 40, 40, 0.7);
+  --sidebar-bg: #1a1a1a;
+  --navbar-bg: #1a1a1a;
+
+  --button-color: #cc7b19;
+  --button-color-hover: #e59029;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #e5a00d;
+  --button-primary-hover: #ffc107;
+  --button-success: #27c24c;
+  --button-danger: #e74c3c;
+  --button-warning: #e5a00d;
+
+  --accent-color: 229, 160, 13;
+  --accent-color-hover: #ffc107;
+  --accent-rgb: 229, 160, 13;
+
+  --link-color: #e5a00d;
+  --link-color-hover: #fff;
+
+  --label-text-color: #333;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: #444;
+
+  --success-color: #27c24c;
+  --success-color-rgb: 39, 194, 76;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #e5a00d;
+  --warning-color-rgb: 229, 160, 13;
+  --info-color: #3498db;
+
+  --input-bg: #333;
+  --input-border: #555;
+}
+
+/* ============================================
+   THÈME HOTLINE
+   Style néon rétro rose/bleu
+   ============================================ */
+[data-theme="hotline"] {
+  --main-bg-color: linear-gradient(0deg, rgba(247, 101, 184, 1) 0%, rgb(21, 95, 165) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(-90deg, rgba(247, 101, 184, 1) 0%, rgb(21, 95, 165) 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(-90deg, rgba(247, 101, 184, 1) 0%, rgb(21, 95, 165) 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(-90deg, rgba(247, 101, 184, 1) 0%, rgb(21, 95, 165) 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: #5e61ab;
+  --card-bg: rgba(94, 97, 171, 0.7);
+  --sidebar-bg: rgba(21, 95, 165, 0.9);
+  --navbar-bg: rgba(21, 95, 165, 0.9);
+
+  --button-color: #f98dc9;
+  --button-color-hover: #ff4cb1;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #f98dc9;
+  --button-primary-hover: #ff4cb1;
+  --button-success: #00ff9d;
+  --button-danger: #ff4c4c;
+  --button-warning: #ffb86c;
+
+  --accent-color: 249, 141, 201;
+  --accent-color-hover: rgba(249, 141, 201, 0.8);
+  --accent-rgb: 249, 141, 201;
+
+  --link-color: rgb(255, 179, 222);
+  --link-color-hover: #d7fffe;
+
+  --label-text-color: #fff;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #bbb;
+  --text-heading: #fff;
+
+  --border-color: rgba(255, 255, 255, 0.3);
+
+  --success-color: #00ff9d;
+  --success-color-rgb: 0, 255, 157;
+  --error-color: #ff4c4c;
+  --error-color-rgb: 255, 76, 76;
+  --warning-color: #ffb86c;
+  --warning-color-rgb: 255, 184, 108;
+  --info-color: #8be9fd;
+
+  --input-bg: rgba(94, 97, 171, 0.6);
+  --input-border: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   THÈME HOTPINK
+   Style rose vif cyberpunk
+   ============================================ */
+[data-theme="hotpink"] {
+  --main-bg-color: linear-gradient(45deg, #fb3f62 0%, #204c80 37%, #004249 97%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(-45deg, #204c80 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(-45deg, #204c80 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(-45deg, #204c80 0%, #000 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: #204c80;
+  --card-bg: rgba(32, 76, 128, 0.7);
+  --sidebar-bg: rgba(0, 66, 73, 0.95);
+  --navbar-bg: rgba(0, 66, 73, 0.95);
+
+  --button-color: #fb3f62;
+  --button-color-hover: #cd4164;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #fb3f62;
+  --button-primary-hover: #ff5a7d;
+  --button-success: #00ff9d;
+  --button-danger: #ff3333;
+  --button-warning: #ffb86c;
+
+  --accent-color: 251, 63, 98;
+  --accent-color-hover: rgba(251, 63, 98, 0.8);
+  --accent-rgb: 251, 63, 98;
+
+  --link-color: rgb(0, 255, 157);
+  --link-color-hover: rgba(0, 255, 157, 0.8);
+
+  --label-text-color: #282a36;
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: rgba(251, 63, 98, 0.5);
+
+  --success-color: #00ff9d;
+  --success-color-rgb: 0, 255, 157;
+  --error-color: #ff3333;
+  --error-color-rgb: 255, 51, 51;
+  --warning-color: #ffb86c;
+  --warning-color-rgb: 255, 184, 108;
+  --info-color: #00d4ff;
+
+  --input-bg: rgba(32, 76, 128, 0.6);
+  --input-border: rgba(251, 63, 98, 0.5);
+}
+
+/* ============================================
+   THÈME SPACE GRAY
+   Tons gris spatial élégants
+   ============================================ */
+[data-theme="space-gray"] {
+  --main-bg-color: radial-gradient(ellipse at center, rgba(87, 108, 117, 1) 0%, rgba(37, 50, 55, 1) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(-90deg, rgba(87, 108, 117, 1) 0%, rgba(37, 50, 55, 1) 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(-90deg, rgba(87, 108, 117, 1) 0%, rgba(37, 50, 55, 1) 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(-90deg, rgba(87, 108, 117, 1) 0%, rgba(37, 50, 55, 1) 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: #576c75;
+  --card-bg: rgba(87, 108, 117, 0.7);
+  --sidebar-bg: rgba(37, 50, 55, 0.95);
+  --navbar-bg: rgba(37, 50, 55, 0.95);
+
+  --button-color: #607D8B;
+  --button-color-hover: #81a6b7;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #607D8B;
+  --button-primary-hover: #81a6b7;
+  --button-success: #81a6b7;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 129, 166, 183;
+  --accent-color-hover: rgba(129, 166, 183, 0.8);
+  --accent-rgb: 129, 166, 183;
+
+  --link-color: #81a6b7;
+  --link-color-hover: #9adfff;
+
+  --label-text-color: #fff;
+
+  --text: #bbb;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: #576c75;
+
+  --success-color: #81a6b7;
+  --success-color-rgb: 129, 166, 183;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #f39c12;
+  --warning-color-rgb: 243, 156, 18;
+  --info-color: #70aeca;
+
+  --input-bg: rgba(37, 50, 55, 0.6);
+  --input-border: #576c75;
+}
+
+/* ============================================
+   THÈME OVERSEERR
+   Style moderne violet/indigo
+   ============================================ */
+[data-theme="overseerr"] {
+  --main-bg-color: linear-gradient(360deg, hsl(221, 39%, 11%) 65%, hsl(215, 28%, 17%) 100%);
+  --modal-bg-color: #1f2937;
+  --modal-header-color: #1f2937;
+  --modal-footer-color: #1f2937;
+  --dropdown-bg: #374151;
+  --card-bg: rgba(31, 41, 55, 0.7);
+  --sidebar-bg: hsl(221, 39%, 11%);
+  --navbar-bg: hsl(221, 39%, 11%);
+
+  --button-color: #4f46e5;
+  --button-color-hover: #6366f1;
+  --button-text: #e5e7eb;
+  --button-text-hover: #fff;
+  --button-primary: #4f46e5;
+  --button-primary-hover: #6366f1;
+  --button-success: #10b981;
+  --button-danger: #ef4444;
+  --button-warning: #f59e0b;
+
+  --accent-color: 167, 139, 250;
+  --accent-color-hover: rgba(167, 139, 250, 0.8);
+  --accent-rgb: 167, 139, 250;
+
+  --link-color: #6366f1;
+  --link-color-hover: #a78bfa;
+
+  --label-text-color: #000;
+
+  --text: #d1d5db;
+  --text-hover: #fff;
+  --text-muted: #9ca3af;
+  --text-heading: #f9fafb;
+
+  --border-color: #374151;
+
+  --success-color: #10b981;
+  --success-color-rgb: 16, 185, 129;
+  --error-color: #ef4444;
+  --error-color-rgb: 239, 68, 68;
+  --warning-color: #f59e0b;
+  --warning-color-rgb: 245, 158, 11;
+  --info-color: #6366f1;
+
+  --input-bg: #374151;
+  --input-border: #4b5563;
+}
+
+/* ============================================
+   THÈME MAROON
+   Style bordeaux élégant
+   ============================================ */
+[data-theme="maroon"] {
+  --main-bg-color: radial-gradient(circle farthest-corner at 48.4% 47.5%, rgba(76, 21, 51, 1) 0%, rgba(34, 10, 37, 1) 90%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(-90deg, rgba(76, 21, 51, 1) 0%, rgba(34, 10, 37, 1) 90%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(-90deg, rgba(76, 21, 51, 1) 0%, rgba(34, 10, 37, 1) 90%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(-90deg, rgba(76, 21, 51, 1) 0%, rgba(34, 10, 37, 1) 90%) center center/cover no-repeat fixed;
+  --dropdown-bg: #220a25;
+  --card-bg: rgba(76, 21, 51, 0.7);
+  --sidebar-bg: rgba(34, 10, 37, 0.95);
+  --navbar-bg: rgba(34, 10, 37, 0.95);
+
+  --button-color: #7b154d;
+  --button-color-hover: rgb(150, 26, 94);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #7b154d;
+  --button-primary-hover: rgb(150, 26, 94);
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 162, 28, 101;
+  --accent-color-hover: rgba(162, 28, 101, 0.8);
+  --accent-rgb: 162, 28, 101;
+
+  --link-color: rgb(162, 28, 101);
+  --link-color-hover: rgb(194, 36, 122);
+
+  --label-text-color: #fff;
+
+  --text: #dadada;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: rgba(162, 28, 101, 0.5);
+
+  --success-color: #6b5;
+  --success-color-rgb: 102, 187, 85;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #f39c12;
+  --warning-color-rgb: 243, 156, 18;
+  --info-color: #a21c65;
+
+  --input-bg: rgba(34, 10, 37, 0.6);
+  --input-border: rgba(162, 28, 101, 0.5);
+}
+
+/* ============================================
+   THÈME ORGANIZR
+   Style bleu cyan moderne
+   ============================================ */
+[data-theme="organizr"] {
+  --main-bg-color: #1f1f1f;
+  --modal-bg-color: #333;
+  --modal-header-color: #232323;
+  --modal-footer-color: #232323;
+  --dropdown-bg: #1b1b1b;
+  --card-bg: rgba(51, 51, 51, 0.7);
+  --sidebar-bg: #1b1b1b;
+  --navbar-bg: #1b1b1b;
+
+  --button-color: #2cabe3;
+  --button-color-hover: #298fbc;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #2cabe3;
+  --button-primary-hover: #3cc5ff;
+  --button-success: #2cabe3;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 44, 171, 227;
+  --accent-color-hover: rgba(44, 171, 227, 0.8);
+  --accent-rgb: 44, 171, 227;
+
+  --link-color: #2cabe3;
+  --link-color-hover: #3cc5ff;
+
+  --label-text-color: #fff;
+
+  --text: #96a2b4;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: #444;
+
+  --success-color: #2cabe3;
+  --success-color-rgb: 44, 171, 227;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #f39c12;
+  --warning-color-rgb: 243, 156, 18;
+  --info-color: #2cabe3;
+
+  --input-bg: #333;
+  --input-border: #555;
+}
+
+/* ============================================
+   THÈMES COMMUNITY
+   ============================================ */
+
+/* CATPPUCCIN MOCHA - Palette douce et moderne */
+[data-theme="catppuccin-mocha"] {
+  --main-bg-color: #1e1e2e;
+  --modal-bg-color: #181825;
+  --modal-header-color: #11111b;
+  --modal-footer-color: #11111b;
+  --dropdown-bg: #313244;
+  --card-bg: rgba(30, 30, 46, 0.7);
+  --sidebar-bg: #181825;
+  --navbar-bg: #181825;
+
+  --button-color: #313244;
+  --button-color-hover: #45475a;
+  --button-text: #cdd6f4;
+  --button-text-hover: #cdd6f4;
+  --button-primary: #89b4fa;
+  --button-primary-hover: #b4befe;
+  --button-success: #a6e3a1;
+  --button-danger: #f38ba8;
+  --button-warning: #fab387;
+
+  --accent-color: 137, 180, 250;
+  --accent-color-hover: rgba(137, 180, 250, 0.8);
+  --accent-rgb: 137, 180, 250;
+
+  --link-color: #cdd6f4;
+  --link-color-hover: #89b4fa;
+
+  --label-text-color: #fff;
+
+  --text: #cdd6f4;
+  --text-hover: #cdd6f4;
+  --text-muted: #a6adc8;
+  --text-heading: #cdd6f4;
+
+  --border-color: #45475a;
+
+  --success-color: #a6e3a1;
+  --success-color-rgb: 166, 227, 161;
+  --error-color: #f38ba8;
+  --error-color-rgb: 243, 139, 168;
+  --warning-color: #fab387;
+  --warning-color-rgb: 250, 179, 135;
+  --info-color: #89b4fa;
+
+  --input-bg: #313244;
+  --input-border: #45475a;
+}
+
+/* ONEDARK - Palette Atom One Dark */
+[data-theme="onedark"] {
+  --main-bg-color: #282c34;
+  --modal-bg-color: #1e222a;
+  --modal-header-color: #1e222a;
+  --modal-footer-color: #1e222a;
+  --dropdown-bg: #1e222a;
+  --card-bg: rgba(40, 44, 52, 0.7);
+  --sidebar-bg: #21252b;
+  --navbar-bg: #21252b;
+
+  --button-color: #61afef;
+  --button-color-hover: #c678dd;
+  --button-text: #e2e4eb;
+  --button-text-hover: #fff;
+  --button-primary: #61afef;
+  --button-primary-hover: #56b6c2;
+  --button-success: #98c379;
+  --button-danger: #e06c75;
+  --button-warning: #e5c07b;
+
+  --accent-color: 152, 195, 121;
+  --accent-color-hover: rgba(152, 195, 121, 0.8);
+  --accent-rgb: 152, 195, 121;
+
+  --link-color: #61afef;
+  --link-color-hover: #56b6c2;
+
+  --label-text-color: #282c34;
+
+  --text: #abb2bf;
+  --text-hover: #c8ccd4;
+  --text-muted: #565c64;
+  --text-heading: #e2e4eb;
+
+  --border-color: #3e4451;
+
+  --success-color: #98c379;
+  --success-color-rgb: 152, 195, 121;
+  --error-color: #e06c75;
+  --error-color-rgb: 224, 108, 117;
+  --warning-color: #e5c07b;
+  --warning-color-rgb: 229, 192, 123;
+  --info-color: #61afef;
+
+  --input-bg: #1e222a;
+  --input-border: #3e4451;
+}
+
+/* TRUE BLACK - Noir pur AMOLED */
+[data-theme="trueblack"] {
+  --main-bg-color: #000;
+  --modal-bg-color: #000;
+  --modal-header-color: #000;
+  --modal-footer-color: #000;
+  --dropdown-bg: #000;
+  --card-bg: rgba(20, 20, 20, 0.7);
+  --sidebar-bg: #000;
+  --navbar-bg: #000;
+
+  --button-color: #7a7a7a;
+  --button-color-hover: #444;
+  --button-text: #ddd;
+  --button-text-hover: #999;
+  --button-primary: #7a7a7a;
+  --button-primary-hover: #999;
+  --button-success: #ddd;
+  --button-danger: #ff4444;
+  --button-warning: #ffaa00;
+
+  --accent-color: 170, 170, 170;
+  --accent-color-hover: rgba(153, 153, 153, 0.45);
+  --accent-rgb: 170, 170, 170;
+
+  --link-color: #7a7a7a;
+  --link-color-hover: #999;
+
+  --label-text-color: #000;
+
+  --text: #ddd;
+  --text-hover: #999;
+  --text-muted: #5a5a5a;
+  --text-heading: #fff;
+
+  --border-color: #333;
+
+  --success-color: #ddd;
+  --success-color-rgb: 221, 221, 221;
+  --error-color: #ff4444;
+  --error-color-rgb: 255, 68, 68;
+  --warning-color: #ffaa00;
+  --warning-color-rgb: 255, 170, 0;
+  --info-color: #7a7a7a;
+
+  --input-bg: #111;
+  --input-border: #333;
+}
+
+/* PINE SHADOW - Sombre avec accent doré */
+[data-theme="pine-shadow"] {
+  --main-bg-color: linear-gradient(135deg, #252b2f, #090c0e) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(135deg, #252b2f, #090c0e) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(135deg, #252b2f, #090c0e) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(135deg, #252b2f, #090c0e) center center/cover no-repeat fixed;
+  --dropdown-bg: #1a1d20;
+  --card-bg: rgba(37, 43, 47, 0.7);
+  --sidebar-bg: #090c0e;
+  --navbar-bg: #090c0e;
+
+  --button-color: #cc7b19;
+  --button-color-hover: #e59029;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #e5a00d;
+  --button-primary-hover: #ffc107;
+  --button-success: #27c24c;
+  --button-danger: #e74c3c;
+  --button-warning: #e5a00d;
+
+  --accent-color: 229, 160, 13;
+  --accent-color-hover: #ffc107;
+  --accent-rgb: 229, 160, 13;
+
+  --link-color: #fff;
+  --link-color-hover: #fff;
+
+  --label-text-color: #fff;
+
+  --text: #bbb;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: #3a3f44;
+
+  --success-color: #27c24c;
+  --success-color-rgb: 39, 194, 76;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #e5a00d;
+  --warning-color-rgb: 229, 160, 13;
+  --info-color: #cc7b19;
+
+  --input-bg: rgba(9, 12, 14, 0.6);
+  --input-border: #3a3f44;
+}
+
+/* IBRACORP - Rouge corail sur sombre */
+[data-theme="ibracorp"] {
+  --main-bg-color: #262a2b;
+  --modal-bg-color: #333;
+  --modal-header-color: #232323;
+  --modal-footer-color: #232323;
+  --dropdown-bg: #1b1b1b;
+  --card-bg: rgba(38, 42, 43, 0.7);
+  --sidebar-bg: #1b1b1b;
+  --navbar-bg: #1b1b1b;
+
+  --button-color: #ef7a70;
+  --button-color-hover: #d16057;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #ef7a70;
+  --button-primary-hover: #d16057;
+  --button-success: #ef7a70;
+  --button-danger: #d16057;
+  --button-warning: #f39c12;
+
+  --accent-color: 239, 122, 112;
+  --accent-color-hover: rgba(239, 122, 112, 0.8);
+  --accent-rgb: 239, 122, 112;
+
+  --link-color: #ef7a70;
+  --link-color-hover: #d16057;
+
+  --label-text-color: #fff;
+
+  --text: #d16057;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: #444;
+
+  --success-color: #ef7a70;
+  --success-color-rgb: 239, 122, 112;
+  --error-color: #d16057;
+  --error-color-rgb: 209, 96, 87;
+  --warning-color: #f39c12;
+  --warning-color-rgb: 243, 156, 18;
+  --info-color: #ef7a70;
+
+  --input-bg: #333;
+  --input-border: #555;
+}
+
+/* BLACKBERRY SOLAR - Orange doré sur sombre */
+[data-theme="blackberry-solar"] {
+  --main-bg-color: radial-gradient(at top left, rgba(0, 0, 0, 0.31), hsla(0, 14%, 18%, 0.9), hsla(0, 18%, 5%, 1)) center center/cover no-repeat fixed, linear-gradient(120deg, #f6d365 0%, #a25a25 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(135deg, hsla(0, 14%, 18%, 0.95), hsla(0, 18%, 5%, 1)) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(135deg, hsla(0, 14%, 18%, 0.95), hsla(0, 18%, 5%, 1)) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(135deg, hsla(0, 14%, 18%, 0.95), hsla(0, 18%, 5%, 1)) center center/cover no-repeat fixed;
+  --dropdown-bg: hsla(0, 18%, 10%, 0.95);
+  --card-bg: rgba(30, 25, 20, 0.7);
+  --sidebar-bg: hsla(0, 18%, 5%, 0.95);
+  --navbar-bg: hsla(0, 18%, 5%, 0.95);
+
+  --button-color: #f6d365;
+  --button-color-hover: #a25a25;
+  --button-text: hsla(0, 18%, 5%, 0.95);
+  --button-text-hover: hsla(0, 0%, 100%, 0.95);
+  --button-primary: #f6d365;
+  --button-primary-hover: #ffdf80;
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f6d365;
+
+  --accent-color: 246, 211, 101;
+  --accent-color-hover: rgba(246, 211, 101, 0.8);
+  --accent-rgb: 246, 211, 101;
+
+  --link-color: rgb(246, 211, 101);
+  --link-color-hover: rgba(246, 211, 101, 0.8);
+
+  --label-text-color: hsla(0, 18%, 5%, 0.95);
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff;
+
+  --border-color: rgba(246, 211, 101, 0.3);
+
+  --success-color: #6b5;
+  --success-color-rgb: 102, 187, 85;
+  --error-color: #e74c3c;
+  --error-color-rgb: 231, 76, 60;
+  --warning-color: #f6d365;
+  --warning-color-rgb: 246, 211, 101;
+  --info-color: #f6d365;
+
+  --input-bg: hsla(0, 18%, 8%, 0.8);
+  --input-border: rgba(246, 211, 101, 0.3);
+}
+
+/* ============================================
+   THÈMES INFINITY STONES
+   Collection inspirée des pierres d'infinité
+   ============================================ */
+
+/* MIND - Jaune doré */
+[data-theme="infinity-mind"] {
+  --main-bg-color: radial-gradient(ellipse at center bottom, rgba(255, 242, 0, 0.7) 0%, #0d0400 80%, rgba(0, 0, 0, 1) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(180deg, rgba(51, 49, 0, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(180deg, rgba(51, 49, 0, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(180deg, rgba(51, 49, 0, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: rgba(51, 49, 0, 0.95);
+  --card-bg: rgba(40, 38, 0, 0.7);
+  --sidebar-bg: rgba(13, 4, 0, 0.95);
+  --navbar-bg: rgba(13, 4, 0, 0.95);
+
+  --button-color: #e1d500;
+  --button-color-hover: #c3b900;
+  --button-text: #000;
+  --button-text-hover: #000;
+  --button-primary: #fff200;
+  --button-primary-hover: #e1d500;
+  --button-success: #e1d500;
+  --button-danger: #e74c3c;
+  --button-warning: #e1d500;
+
+  --accent-color: 228, 216, 0;
+  --accent-color-hover: rgba(228, 216, 0, 0.8);
+  --accent-rgb: 228, 216, 0;
+
+  --link-color: #fff200;
+  --link-color-hover: rgba(255, 242, 0, 0.8);
+
+  --label-text-color: #000;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fff200;
+
+  --border-color: rgba(228, 216, 0, 0.3);
+}
+
+/* SOUL - Orange */
+[data-theme="infinity-soul"] {
+  --main-bg-color: radial-gradient(ellipse at center bottom, rgba(255, 153, 0, 0.7) 0%, #3c0015 80%, rgba(0, 0, 0, 1) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(180deg, rgba(140, 64, 2, 1) 0%, #3c0015 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(180deg, rgba(140, 64, 2, 1) 0%, #3c0015 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(180deg, rgba(140, 64, 2, 1) 0%, #3c0015 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: rgba(140, 64, 2, 0.95);
+  --card-bg: rgba(100, 45, 0, 0.7);
+  --sidebar-bg: rgba(60, 0, 21, 0.95);
+  --navbar-bg: rgba(60, 0, 21, 0.95);
+
+  --button-color: rgb(255, 153, 0);
+  --button-color-hover: rgba(255, 153, 0, 0.8);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #ff9900;
+  --button-primary-hover: #ffaa33;
+  --button-success: #ff9900;
+  --button-danger: #880030;
+  --button-warning: #ff9900;
+
+  --accent-color: 255, 153, 0;
+  --accent-color-hover: rgba(255, 153, 0, 0.8);
+  --accent-rgb: 255, 153, 0;
+
+  --link-color: rgb(255, 153, 0);
+  --link-color-hover: rgba(255, 153, 0, 0.8);
+
+  --label-text-color: #fff;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #ff9900;
+
+  --border-color: rgba(255, 153, 0, 0.3);
+}
+
+/* REALITY - Rouge */
+[data-theme="infinity-reality"] {
+  --main-bg-color: radial-gradient(ellipse at center bottom, rgba(232, 11, 11, 0.7) 0%, #08000d 80%, rgba(0, 0, 0, 1) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(180deg, rgba(102, 5, 5, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(180deg, rgba(102, 5, 5, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(180deg, rgba(102, 5, 5, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: rgba(102, 5, 5, 0.95);
+  --card-bg: rgba(80, 5, 5, 0.7);
+  --sidebar-bg: rgba(8, 0, 13, 0.95);
+  --navbar-bg: rgba(8, 0, 13, 0.95);
+
+  --button-color: #e80c0b;
+  --button-color-hover: rgba(232, 12, 11, 0.8);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #e80c0b;
+  --button-primary-hover: #ff3333;
+  --button-success: #e80c0b;
+  --button-danger: #e80c0b;
+  --button-warning: #f39c12;
+
+  --accent-color: 232, 12, 11;
+  --accent-color-hover: rgba(232, 12, 11, 0.8);
+  --accent-rgb: 232, 12, 11;
+
+  --link-color: rgb(232, 12, 11);
+  --link-color-hover: rgba(232, 12, 11, 0.8);
+
+  --label-text-color: #fff;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #e80c0b;
+
+  --border-color: rgba(232, 12, 11, 0.3);
+}
+
+/* POWER - Violet/Magenta */
+[data-theme="infinity-power"] {
+  --main-bg-color: radial-gradient(ellipse at center bottom, rgba(166, 40, 140, 0.7) 0%, rgba(11, 8, 51, 1) 80%, rgba(0, 0, 0, 1) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(180deg, rgba(35, 0, 57, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(180deg, rgba(35, 0, 57, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(180deg, rgba(35, 0, 57, 1) 0%, #000 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: rgba(35, 0, 57, 0.95);
+  --card-bg: rgba(50, 10, 70, 0.7);
+  --sidebar-bg: rgba(11, 8, 51, 0.95);
+  --navbar-bg: rgba(11, 8, 51, 0.95);
+
+  --button-color: #85096b;
+  --button-color-hover: rgba(133, 9, 107, 0.8);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #d816ae;
+  --button-primary-hover: #ff00c8;
+  --button-success: #d816ae;
+  --button-danger: #ff0055;
+  --button-warning: #f39c12;
+
+  --accent-color: 166, 40, 140;
+  --accent-color-hover: rgba(166, 40, 140, 0.8);
+  --accent-rgb: 166, 40, 140;
+
+  --link-color: rgb(223, 21, 179);
+  --link-color-hover: rgb(255, 0, 200);
+
+  --label-text-color: #fff;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #d816ae;
+
+  --border-color: rgba(166, 40, 140, 0.3);
+}
+
+/* SPACE - Bleu profond */
+[data-theme="infinity-space"] {
+  --main-bg-color: radial-gradient(ellipse at center bottom, rgba(0, 98, 255, 0.7) 0%, #020013 80%, rgb(0, 0, 0) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(180deg, rgb(0, 57, 148) 0%, #10003c 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(180deg, rgb(0, 57, 148) 0%, #10003c 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(180deg, rgb(0, 57, 148) 0%, #10003c 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: rgba(0, 57, 148, 0.95);
+  --card-bg: rgba(0, 40, 100, 0.7);
+  --sidebar-bg: rgba(2, 0, 19, 0.95);
+  --navbar-bg: rgba(2, 0, 19, 0.95);
+
+  --button-color: #0062ff;
+  --button-color-hover: rgba(0, 98, 255, 0.8);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #0062ff;
+  --button-primary-hover: #3d7eff;
+  --button-success: #0062ff;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 0, 98, 255;
+  --accent-color-hover: rgba(0, 98, 255, 0.8);
+  --accent-rgb: 0, 98, 255;
+
+  --link-color: rgb(61, 126, 255);
+  --link-color-hover: rgb(0, 98, 255);
+
+  --label-text-color: #fff;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #3d7eff;
+
+  --border-color: rgba(0, 98, 255, 0.3);
+}
+
+/* TIME - Vert émeraude */
+[data-theme="infinity-time"] {
+  --main-bg-color: radial-gradient(ellipse at center bottom, rgba(109, 247, 81, 0.7) 0%, #00130c 80%, rgb(0, 0, 0) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(180deg, rgba(2, 77, 0, 1) 0%, #00130c 100%) center center/cover no-repeat fixed;
+  --modal-header-color: linear-gradient(180deg, rgba(2, 77, 0, 1) 0%, #00130c 100%) center center/cover no-repeat fixed;
+  --modal-footer-color: linear-gradient(180deg, rgba(2, 77, 0, 1) 0%, #00130c 100%) center center/cover no-repeat fixed;
+  --dropdown-bg: rgba(2, 77, 0, 0.95);
+  --card-bg: rgba(0, 60, 0, 0.7);
+  --sidebar-bg: rgba(0, 19, 12, 0.95);
+  --navbar-bg: rgba(0, 19, 12, 0.95);
+
+  --button-color: rgb(4, 168, 0);
+  --button-color-hover: rgba(4, 168, 0, 0.8);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #6df751;
+  --button-primary-hover: #04a800;
+  --button-success: #6df751;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 109, 247, 81;
+  --accent-color-hover: rgba(109, 247, 81, 0.8);
+  --accent-rgb: 109, 247, 81;
+
+  --link-color: rgb(109, 247, 81);
+  --link-color-hover: rgba(109, 247, 81, 0.8);
+
+  --label-text-color: #000;
+
+  --text: #ddd;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #6df751;
+
+  --border-color: rgba(109, 247, 81, 0.3);
+}
+
+/* ============================================
+   THÈME CATPPUCCIN LATTE
+   Thème clair crème/beige
+   ============================================ */
+[data-theme="catppuccin-latte"] {
+  --main-bg-color: #eff1f5;
+  --modal-bg-color: #e6e9ef;
+  --modal-header-color: #dce0e8;
+  --modal-footer-color: #dce0e8;
+  --dropdown-bg: #ccd0da;
+  --card-bg: rgba(220, 224, 232, 0.7);
+  --sidebar-bg: #dce0e8;
+  --navbar-bg: #dce0e8;
+
+  --button-color: #ccd0da;
+  --button-color-hover: #bcc0cc;
+  --button-text: #4c4f69;
+  --button-text-hover: #4c4f69;
+  --button-primary: #1e66f5;
+  --button-primary-hover: #2a6ef5;
+  --button-success: #40a02b;
+  --button-danger: #d20f39;
+  --button-warning: #df8e1d;
+
+  --accent-color: 30, 102, 245;
+  --accent-color-hover: rgba(30, 102, 245, 0.8);
+  --accent-rgb: 30, 102, 245;
+
+  --link-color: #1e66f5;
+  --link-color-hover: #2a6ef5;
+
+  --label-text-color: #4c4f69;
+
+  --text: #4c4f69;
+  --text-hover: #4c4f69;
+  --text-muted: #6c6f85;
+  --text-heading: #4c4f69;
+
+  --border-color: rgba(76, 79, 105, 0.2);
+
+  --success-color: #40a02b;
+  --success-color-rgb: 64, 160, 43;
+  --error-color: #d20f39;
+  --error-color-rgb: 210, 15, 57;
+  --warning-color: #df8e1d;
+  --warning-color-rgb: 223, 142, 29;
+  --info-color: #1e66f5;
+
+  --input-bg: #e6e9ef;
+  --input-border: rgba(76, 79, 105, 0.3);
+}
+
+/* ============================================
+   THÈME CATPPUCCIN FRAPPE
+   Bleu-gris doux
+   ============================================ */
+[data-theme="catppuccin-frappe"] {
+  --main-bg-color: #303446;
+  --modal-bg-color: #292c3c;
+  --modal-header-color: #232634;
+  --modal-footer-color: #232634;
+  --dropdown-bg: #414559;
+  --card-bg: rgba(65, 69, 89, 0.7);
+  --sidebar-bg: #232634;
+  --navbar-bg: #232634;
+
+  --button-color: #414559;
+  --button-color-hover: #51576d;
+  --button-text: #c6d0f5;
+  --button-text-hover: #fff;
+  --button-primary: #8caaee;
+  --button-primary-hover: #99b4f1;
+  --button-success: #a6d189;
+  --button-danger: #e78284;
+  --button-warning: #ef9f76;
+
+  --accent-color: 140, 170, 238;
+  --accent-color-hover: rgba(140, 170, 238, 0.8);
+  --accent-rgb: 140, 170, 238;
+
+  --link-color: #8caaee;
+  --link-color-hover: #99b4f1;
+
+  --label-text-color: #fff;
+
+  --text: #c6d0f5;
+  --text-hover: #fff;
+  --text-muted: #a5adce;
+  --text-heading: #c6d0f5;
+
+  --border-color: rgba(140, 170, 238, 0.3);
+
+  --success-color: #a6d189;
+  --success-color-rgb: 166, 209, 137;
+  --error-color: #e78284;
+  --error-color-rgb: 231, 130, 132;
+  --warning-color: #ef9f76;
+  --warning-color-rgb: 239, 159, 118;
+  --info-color: #8caaee;
+
+  --input-bg: rgba(65, 69, 89, 0.6);
+  --input-border: rgba(140, 170, 238, 0.3);
+}
+
+/* ============================================
+   THÈME CATPPUCCIN MACCHIATO
+   Violet-bleu profond
+   ============================================ */
+[data-theme="catppuccin-macchiato"] {
+  --main-bg-color: #24273a;
+  --modal-bg-color: #1e2030;
+  --modal-header-color: #181926;
+  --modal-footer-color: #181926;
+  --dropdown-bg: #363a4f;
+  --card-bg: rgba(54, 58, 79, 0.7);
+  --sidebar-bg: #181926;
+  --navbar-bg: #181926;
+
+  --button-color: #363a4f;
+  --button-color-hover: #494d64;
+  --button-text: #cad3f5;
+  --button-text-hover: #fff;
+  --button-primary: #8aadf4;
+  --button-primary-hover: #99b8f6;
+  --button-success: #a6da95;
+  --button-danger: #ed8796;
+  --button-warning: #f5a97f;
+
+  --accent-color: 138, 173, 244;
+  --accent-color-hover: rgba(138, 173, 244, 0.8);
+  --accent-rgb: 138, 173, 244;
+
+  --link-color: #8aadf4;
+  --link-color-hover: #99b8f6;
+
+  --label-text-color: #fff;
+
+  --text: #cad3f5;
+  --text-hover: #fff;
+  --text-muted: #a5adcb;
+  --text-heading: #cad3f5;
+
+  --border-color: rgba(138, 173, 244, 0.3);
+
+  --success-color: #a6da95;
+  --success-color-rgb: 166, 218, 149;
+  --error-color: #ed8796;
+  --error-color-rgb: 237, 135, 150;
+  --warning-color: #f5a97f;
+  --warning-color-rgb: 245, 169, 127;
+  --info-color: #8aadf4;
+
+  --input-bg: rgba(54, 58, 79, 0.6);
+  --input-border: rgba(138, 173, 244, 0.3);
+}
+
+/* ============================================
+   THÈME ROSE PINE
+   Violet sombre avec accents roses
+   ============================================ */
+[data-theme="rose-pine"] {
+  --main-bg-color: #1f1d2e;
+  --modal-bg-color: #26233a;
+  --modal-header-color: #191724;
+  --modal-footer-color: #191724;
+  --dropdown-bg: #21202e;
+  --card-bg: rgba(38, 35, 58, 0.7);
+  --sidebar-bg: #191724;
+  --navbar-bg: #191724;
+
+  --button-color: #403d52;
+  --button-color-hover: #524f67;
+  --button-text: #e0def4;
+  --button-text-hover: #fff;
+  --button-primary: #eb6f92;
+  --button-primary-hover: #f082a0;
+  --button-success: #31748f;
+  --button-danger: #eb6f92;
+  --button-warning: #f6c177;
+
+  --accent-color: 235, 111, 146;
+  --accent-color-hover: rgba(235, 111, 146, 0.8);
+  --accent-rgb: 235, 111, 146;
+
+  --link-color: #31748f;
+  --link-color-hover: #9ccfd8;
+
+  --label-text-color: #e0def4;
+
+  --text: #e0def4;
+  --text-hover: #fff;
+  --text-muted: #6e6a86;
+  --text-heading: #e0def4;
+
+  --border-color: rgba(235, 111, 146, 0.3);
+
+  --success-color: #31748f;
+  --success-color-rgb: 49, 116, 143;
+  --error-color: #eb6f92;
+  --error-color-rgb: 235, 111, 146;
+  --warning-color: #f6c177;
+  --warning-color-rgb: 246, 193, 119;
+  --info-color: #9ccfd8;
+
+  --input-bg: rgba(38, 35, 58, 0.6);
+  --input-border: rgba(235, 111, 146, 0.3);
+}
+
+/* ============================================
+   THÈME ROSE PINE MOON
+   Violet plus sombre
+   ============================================ */
+[data-theme="rose-pine-moon"] {
+  --main-bg-color: #2a273f;
+  --modal-bg-color: #393552;
+  --modal-header-color: #232136;
+  --modal-footer-color: #232136;
+  --dropdown-bg: #2a283e;
+  --card-bg: rgba(57, 53, 82, 0.7);
+  --sidebar-bg: #232136;
+  --navbar-bg: #232136;
+
+  --button-color: #44415a;
+  --button-color-hover: #56526e;
+  --button-text: #e0def4;
+  --button-text-hover: #fff;
+  --button-primary: #eb6f92;
+  --button-primary-hover: #f082a0;
+  --button-success: #3e8fb0;
+  --button-danger: #eb6f92;
+  --button-warning: #f6c177;
+
+  --accent-color: 235, 111, 146;
+  --accent-color-hover: rgba(235, 111, 146, 0.8);
+  --accent-rgb: 235, 111, 146;
+
+  --link-color: #3e8fb0;
+  --link-color-hover: #9ccfd8;
+
+  --label-text-color: #e0def4;
+
+  --text: #e0def4;
+  --text-hover: #fff;
+  --text-muted: #6e6a86;
+  --text-heading: #e0def4;
+
+  --border-color: rgba(235, 111, 146, 0.3);
+
+  --success-color: #3e8fb0;
+  --success-color-rgb: 62, 143, 176;
+  --error-color: #eb6f92;
+  --error-color-rgb: 235, 111, 146;
+  --warning-color: #f6c177;
+  --warning-color-rgb: 246, 193, 119;
+  --info-color: #9ccfd8;
+
+  --input-bg: rgba(57, 53, 82, 0.6);
+  --input-border: rgba(235, 111, 146, 0.3);
+}
+
+/* ============================================
+   THÈME ROSE PINE DAWN
+   Thème clair rosé
+   ============================================ */
+[data-theme="rose-pine-dawn"] {
+  --main-bg-color: #fffaf3;
+  --modal-bg-color: #f2e9de;
+  --modal-header-color: #faf4ed;
+  --modal-footer-color: #faf4ed;
+  --dropdown-bg: #f4ede8;
+  --card-bg: rgba(242, 233, 222, 0.7);
+  --sidebar-bg: #faf4ed;
+  --navbar-bg: #faf4ed;
+
+  --button-color: #dfdad9;
+  --button-color-hover: #cecacd;
+  --button-text: #575279;
+  --button-text-hover: #575279;
+  --button-primary: #b4637a;
+  --button-primary-hover: #c07088;
+  --button-success: #286983;
+  --button-danger: #b4637a;
+  --button-warning: #ea9d34;
+
+  --accent-color: 180, 99, 122;
+  --accent-color-hover: rgba(180, 99, 122, 0.8);
+  --accent-rgb: 180, 99, 122;
+
+  --link-color: #286983;
+  --link-color-hover: #56949f;
+
+  --label-text-color: #575279;
+
+  --text: #575279;
+  --text-hover: #575279;
+  --text-muted: #9893a5;
+  --text-heading: #575279;
+
+  --border-color: rgba(87, 82, 121, 0.2);
+
+  --success-color: #286983;
+  --success-color-rgb: 40, 105, 131;
+  --error-color: #b4637a;
+  --error-color-rgb: 180, 99, 122;
+  --warning-color: #ea9d34;
+  --warning-color-rgb: 234, 157, 52;
+  --info-color: #56949f;
+
+  --input-bg: #f2e9de;
+  --input-border: rgba(87, 82, 121, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY ABYSS
+   Bleu profond abyssal
+   ============================================ */
+[data-theme="blackberry-abyss"] {
+  --main-bg-color: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.35)) center center/cover no-repeat fixed, radial-gradient(at bottom center, rgba(0, 0, 0, 0.4) 0%, hsla(211, 18%, 45%, 0.55), hsla(211, 18%, 5%, 0)) center center/cover no-repeat fixed, linear-gradient(to right, hsla(211, 18%, 5%, 1), hsla(211, 18%, 45%, 1), hsla(211, 18%, 5%, 1)) center center/cover no-repeat fixed;
+  --modal-bg-color: hsla(211, 18%, 15%, 0.95);
+  --modal-header-color: hsla(211, 18%, 10%, 0.95);
+  --modal-footer-color: hsla(211, 18%, 10%, 0.95);
+  --dropdown-bg: hsla(211, 18%, 20%, 0.95);
+  --card-bg: hsla(211, 18%, 25%, 0.7);
+  --sidebar-bg: hsla(211, 18%, 8%, 0.95);
+  --navbar-bg: hsla(211, 18%, 8%, 0.95);
+
+  --button-color: hsla(211, 18%, 45%, 1);
+  --button-color-hover: hsla(211, 18%, 45%, 0.55);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: rgb(130, 157, 185);
+  --button-primary-hover: rgb(100, 119, 139);
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 130, 157, 185;
+  --accent-color-hover: rgba(130, 157, 185, 0.8);
+  --accent-rgb: 130, 157, 185;
+
+  --link-color: rgb(130, 157, 185);
+  --link-color-hover: rgb(100, 119, 139);
+
+  --label-text-color: #fff;
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: rgb(130, 157, 185);
+
+  --border-color: rgba(130, 157, 185, 0.3);
+
+  --input-bg: hsla(211, 18%, 20%, 0.6);
+  --input-border: rgba(130, 157, 185, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY AMETHYST
+   Violet améthyste
+   ============================================ */
+[data-theme="blackberry-amethyst"] {
+  --main-bg-color: radial-gradient(at top center, rgba(0, 0, 0, 0.25), hsla(0, 14%, 18%, 0.55), hsla(0, 18%, 5%, 0.9)) center center/cover no-repeat fixed, linear-gradient(to bottom, #df89de 0%, hsl(276, 100%, 3%) 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(50, 20, 50, 0.95);
+  --modal-header-color: rgba(30, 10, 30, 0.95);
+  --modal-footer-color: rgba(30, 10, 30, 0.95);
+  --dropdown-bg: rgba(60, 30, 60, 0.95);
+  --card-bg: rgba(80, 40, 80, 0.7);
+  --sidebar-bg: rgba(20, 5, 20, 0.95);
+  --navbar-bg: rgba(20, 5, 20, 0.95);
+
+  --button-color: rgb(134, 84, 132);
+  --button-color-hover: rgba(134, 84, 132, 0.8);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: rgb(199, 118, 197);
+  --button-primary-hover: rgb(217, 164, 217);
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 217, 164, 217;
+  --accent-color-hover: rgba(217, 164, 217, 0.8);
+  --accent-rgb: 217, 164, 217;
+
+  --link-color: rgb(199, 118, 197);
+  --link-color-hover: rgb(217, 164, 217);
+
+  --label-text-color: #fff;
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: rgb(217, 164, 217);
+
+  --border-color: rgba(217, 164, 217, 0.3);
+
+  --input-bg: rgba(80, 40, 80, 0.6);
+  --input-border: rgba(217, 164, 217, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY CAROL
+   Rouge et vert festif
+   ============================================ */
+[data-theme="blackberry-carol"] {
+  --main-bg-color: linear-gradient(45deg, #0b5019 0%, #a70606 135%) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(30, 10, 10, 0.95);
+  --modal-header-color: rgba(20, 5, 5, 0.95);
+  --modal-footer-color: rgba(20, 5, 5, 0.95);
+  --dropdown-bg: rgba(51, 0, 0, 0.95);
+  --card-bg: rgba(60, 20, 20, 0.7);
+  --sidebar-bg: rgba(10, 5, 5, 0.95);
+  --navbar-bg: rgba(10, 5, 5, 0.95);
+
+  --button-color: rgb(51, 0, 0);
+  --button-color-hover: rgb(104, 4, 4);
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #a70606;
+  --button-primary-hover: #c70808;
+  --button-success: #0b5019;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 170, 170, 170;
+  --accent-color-hover: rgba(170, 170, 170, 0.8);
+  --accent-rgb: 170, 170, 170;
+
+  --link-color: #aaa;
+  --link-color-hover: #fff;
+
+  --label-text-color: rgb(32, 32, 32);
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #aaa;
+
+  --border-color: rgba(170, 170, 170, 0.3);
+
+  --input-bg: rgba(51, 0, 0, 0.6);
+  --input-border: rgba(170, 170, 170, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY DREAMSCAPE
+   Dégradé rose rêveur
+   ============================================ */
+[data-theme="blackberry-dreamscape"] {
+  --main-bg-color: linear-gradient(to top, #e2c9cc 1%, #e7627d 46%, #b8235a 59%, #801357 71%, #3d1635 84%, #1c1a27 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(61, 22, 53, 0.95);
+  --modal-header-color: rgba(28, 26, 39, 0.95);
+  --modal-footer-color: rgba(28, 26, 39, 0.95);
+  --dropdown-bg: rgba(80, 30, 60, 0.95);
+  --card-bg: rgba(100, 40, 80, 0.7);
+  --sidebar-bg: rgba(28, 26, 39, 0.95);
+  --navbar-bg: rgba(28, 26, 39, 0.95);
+
+  --button-color: #3d1635;
+  --button-color-hover: #801357;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #e7627d;
+  --button-primary-hover: #b8235a;
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 231, 98, 125;
+  --accent-color-hover: rgba(231, 98, 125, 0.8);
+  --accent-rgb: 231, 98, 125;
+
+  --link-color: rgb(230, 125, 146);
+  --link-color-hover: #e2c9cc;
+
+  --label-text-color: #fff;
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #e7627d;
+
+  --border-color: rgba(231, 98, 125, 0.3);
+
+  --input-bg: rgba(80, 30, 60, 0.6);
+  --input-border: rgba(231, 98, 125, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY FLAMINGO
+   Rose flamant doux
+   ============================================ */
+[data-theme="blackberry-flamingo"] {
+  --main-bg-color: radial-gradient(at bottom center, rgba(0, 0, 0, 0.15), hsla(0, 14%, 18%, 0.65), hsla(0, 18%, 5%, 0.95)) center center/cover no-repeat fixed, linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(40, 20, 25, 0.95);
+  --modal-header-color: rgba(20, 10, 15, 0.95);
+  --modal-footer-color: rgba(20, 10, 15, 0.95);
+  --dropdown-bg: rgba(60, 30, 40, 0.95);
+  --card-bg: rgba(80, 50, 60, 0.7);
+  --sidebar-bg: rgba(15, 8, 10, 0.95);
+  --navbar-bg: rgba(15, 8, 10, 0.95);
+
+  --button-color: #fad0c4;
+  --button-color-hover: #ff9a9e;
+  --button-text: hsla(0, 18%, 5%, 0.95);
+  --button-text-hover: hsla(0, 18%, 5%, 0.95);
+  --button-primary: #ff9a9e;
+  --button-primary-hover: #fad0c4;
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 250, 208, 196;
+  --accent-color-hover: rgba(250, 208, 196, 0.8);
+  --accent-rgb: 250, 208, 196;
+
+  --link-color: #fad0c4;
+  --link-color-hover: #e2c9cc;
+
+  --label-text-color: hsla(0, 18%, 5%, 0.95);
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #fad0c4;
+
+  --border-color: rgba(250, 208, 196, 0.3);
+
+  --input-bg: rgba(60, 30, 40, 0.6);
+  --input-border: rgba(250, 208, 196, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY HEARTH
+   Rouge feu de cheminée
+   ============================================ */
+[data-theme="blackberry-hearth"] {
+  --main-bg-color: radial-gradient(at bottom center, rgba(0, 0, 0, 0.4) 0%, hsla(0, 14%, 18%, 0.55), hsla(0, 18%, 5%, 0)) center center/cover no-repeat fixed, linear-gradient(to bottom, hsl(0, 18%, 5%), hsl(0, 65%, 23%), hsl(0, 100%, 9%)) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(50, 15, 15, 0.95);
+  --modal-header-color: rgba(30, 8, 8, 0.95);
+  --modal-footer-color: rgba(30, 8, 8, 0.95);
+  --dropdown-bg: rgba(70, 20, 20, 0.95);
+  --card-bg: rgba(90, 30, 30, 0.7);
+  --sidebar-bg: rgba(20, 5, 5, 0.95);
+  --navbar-bg: rgba(20, 5, 5, 0.95);
+
+  --button-color: rgb(236, 106, 106);
+  --button-color-hover: hsl(0, 65%, 23%);
+  --button-text: hsla(0, 18%, 5%, 0.95);
+  --button-text-hover: hsla(0, 0%, 100%, 0.95);
+  --button-primary: rgb(236, 106, 106);
+  --button-primary-hover: hsl(0, 65%, 30%);
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 236, 106, 106;
+  --accent-color-hover: rgba(236, 106, 106, 0.8);
+  --accent-rgb: 236, 106, 106;
+
+  --link-color: #fad0c4;
+  --link-color-hover: #e2c9cc;
+
+  --label-text-color: hsla(0, 18%, 5%, 0.95);
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: rgb(236, 106, 106);
+
+  --border-color: rgba(236, 106, 106, 0.3);
+
+  --input-bg: rgba(70, 20, 20, 0.6);
+  --input-border: rgba(236, 106, 106, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY MARTIAN
+   Vert martien lumineux
+   ============================================ */
+[data-theme="blackberry-martian"] {
+  --main-bg-color: linear-gradient(to right, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45)) center center/cover no-repeat fixed, radial-gradient(at right center, rgba(0, 0, 0, 0.3) 10%, hsla(0, 14%, 18%, 0.6), hsla(0, 18%, 5%, 1) 95%) center center/cover no-repeat fixed, linear-gradient(to right, #43e97b 0%, #043815 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(10, 40, 20, 0.95);
+  --modal-header-color: rgba(4, 30, 15, 0.95);
+  --modal-footer-color: rgba(4, 30, 15, 0.95);
+  --dropdown-bg: rgba(20, 50, 30, 0.95);
+  --card-bg: rgba(30, 70, 40, 0.7);
+  --sidebar-bg: rgba(4, 20, 10, 0.95);
+  --navbar-bg: rgba(4, 20, 10, 0.95);
+
+  --button-color: #2e5135;
+  --button-color-hover: #043815;
+  --button-text: #eee;
+  --button-text-hover: hsla(0, 0%, 100%, 0.95);
+  --button-primary: #43e97b;
+  --button-primary-hover: #2e5135;
+  --button-success: #43e97b;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 67, 233, 123;
+  --accent-color-hover: rgba(67, 233, 123, 0.8);
+  --accent-rgb: 67, 233, 123;
+
+  --link-color: #43e97b;
+  --link-color-hover: #2e5135;
+
+  --label-text-color: hsla(0, 18%, 5%, 0.95);
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #43e97b;
+
+  --border-color: rgba(67, 233, 123, 0.3);
+
+  --input-bg: rgba(20, 50, 30, 0.6);
+  --input-border: rgba(67, 233, 123, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY PUMPKIN
+   Orange citrouille
+   ============================================ */
+[data-theme="blackberry-pumpkin"] {
+  --main-bg-color: radial-gradient(at center center, #ff8a00 50%, #37033a 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(40, 15, 30, 0.95);
+  --modal-header-color: rgba(20, 8, 15, 0.95);
+  --modal-footer-color: rgba(20, 8, 15, 0.95);
+  --dropdown-bg: rgba(60, 25, 40, 0.95);
+  --card-bg: rgba(80, 40, 50, 0.7);
+  --sidebar-bg: rgba(15, 5, 10, 0.95);
+  --navbar-bg: rgba(15, 5, 10, 0.95);
+
+  --button-color: #924e00;
+  --button-color-hover: #723d00;
+  --button-text: #eee;
+  --button-text-hover: hsla(0, 0%, 100%, 0.95);
+  --button-primary: #ff8a00;
+  --button-primary-hover: #bd6500;
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 255, 138, 0;
+  --accent-color-hover: rgba(255, 138, 0, 0.8);
+  --accent-rgb: 255, 138, 0;
+
+  --link-color: #ff8a00;
+  --link-color-hover: #bd6500;
+
+  --label-text-color: hsla(0, 18%, 5%, 0.95);
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #ff8a00;
+
+  --border-color: rgba(255, 138, 0, 0.3);
+
+  --input-bg: rgba(60, 25, 40, 0.6);
+  --input-border: rgba(255, 138, 0, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY ROYAL
+   Noir et or royal
+   ============================================ */
+[data-theme="blackberry-royal"] {
+  --main-bg-color: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.7) 100%) center center/cover no-repeat fixed, radial-gradient(at top center, rgba(255, 255, 255, 0.3) 0%, rgba(0, 0, 0, 0.40) 120%) #000 center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(30, 25, 20, 0.95);
+  --modal-header-color: rgba(15, 12, 10, 0.95);
+  --modal-footer-color: rgba(15, 12, 10, 0.95);
+  --dropdown-bg: rgba(50, 40, 35, 0.95);
+  --card-bg: rgba(60, 50, 45, 0.7);
+  --sidebar-bg: rgba(10, 8, 6, 0.95);
+  --navbar-bg: rgba(10, 8, 6, 0.95);
+
+  --button-color: rgb(185, 170, 159);
+  --button-color-hover: rgb(184, 159, 141);
+  --button-text: hsla(0, 18%, 5%, 0.95);
+  --button-text-hover: hsla(0, 0%, 100%, 0.95);
+  --button-primary: rgb(185, 170, 159);
+  --button-primary-hover: rgb(184, 159, 141);
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 185, 170, 159;
+  --accent-color-hover: rgba(185, 170, 159, 0.8);
+  --accent-rgb: 185, 170, 159;
+
+  --link-color: rgb(185, 170, 159);
+  --link-color-hover: rgb(184, 159, 141);
+
+  --label-text-color: hsla(0, 18%, 5%, 0.95);
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: rgb(185, 170, 159);
+
+  --border-color: rgba(185, 170, 159, 0.3);
+
+  --input-bg: rgba(50, 40, 35, 0.6);
+  --input-border: rgba(185, 170, 159, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY SHADOW
+   Gris ombre profond
+   ============================================ */
+[data-theme="blackberry-shadow"] {
+  --main-bg-color: linear-gradient(135deg, #252b2f, #090c0e) center center/cover no-repeat fixed;
+  --modal-bg-color: rgba(25, 30, 35, 0.95);
+  --modal-header-color: rgba(12, 15, 18, 0.95);
+  --modal-footer-color: rgba(12, 15, 18, 0.95);
+  --dropdown-bg: rgba(35, 40, 45, 0.95);
+  --card-bg: rgba(45, 50, 55, 0.7);
+  --sidebar-bg: rgba(9, 12, 14, 0.95);
+  --navbar-bg: rgba(9, 12, 14, 0.95);
+
+  --button-color: #252b2f;
+  --button-color-hover: #090c0e;
+  --button-text: #eee;
+  --button-text-hover: hsla(0, 0%, 100%, 0.95);
+  --button-primary: rgb(96, 128, 150);
+  --button-primary-hover: rgb(81, 101, 114);
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 81, 101, 114;
+  --accent-color-hover: rgba(81, 101, 114, 0.8);
+  --accent-rgb: 81, 101, 114;
+
+  --link-color: rgb(96, 128, 150);
+  --link-color-hover: rgba(81, 101, 114, 0.8);
+
+  --label-text-color: #eee;
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: rgb(96, 128, 150);
+
+  --border-color: rgba(81, 101, 114, 0.3);
+
+  --input-bg: rgba(35, 40, 45, 0.6);
+  --input-border: rgba(81, 101, 114, 0.3);
+}
+
+/* ============================================
+   THÈME BLACKBERRY VANTA
+   Noir absolu vanta
+   ============================================ */
+[data-theme="blackberry-vanta"] {
+  --main-bg-color: #000;
+  --modal-bg-color: #181818;
+  --modal-header-color: #181818;
+  --modal-footer-color: #181818;
+  --dropdown-bg: #2d2d2d;
+  --card-bg: rgba(45, 45, 45, 0.7);
+  --sidebar-bg: #0a0a0a;
+  --navbar-bg: #0a0a0a;
+
+  --button-color: #7a7a7a;
+  --button-color-hover: #9b9b9b;
+  --button-text: #eee;
+  --button-text-hover: #fff;
+  --button-primary: #7a7a7a;
+  --button-primary-hover: #9b9b9b;
+  --button-success: #6b5;
+  --button-danger: #e74c3c;
+  --button-warning: #f39c12;
+
+  --accent-color: 170, 170, 170;
+  --accent-color-hover: rgba(255, 255, 255, 0.45);
+  --accent-rgb: 170, 170, 170;
+
+  --link-color: #7a7a7a;
+  --link-color-hover: #fff;
+
+  --label-text-color: black;
+
+  --text: #eee;
+  --text-hover: #fff;
+  --text-muted: #999;
+  --text-heading: #aaa;
+
+  --border-color: rgba(170, 170, 170, 0.3);
+
+  --input-bg: rgba(45, 45, 45, 0.6);
+  --input-border: rgba(170, 170, 170, 0.3);
+}
+
+/* ============================================
+   THÈME SNOWSHELF CHRISTMAS 🎄
+   Thème festif de Noël - Rouge, vert, or
+   ============================================ */
+[data-theme="snowshelf-christmas"] {
+  --main-bg-color: linear-gradient(135deg, #1a472a 0%, #0d2818 25%, #1a0a0a 50%, #2d0f0f 75%, #1a472a 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(135deg, #1a2a1a, #0d1810, #1a0a0a);
+  --modal-header-color: linear-gradient(135deg, #2d1a1a, #1a2d1a);
+  --modal-footer-color: linear-gradient(135deg, #1a2a1a, #2d1a1a);
+  --dropdown-bg: #0d1810;
+  --card-bg: rgba(26, 42, 26, 0.9);
+  --sidebar-bg: rgba(8, 15, 10, 0.97);
+  --navbar-bg: rgba(10, 8, 8, 0.95);
+
+  --button-color: #b22222;
+  --button-color-hover: #dc3545;
+  --button-text: #fff;
+  --button-text-hover: #ffd700;
+  --button-primary: #228b22;
+  --button-primary-hover: #32cd32;
+  --button-success: #228b22;
+  --button-danger: #b22222;
+  --button-warning: #ffd700;
+
+  --accent-color: 255, 215, 0;
+  --accent-color-hover: rgba(255, 223, 0, 0.6);
+  --accent-rgb: 255, 215, 0;
+
+  --link-color: #ff6b6b;
+  --link-color-hover: #ffd700;
+
+  --label-text-color: #0d1810;
+
+  --text: #f0f0f0;
+  --text-hover: #ffd700;
+  --text-muted: #98d998;
+  --text-heading: #ff6b6b;
+
+  --border-color: rgba(255, 215, 0, 0.3);
+  --border-radius: 8px;
+  --box-shadow: 0 4px 15px rgba(178, 34, 34, 0.3), 0 0 20px rgba(255, 215, 0, 0.1);
+  --box-shadow-hover: 0 8px 25px rgba(178, 34, 34, 0.4), 0 0 30px rgba(255, 215, 0, 0.2);
+
+  --success-color: #32cd32;
+  --success-color-rgb: 50, 205, 50;
+  --error-color: #dc3545;
+  --error-color-rgb: 220, 53, 69;
+  --warning-color: #ffd700;
+  --warning-color-rgb: 255, 215, 0;
+  --info-color: #87ceeb;
+
+  --input-bg: rgba(26, 42, 26, 0.8);
+  --input-border: rgba(255, 215, 0, 0.4);
+  --input-focus-border: #ffd700;
+  --input-text: #f0f0f0;
+  --placeholder-color: #98d998;
+
+  --scrollbar-bg: #0d1810;
+  --scrollbar-thumb: #b22222;
+  --scrollbar-thumb-hover: #dc3545;
+}
+
+/* ============================================
+   THÈME SNOWSHELF SANTA 🎅
+   Thème Père Noël - Rouge et blanc classique
+   ============================================ */
+[data-theme="snowshelf-santa"] {
+  --main-bg-color: linear-gradient(135deg, #8b0000 0%, #660000 25%, #4a0000 50%, #2d0000 75%, #1a0000 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(135deg, #4a0000, #2d0000, #1a0000);
+  --modal-header-color: linear-gradient(135deg, #660000, #4a0000);
+  --modal-footer-color: linear-gradient(135deg, #4a0000, #2d0000);
+  --dropdown-bg: #2d0000;
+  --card-bg: rgba(74, 0, 0, 0.9);
+  --sidebar-bg: rgba(20, 0, 0, 0.97);
+  --navbar-bg: rgba(35, 0, 0, 0.95);
+
+  --button-color: #cc0000;
+  --button-color-hover: #ff0000;
+  --button-text: #fff;
+  --button-text-hover: #fff;
+  --button-primary: #cc0000;
+  --button-primary-hover: #ff0000;
+  --button-success: #228b22;
+  --button-danger: #8b0000;
+  --button-warning: #ffd700;
+
+  --accent-color: 255, 255, 255;
+  --accent-color-hover: rgba(255, 255, 255, 0.8);
+  --accent-rgb: 255, 255, 255;
+
+  --link-color: #ffcccc;
+  --link-color-hover: #fff;
+
+  --label-text-color: #4a0000;
+
+  --text: #fff;
+  --text-hover: #fff;
+  --text-muted: #ffcccc;
+  --text-heading: #fff;
+
+  --border-color: rgba(255, 255, 255, 0.25);
+  --border-radius: 8px;
+  --box-shadow: 0 4px 15px rgba(139, 0, 0, 0.5), 0 0 20px rgba(255, 255, 255, 0.1);
+  --box-shadow-hover: 0 8px 25px rgba(139, 0, 0, 0.6), 0 0 30px rgba(255, 255, 255, 0.2);
+
+  --success-color: #32cd32;
+  --success-color-rgb: 50, 205, 50;
+  --error-color: #ff6666;
+  --error-color-rgb: 255, 102, 102;
+  --warning-color: #ffd700;
+  --warning-color-rgb: 255, 215, 0;
+  --info-color: #87ceeb;
+
+  --input-bg: rgba(74, 0, 0, 0.8);
+  --input-border: rgba(255, 255, 255, 0.3);
+  --input-focus-border: #fff;
+  --input-text: #fff;
+  --placeholder-color: #ffcccc;
+
+  --scrollbar-bg: #2d0000;
+  --scrollbar-thumb: #cc0000;
+  --scrollbar-thumb-hover: #ff0000;
+}
+
+/* ============================================
+   THÈME SNOWSHELF HALLOWEEN 🎃
+   Thème effrayant - Orange, violet, noir
+   ============================================ */
+[data-theme="snowshelf-halloween"] {
+  --main-bg-color: linear-gradient(135deg, #1a0a1a 0%, #0d0d1a 25%, #1a1a0a 50%, #0a0a0a 75%, #1a0a1a 100%) center center/cover no-repeat fixed;
+  --modal-bg-color: linear-gradient(135deg, #1a0a1a, #0d0d1a, #0a0a0a);
+  --modal-header-color: linear-gradient(135deg, #2d1a2d, #1a1a0a);
+  --modal-footer-color: linear-gradient(135deg, #1a0a1a, #1a1a0a);
+  --dropdown-bg: #100810;
+  --card-bg: rgba(26, 10, 26, 0.9);
+  --sidebar-bg: rgba(5, 5, 8, 0.97);
+  --navbar-bg: rgba(15, 8, 15, 0.95);
+
+  --button-color: #8b008b;
+  --button-color-hover: #9932cc;
+  --button-text: #fff;
+  --button-text-hover: #ff8c00;
+  --button-primary: #ff6600;
+  --button-primary-hover: #ff8c00;
+  --button-success: #32cd32;
+  --button-danger: #8b0000;
+  --button-warning: #ff6600;
+
+  --accent-color: 255, 140, 0;
+  --accent-color-hover: rgba(255, 140, 0, 0.6);
+  --accent-rgb: 255, 140, 0;
+
+  --link-color: #9932cc;
+  --link-color-hover: #ff8c00;
+
+  --label-text-color: #0a0a0a;
+
+  --text: #e8e8e8;
+  --text-hover: #ff8c00;
+  --text-muted: #9370db;
+  --text-heading: #ff6600;
+
+  --border-color: rgba(255, 140, 0, 0.3);
+  --border-radius: 8px;
+  --box-shadow: 0 4px 15px rgba(139, 0, 139, 0.4), 0 0 20px rgba(255, 102, 0, 0.2);
+  --box-shadow-hover: 0 8px 25px rgba(139, 0, 139, 0.5), 0 0 30px rgba(255, 102, 0, 0.3);
+
+  --success-color: #32cd32;
+  --success-color-rgb: 50, 205, 50;
+  --error-color: #8b0000;
+  --error-color-rgb: 139, 0, 0;
+  --warning-color: #ff6600;
+  --warning-color-rgb: 255, 102, 0;
+  --info-color: #9370db;
+
+  --input-bg: rgba(26, 10, 26, 0.8);
+  --input-border: rgba(255, 140, 0, 0.4);
+  --input-focus-border: #ff8c00;
+  --input-text: #e8e8e8;
+  --placeholder-color: #9370db;
+
+  --scrollbar-bg: #0a0a0a;
+  --scrollbar-thumb: #8b008b;
+  --scrollbar-thumb-hover: #9932cc;
+}
+
+/* ============================================
+   STYLES DE BASE UTILISANT LES VARIABLES
+   ============================================ */
+
+/* Application des couleurs de base */
+body {
+  background: var(--main-bg-color);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+/* Liens */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--link-color-hover);
+}
+
+/* Boutons de base */
+.btn {
+  background-color: var(--button-color);
+  color: var(--button-text);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background-color: var(--button-color-hover);
+  color: var(--button-text-hover);
+}
+
+.btn-primary {
+  background-color: var(--button-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--button-primary-hover);
+}
+
+.btn-success {
+  background-color: var(--button-success);
+}
+
+.btn-danger {
+  background-color: var(--button-danger);
+}
+
+.btn-warning {
+  background-color: var(--button-warning);
+}
+
+/* Cartes */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  border: 1px solid var(--border-color);
+}
+
+.card:hover {
+  box-shadow: var(--box-shadow-hover);
+}
+
+/* Modales - Styles de base uniquement (layout complet dans modal.css) */
+.modal {
+  background: var(--modal-bg-color);
+}
+
+/* Note: .modal-header et .modal-footer sont entièrement définis dans modal.css
+   Ne pas ajouter de styles ici pour éviter les conflits de spécificité */
+
+/* Formulaires */
+input, select, textarea {
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-text);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--input-focus-border);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--accent-color), 0.25);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--placeholder-color);
+}
+
+/* Sidebar et Navbar */
+.sidebar {
+  background: var(--sidebar-bg);
+}
+
+.navbar {
+  background: var(--navbar-bg);
+}
+
+/* Dropdown */
+.dropdown-menu {
+  background: var(--dropdown-bg);
+  border: 1px solid var(--border-color);
+}
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Textes */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-heading);
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* États */
+.text-success { color: var(--success-color) !important; }
+.text-danger { color: var(--error-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.text-info { color: var(--info-color) !important; }
+
+.bg-success { background-color: var(--success-color) !important; }
+.bg-danger { background-color: var(--error-color) !important; }
+.bg-warning { background-color: var(--warning-color) !important; }
+.bg-info { background-color: var(--info-color) !important; }
+
+/* Badge avec couleur d'accent */
+.badge {
+  background: var(--badge-bg);
+  color: rgb(var(--accent-color));
+  padding: 0.25rem 0.5rem;
+  border-radius: calc(var(--border-radius) / 2);
+  font-size: 0.875rem;
+}
+
+/* Accent utilities */
+.accent-color {
+  color: rgb(var(--accent-color));
+}
+
+.accent-bg {
+  background-color: rgb(var(--accent-color));
+}
+
+.accent-border {
+  border-color: rgb(var(--accent-color));
+}
+
+/* Sticker grid styles */
+.metadata-sticker-grid-wrapper {
+  margin-top: 8px;
+}
+.sticker-grid-header {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.sticker-grid-header .sticker-count-missing {
+  font-weight: bold;
+  color: var(--warning-color);
+  font-size: 16px;
+}
+.sticker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sticker-cell {
+  min-width: 34px;
+  height: 34px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  position: relative;
+}
+.sticker-cell.missing {
+  opacity: 0.6;
+}
+.sticker-cell.owned {
+  background: linear-gradient(180deg, rgba(var(--accent-color),0.12), rgba(var(--accent-color),0.06));
+  border-color: rgba(var(--accent-color),0.5);
+  box-shadow: 0 2px 6px rgba(var(--shadow-color),0.12);
+  position: relative;
+}
+.sticker-cell.owned::after {
+  content: '\2716';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--button-danger);
+  pointer-events: none;
+}
