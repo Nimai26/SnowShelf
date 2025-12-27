@@ -117,7 +117,7 @@ export function buildDetailModalContent(result, selectedTypeId) {
     // Fonction pour valider qu'une URL pointe vers une vraie image
     const isValidImageUrl = (url) => {
         if (!url || typeof url !== 'string') return false;
-        const cleanedUrl = url.replace(/\\/\//g, '/').trim();
+        const cleanedUrl = url.replace(/\\//g, '/').trim();
         if (cleanedUrl.endsWith('/')) return false;
         const lastSlashIdx = cleanedUrl.lastIndexOf('/');
         if (lastSlashIdx === -1) return false;
@@ -780,7 +780,7 @@ function updateDetailModalContent(result) {
     const isValidImageUrl = (url) => {
         if (!url || typeof url !== 'string') return false;
         // Vérifier que l'URL ne se termine pas par un / (dossier) et contient une extension ou un fichier
-        const cleanedUrl = url.replace(/\\/\//g, '/').trim();
+        const cleanedUrl = url.replace(/\\//g, '/').trim();
         if (cleanedUrl.endsWith('/')) return false;
         // Vérifier qu'il y a un nom de fichier après le dernier /
         const lastSlashIdx = cleanedUrl.lastIndexOf('/');
