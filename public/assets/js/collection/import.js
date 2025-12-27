@@ -26,13 +26,34 @@ const metadataMappingsCache = new Map();
 // ============================================================================
 
 /**
- * Nettoie une URL des échappements JSON et espaces
+ * Vérifie si une URL pointe vers une vraie image (pas juste un dossier)
+ * @param {string} url - URL à valider
+ * @returns {boolean} true si l'URL est valide
+ */
+function isValidImageUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    const cleanedUrl = url.replace(/\\\//g, '/').trim();
+    // Rejeter les URLs qui se terminent par / (dossiers)
+    if (cleanedUrl.endsWith('/')) return false;
+    // Vérifier qu'il y a un nom de fichier après le dernier /
+    const lastSlashIdx = cleanedUrl.lastIndexOf('/');
+    if (lastSlashIdx === -1) return false;
+    const filename = cleanedUrl.substring(lastSlashIdx + 1);
+    // Le fichier doit avoir au moins 1 caractère et idéalement une extension ou être un ID long
+    return filename.length > 0 && (filename.includes('.') || filename.length > 10);
+}
+
+/**
+ * Nettoie une URL des échappements JSON et espaces, et valide qu'elle pointe vers une image
  * @param {string} url - URL potentiellement avec échappements
- * @returns {string|null} URL nettoyée ou null
+ * @returns {string|null} URL nettoyée ou null si invalide
  */
 function cleanImageUrl(url) {
     if (!url || typeof url !== 'string') return null;
-    return url.replace(/\\\//g, '/').trim() || null;
+    const cleaned = url.replace(/\\\//g, '/').trim();
+    // Valider que l'URL pointe vers une vraie image
+    if (!isValidImageUrl(cleaned)) return null;
+    return cleaned || null;
 }
 
 /**

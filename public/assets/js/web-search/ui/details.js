@@ -104,8 +104,32 @@ export function buildDetailModalContent(result, selectedTypeId) {
     const selectedType = state.primaryTypes.find(pt => pt.id === selectedTypeId);
     const typeName = selectedType?.name || 'divers';
     
-    // Utiliser le proxy pour les images de certains domaines
-    const imageUrl = getImageUrl(result.image);
+    // Fonction pour extraire le nom depuis différents formats (string, objet, etc.)
+    const extractName = (value) => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object') {
+            return value.name || value.title || value.label || value.text || value.value || null;
+        }
+        return String(value);
+    };
+    
+    // Fonction pour valider qu'une URL pointe vers une vraie image
+    const isValidImageUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+        const cleanedUrl = url.replace(/\\/\//g, '/').trim();
+        if (cleanedUrl.endsWith('/')) return false;
+        const lastSlashIdx = cleanedUrl.lastIndexOf('/');
+        if (lastSlashIdx === -1) return false;
+        const filename = cleanedUrl.substring(lastSlashIdx + 1);
+        return filename.length > 0 && (filename.includes('.') || filename.length > 10);
+    };
+    
+    // Extraire le nom du résultat
+    const resultName = extractName(result.name) || extractName(result.title) || 'Sans nom';
+    
+    // Utiliser le proxy pour les images de certains domaines (seulement si URL valide)
+    const imageUrl = isValidImageUrl(result.image) ? getImageUrl(result.image) : null;
     const imageHtml = imageUrl 
         ? `<img src="${imageUrl}" alt="" class="detail-image" onerror="this.style.display='none'">`
         : `<div class="detail-no-image">
@@ -135,7 +159,7 @@ export function buildDetailModalContent(result, selectedTypeId) {
                     ${imageHtml}
                 </div>
                 <div class="detail-content">
-                    <h3 class="detail-title">${escapeHtml(result.name)}</h3>
+                    <h3 class="detail-title">${escapeHtml(resultName)}</h3>
                     ${descriptionHtml}
                     
                     <div class="detail-source">
@@ -212,7 +236,11 @@ export function buildDetailModalContent(result, selectedTypeId) {
 function buildGeneralFieldsHtml(result, t) {
     const fields = [];
     
-    const name = findValueFromSources(result, ['name']);
+    // Extraire le nom même si c'est un objet
+    let name = findValueFromSources(result, ['name', 'title']);
+    if (name && typeof name === 'object') {
+        name = name.name || name.title || name.label || name.text || name.value || null;
+    }
     fields.push(buildImportFieldItem('name', t.detail_field_name || 'Nom suggéré', name, true));
     
     const description = findValueFromSources(result, ['description']);
@@ -246,31 +274,49 @@ function buildMediaFieldsHtml(result, t) {
         return null;
     };
     
+    // Fonction pour valider qu'une URL pointe vers une vraie image
+    const isValidImageUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+        const cleanedUrl = url.replace(/\\\//g, '/').trim();
+        if (cleanedUrl.endsWith('/')) return false;
+        const lastSlashIdx = cleanedUrl.lastIndexOf('/');
+        if (lastSlashIdx === -1) return false;
+        const filename = cleanedUrl.substring(lastSlashIdx + 1);
+        return filename.length > 0 && (filename.includes('.') || filename.length > 10);
+    };
+    
     // Normaliser les images (même logique que updateDetailModalContent)
     const rawImages = result.images || result.data?.images || {};
     let imageCount = 0;
     
     if (rawImages.primary || rawImages.gallery) {
         // Format {primary, gallery}
-        imageCount = (rawImages.primary ? 1 : 0) + (rawImages.gallery?.length || 0);
+        const validPrimary = rawImages.primary && isValidImageUrl(rawImages.primary) ? 1 : 0;
+        const validGallery = (rawImages.gallery || []).filter(img => isValidImageUrl(extractUrl(img))).length;
+        imageCount = validPrimary + validGallery;
     } else if (rawImages.cover || rawImages.screenshots || rawImages.artworks) {
         // Format RAWG/IGDB: {cover, screenshots, artworks, background}
         const allImages = new Set();
-        if (rawImages.cover) allImages.add(rawImages.cover);
+        if (rawImages.cover && isValidImageUrl(rawImages.cover)) allImages.add(rawImages.cover);
         if (rawImages.screenshots) rawImages.screenshots.forEach(img => {
             const url = extractUrl(img);
-            if (url) allImages.add(url);
+            if (url && isValidImageUrl(url)) allImages.add(url);
         });
         if (rawImages.artworks) rawImages.artworks.forEach(img => {
             const url = extractUrl(img);
-            if (url) allImages.add(url);
+            if (url && isValidImageUrl(url)) allImages.add(url);
         });
-        if (rawImages.background && rawImages.background !== rawImages.cover) allImages.add(rawImages.background);
+        if (rawImages.background && rawImages.background !== rawImages.cover && isValidImageUrl(rawImages.background)) {
+            allImages.add(rawImages.background);
+        }
         imageCount = allImages.size;
     } else if (Array.isArray(rawImages)) {
         // Format tableau (strings ou objets)
-        imageCount = rawImages.filter(img => extractUrl(img)).length;
-    } else if (result.image) {
+        imageCount = rawImages.filter(img => {
+            const url = extractUrl(img);
+            return url && isValidImageUrl(url);
+        }).length;
+    } else if (result.image && isValidImageUrl(result.image)) {
         // Image unique
         imageCount = 1;
     }
@@ -729,8 +775,31 @@ function updateDetailModalContent(result) {
     const cleanUrl = (url) => {
         if (!url || typeof url !== 'string') return null;
         return url.replace(/\\\//g, '/').trim();
+    };    
+    // Fonction pour valider qu'une URL pointe vers une vraie image (pas juste un dossier)
+    const isValidImageUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+        // Vérifier que l'URL ne se termine pas par un / (dossier) et contient une extension ou un fichier
+        const cleanedUrl = url.replace(/\\/\//g, '/').trim();
+        if (cleanedUrl.endsWith('/')) return false;
+        // Vérifier qu'il y a un nom de fichier après le dernier /
+        const lastSlashIdx = cleanedUrl.lastIndexOf('/');
+        if (lastSlashIdx === -1) return false;
+        const filename = cleanedUrl.substring(lastSlashIdx + 1);
+        // Le fichier doit avoir au moins 1 caractère et idéalement une extension
+        return filename.length > 0 && (filename.includes('.') || filename.length > 10);
     };
     
+    // Fonction pour extraire le nom depuis différents formats (string, objet, etc.)
+    const extractName = (value) => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object') {
+            // Essayer différentes propriétés courantes
+            return value.name || value.title || value.label || value.text || value.value || null;
+        }
+        return String(value);
+    };    
     // Fonction pour extraire l'URL d'un élément (string ou objet)
     const extractUrl = (item) => {
         if (!item) return null;
@@ -781,7 +850,7 @@ function updateDetailModalContent(result) {
             const url = extractUrl(item);
             const isMain = item?.is_main === true;
             return { url, isMain };
-        }).filter(img => img.url);
+        }).filter(img => img.url && isValidImageUrl(img.url));
         
         // Chercher l'image principale marquée is_main
         const mainImage = extractedImages.find(img => img.isMain);
@@ -791,7 +860,7 @@ function updateDetailModalContent(result) {
         images.gallery = extractedImages.map(img => img.url).filter(Boolean);
     }
     // Fallback sur result.image
-    else if (result.image) {
+    else if (result.image && isValidImageUrl(result.image)) {
         images.primary = cleanUrl(result.image);
     }
     
@@ -889,8 +958,9 @@ function updateDetailModalContent(result) {
     
     // Mettre à jour le titre et la description
     const titleEl = document.querySelector('.web-search-detail-modal .detail-title');
-    if (titleEl && donnee.name) {
-        titleEl.textContent = donnee.name;
+    const extractedName = extractName(donnee.name) || extractName(donnee.title);
+    if (titleEl && extractedName) {
+        titleEl.textContent = extractedName;
     }
     
     const descEl = document.querySelector('.web-search-detail-modal .detail-description');
