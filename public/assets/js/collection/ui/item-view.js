@@ -4,7 +4,7 @@
  */
 
 import { getTranslations } from '../state.js';
-import { escapeHtml, formatDate, formatCurrency } from '../utils.js';
+import { escapeHtml, formatDate, formatCurrency, renderMdiIcon } from '../utils.js';
 import { loadItemDetails, deleteItem } from '../api.js';
 import { showToast, showError } from './feedback.js';
 
@@ -137,7 +137,7 @@ export function buildItemViewHtml(item, metadata = null) {
         const typeColor = item.primary_type.color || '#6b7280';
         const typeIcon = item.primary_type.icon || '📦';
         primaryTypeBadge = `<span class="item-badge type-badge" style="background-color: ${typeColor};">
-            <span class="type-icon">${typeIcon}</span>
+            <span class="type-icon">${renderMdiIcon(typeIcon)}</span>
             ${escapeHtml(item.primary_type.name)}
         </span>`;
     }
