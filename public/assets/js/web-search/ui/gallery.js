@@ -69,6 +69,7 @@ export function toggleImageSelection(wrapperEl, imageUrl) {
     }
     
     updateSelectedImagesCount();
+    updateSelectAllButtonLabel();
     updateImageImportField();
 }
 
@@ -84,25 +85,51 @@ export function updateSelectedImagesCount() {
 }
 
 /**
- * Mettre à jour le champ Image dans les options d'import
+ * Mettre à jour le label du bouton "Tout sélectionner / Tout désélectionner"
+ */
+export function updateSelectAllButtonLabel() {
+    const t = getTranslations();
+    const selectAllBtn = document.getElementById('wsSelectAllImages');
+    const gallery = document.getElementById('wsImageGallery');
+    
+    if (!selectAllBtn || !gallery) return;
+    
+    // Récupérer toutes les URLs des images de la galerie
+    const galleryImages = Array.from(gallery.querySelectorAll('.detail-thumb-wrapper'))
+        .map(wrapper => wrapper.dataset.url)
+        .filter(Boolean);
+    
+    // Vérifier si toutes les images de la galerie sont sélectionnées
+    const allGallerySelected = galleryImages.length > 0 && 
+        galleryImages.every(img => state.selectedImages?.has(img));
+    
+    selectAllBtn.textContent = allGallerySelected 
+        ? (t.detail_deselect_all_images || 'Tout désélectionner')
+        : (t.detail_select_all_images || 'Tout sélectionner');
+}
+
+/**
+ * Mettre à jour le champ Images dans les options d'import
  */
 export function updateImageImportField() {
-    const imageField = document.querySelector('#wsImportFields [data-field="image"]');
+    // Le champ peut être dans wsImportFields ou wsMediaFields selon le contexte
+    const imageField = document.querySelector('[data-field="images"]');
     if (!imageField) return;
     
     const checkbox = imageField.querySelector('input[type="checkbox"]');
     const valueSpan = imageField.querySelector('.import-field-value');
     
-    if (state.selectedImages && state.selectedImages.size > 0) {
+    const count = state.selectedImages ? state.selectedImages.size : 0;
+    
+    if (count > 0) {
         imageField.classList.remove('disabled');
         if (checkbox) {
             checkbox.disabled = false;
             checkbox.checked = true;
         }
         if (valueSpan) {
-            valueSpan.textContent = state.selectedImages.size > 1 
-                ? `${state.selectedImages.size} images` 
-                : '✓';
+            valueSpan.textContent = `${count} image(s)`;
+            valueSpan.title = `${count} image(s)`;
         }
     } else {
         imageField.classList.add('disabled');
@@ -112,6 +139,7 @@ export function updateImageImportField() {
         }
         if (valueSpan) {
             valueSpan.textContent = '-';
+            valueSpan.title = '-';
         }
     }
 }

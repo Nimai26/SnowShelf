@@ -9,7 +9,7 @@ import { findValueFromSources, extractYear, getValueFromPath } from '../utils/da
 import { escapeHtml, getTranslations, showToast } from '../utils/helpers.js';
 import { getProviderDisplayName, providerHasDetails } from '../providers.js';
 import { loadProductDetails as loadProductDetailsApi, loadPrimaryTypeFields } from '../api.js';
-import { setupGalleryEvents, updateSelectedImagesCount, updateImageImportField } from './gallery.js';
+import { setupGalleryEvents, updateSelectedImagesCount, updateImageImportField, updateSelectAllButtonLabel } from './gallery.js';
 import { handleImport } from '../import.js';
 import { getImageUrl } from './modal.js';
 import { fetchFieldMappings, applyMapping, extractValueByPath } from '../../collection/import.js';
@@ -71,6 +71,17 @@ export async function showResultDetails(result) {
     // Charger les champs spécifiques au type (avec cache)
     await loadPrimaryTypeFields(suggestedTypeId);
     
+    // Charger les mappings de champs fixes si pas encore en cache
+    if (!state.fieldMappings || state.fieldMappings.length === 0) {
+        try {
+            // Les mappings sont génériques (pas par provider), on utilise webapi_id=1
+            state.fieldMappings = await fetchFieldMappings(1);
+        } catch (e) {
+            console.warn('[WebSearch] Impossible de charger les field mappings');
+            state.fieldMappings = [];
+        }
+    }
+    
     const modalContent = buildDetailModalContent(result, suggestedTypeId);
     
     state.detailModalId = ModalManager.open({
@@ -105,19 +116,6 @@ export function buildDetailModalContent(result, selectedTypeId) {
     const selectedType = state.primaryTypes.find(pt => pt.id === selectedTypeId);
     const typeName = selectedType?.name || 'divers';
     
-    // Fonction pour extraire le texte depuis différents formats (string, objet traduction)
-    // Note: Pour l'affichage initial, on utilise les champs normalisés par le backend
-    // Les vrais mappings BDD sont utilisés dans updateDetailModalContent après chargement des détails
-    const extractName = (value) => {
-        if (!value) return null;
-        if (typeof value === 'string') return value;
-        // Objets de traduction {text: "...", translated: bool}
-        if (typeof value === 'object' && value.text) {
-            return value.text;
-        }
-        return String(value);
-    };
-    
     // Fonction pour valider qu'une URL pointe vers une vraie image
     const isValidImageUrl = (url) => {
         if (!url || typeof url !== 'string') return false;
@@ -129,8 +127,39 @@ export function buildDetailModalContent(result, selectedTypeId) {
         return filename.length > 0 && (filename.includes('.') || filename.length > 10);
     };
     
-    // Extraire le nom du résultat (priorité à name_original si disponible)
-    const resultName = extractName(result.name_original) || extractName(result.name) || extractName(result.title) || 'Sans nom';
+    // Wrapper le résultat pour que les chemins BDD fonctionnent (data.xxx)
+    const wrappedResult = {
+        data: result,
+        ...result
+    };
+    
+    // Extraire le nom via mapping BDD
+    let resultName = 'Sans nom';
+    const nameMapping = state.fieldMappings?.find(m => m.item_field === 'name');
+    if (nameMapping && nameMapping.api_path) {
+        let extractedName = applyMapping(wrappedResult, nameMapping);
+        // Gérer les objets de traduction
+        if (extractedName && typeof extractedName === 'object' && extractedName.text) {
+            extractedName = extractedName.text;
+        }
+        if (extractedName) {
+            resultName = extractedName;
+        }
+    }
+    
+    // Extraire la description via mapping BDD
+    let descriptionText = '';
+    const descMapping = state.fieldMappings?.find(m => m.item_field === 'description');
+    if (descMapping && descMapping.api_path) {
+        let extractedDesc = applyMapping(wrappedResult, descMapping);
+        // Gérer les objets de traduction
+        if (extractedDesc && typeof extractedDesc === 'object' && extractedDesc.text) {
+            extractedDesc = extractedDesc.text;
+        }
+        if (extractedDesc) {
+            descriptionText = extractedDesc;
+        }
+    }
     
     // Utiliser le proxy pour les images de certains domaines (seulement si URL valide)
     const imageUrl = isValidImageUrl(result.image) ? getImageUrl(result.image) : null;
@@ -144,8 +173,8 @@ export function buildDetailModalContent(result, selectedTypeId) {
             </svg>
            </div>`;
     
-    const descriptionHtml = result.description 
-        ? `<p class="detail-description">${escapeHtml(result.description)}</p>`
+    const descriptionHtml = descriptionText 
+        ? `<p class="detail-description">${escapeHtml(descriptionText)}</p>`
         : `<p class="detail-description muted">${t.detail_no_description}</p>`;
     
     // Obtenir le label traduit du type
@@ -238,28 +267,21 @@ export function buildDetailModalContent(result, selectedTypeId) {
 
 /**
  * Construire les champs généraux pour l'affichage INITIAL (avant chargement des détails)
- * Version sync simplifiée - sera mise à jour par buildGeneralFieldsHtml après chargement
- * Affiche uniquement le nom comme placeholder
+ * Utilise les mappings BDD chargés dans state.fieldMappings
  * @param {Object} result - Données du résultat
  * @param {Object} t - Traductions
- * @returns {string} HTML des champs généraux (placeholder)
+ * @returns {string} HTML des champs généraux
  */
 function buildInitialGeneralFieldsHtml(result, t) {
-    const fields = [];
+    // Utiliser les mappings BDD déjà chargés dans state
+    // Note: Pour l'affichage initial, result n'a pas encore result.data
+    // donc on doit wrapper les données pour que les chemins BDD fonctionnent
+    const wrappedResult = {
+        data: result,
+        ...result
+    };
     
-    // Extraire le nom basique pour l'affichage initial
-    let name = result.name_original || result.name || result.title || '';
-    if (name && typeof name === 'object') {
-        name = name.text || name.name || name.title || '';
-    }
-    
-    // Afficher les champs avec indication de chargement
-    fields.push(buildImportFieldItem('name', t.detail_field_name || 'Nom suggéré', name, true));
-    fields.push(buildImportFieldItem('description', t.detail_field_description || 'Description', null, false));
-    fields.push(buildImportFieldItem('value', t.detail_field_price || 'Valeur marchande', null, false));
-    fields.push(buildImportFieldItem('code_barre', t.detail_field_barcode || 'Code-barres', null, false));
-    
-    return fields.join('');
+    return buildGeneralFieldsHtmlWithMappings(wrappedResult, t, state.fieldMappings || []);
 }
 
 /**
@@ -955,13 +977,32 @@ async function updateDetailModalContent(result) {
     if (!state.selectedImages) {
         state.selectedImages = new Set();
     }
-    if (images.primary) {
+    
+    // Conserver l'image originale si elle n'est pas dans la nouvelle galerie
+    const originalImage = result.image || null;
+    const originalImageInGallery = originalImage && gallery.includes(originalImage);
+    
+    // Construire la galerie complète (inclure l'image originale si pas dans gallery)
+    let fullGallery = [...gallery];
+    if (originalImage && !originalImageInGallery && !fullGallery.includes(originalImage)) {
+        // Ajouter l'image originale au début de la galerie
+        fullGallery.unshift(originalImage);
+    }
+    
+    // Réinitialiser les images sélectionnées et sélectionner TOUTES les images de la galerie
+    state.selectedImages.clear();
+    
+    // Ajouter toutes les images de la galerie complète
+    if (fullGallery.length > 0) {
+        fullGallery.forEach(img => state.selectedImages.add(img));
+    } else if (images.primary) {
+        // Si pas de galerie, ajouter au moins l'image principale
         state.selectedImages.add(images.primary);
     }
     
     // Mettre à jour l'image et la galerie seulement si on a des images
     const imageContainer = document.querySelector('.web-search-detail-modal .detail-image-container');
-    if (imageContainer && (images.primary || gallery.length > 0)) {
+    if (imageContainer && (images.primary || fullGallery.length > 0)) {
         let imageHtml = '';
         //console.log('[WebSearch] Mise à jour de la galerie avec images.primary:', images.primary);
         if (images.primary) {
@@ -972,15 +1013,18 @@ async function updateDetailModalContent(result) {
             `;
         }
         
-        if (gallery.length > 0) {
-            const mainImgUrl = images.primary || images.thumbnail || images.box_front || images.box_back || gallery[0];
+        // fullGallery est déjà construit plus haut
+        
+        if (fullGallery.length > 0) {
+            const mainImgUrl = images.primary || images.thumbnail || images.box_front || images.box_back || fullGallery[0];
             imageHtml += `
                 <div class="detail-image-gallery" id="wsImageGallery">
-                    ${gallery.map((img, idx) => {
+                    ${fullGallery.map((img, idx) => {
                         const isActive = img === mainImgUrl;
                         const isSelected = state.selectedImages.has(img);
+                        const isOriginal = img === originalImage && !originalImageInGallery;
                         return `
-                            <div class="detail-thumb-wrapper ${isSelected ? 'selected' : ''}" data-url="${img}">
+                            <div class="detail-thumb-wrapper ${isSelected ? 'selected' : ''} ${isOriginal ? 'original-image' : ''}" data-url="${img}" ${isOriginal ? 'title="Image originale"' : ''}>
                                 <img src="${img}" alt="" class="detail-thumb ${isActive ? 'active' : ''}" 
                                      data-full="${img}">
                                 <span class="detail-thumb-check">✓</span>
@@ -1004,32 +1048,44 @@ async function updateDetailModalContent(result) {
         
         setupGalleryEvents();
         
+        // Mettre à jour le compteur d'images et le champ d'import
+        updateSelectedImagesCount();
+        updateImageImportField();
+        
+        // Gérer le bouton "Tout sélectionner / Tout désélectionner"
         const selectAllBtn = document.getElementById('wsSelectAllImages');
         if (selectAllBtn) {
+            // Initialiser le label du bouton
+            updateSelectAllButtonLabel();
+            
             selectAllBtn.addEventListener('click', () => {
-                const allSelected = state.selectedImages.size === gallery.length;
-                if (allSelected) {
+                // Vérifier si toutes les images de la galerie complète sont sélectionnées
+                const allGallerySelected = fullGallery.every(img => state.selectedImages.has(img));
+                
+                if (allGallerySelected) {
+                    // Tout désélectionner : vider complètement la sélection
                     state.selectedImages.clear();
-                    if (result.image) {
-                        state.selectedImages.add(result.image);
-                    }
-                    selectAllBtn.textContent = t.detail_select_all_images || 'Tout sélectionner';
                 } else {
-                    gallery.forEach(img => state.selectedImages.add(img));
-                    selectAllBtn.textContent = t.detail_deselect_all_images || 'Tout désélectionner';
+                    // Tout sélectionner : ajouter toutes les images de la galerie complète
+                    fullGallery.forEach(img => state.selectedImages.add(img));
                 }
+                
+                // Mettre à jour l'affichage des thumbnails
                 document.querySelectorAll('.detail-thumb-wrapper').forEach(wrapper => {
                     const url = wrapper.dataset.url;
                     wrapper.classList.toggle('selected', state.selectedImages.has(url));
                 });
+                
+                // Mettre à jour le compteur et le label du bouton
                 updateSelectedImagesCount();
+                updateSelectAllButtonLabel();
                 updateImageImportField();
             });
         }
     }
     
-    // Récupérer les données (depuis result directement ou result.data)
-    const donnee = result.data || result;
+    // Les mappings BDD utilisent des chemins depuis la racine de la réponse API (ex: data.synopsis)
+    // On passe donc `result` complet et non `result.data`
     
     // Charger les mappings BDD pour extraire nom et description
     let fieldMappings = [];
@@ -1047,11 +1103,11 @@ async function updateDetailModalContent(result) {
         mappingsByField[mapping.item_field] = mapping;
     }
     
-    // Extraire le nom via mapping BDD
+    // Extraire le nom via mapping BDD (passer result complet car les chemins commencent par data.)
     let extractedName = null;
     const nameMapping = mappingsByField['name'];
     if (nameMapping && nameMapping.api_path) {
-        extractedName = applyMapping(donnee, nameMapping);
+        extractedName = applyMapping(result, nameMapping);
         // Gérer les objets de traduction {text: "...", translated: bool}
         if (extractedName && typeof extractedName === 'object') {
             extractedName = extractedName.text || null;
@@ -1068,7 +1124,7 @@ async function updateDetailModalContent(result) {
     let descriptionText = null;
     const descMapping = mappingsByField['description'];
     if (descMapping && descMapping.api_path) {
-        descriptionText = applyMapping(donnee, descMapping);
+        descriptionText = applyMapping(result, descMapping);
         if (descriptionText && typeof descriptionText === 'object') {
             descriptionText = descriptionText.text || null;
         }
@@ -1089,13 +1145,18 @@ async function updateDetailModalContent(result) {
     const generalFieldsContainer = document.getElementById('wsImportFields');
     if (generalFieldsContainer) {
         // Réutiliser les mappings déjà chargés via buildGeneralFieldsHtmlWithMappings
-        generalFieldsContainer.innerHTML = buildGeneralFieldsHtmlWithMappings(donnee, t, fieldMappings);
+        // Passer result complet car les chemins BDD commencent par data.
+        generalFieldsContainer.innerHTML = buildGeneralFieldsHtmlWithMappings(result, t, fieldMappings);
     }
     
     const mediaFieldsContainer = document.getElementById('wsMediaFields');
     if (mediaFieldsContainer) {
         mediaFieldsContainer.innerHTML = buildMediaFieldsHtml(result, t);
     }
+    
+    // IMPORTANT: Mettre à jour le champ images APRÈS la reconstruction du HTML des médias
+    // car buildMediaFieldsHtml utilise les données brutes, pas state.selectedImages
+    updateImageImportField();
     
     const typeFieldsContainer = document.getElementById('wsTypeFields');
     if (typeFieldsContainer) {

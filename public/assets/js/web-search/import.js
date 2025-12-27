@@ -138,10 +138,15 @@ export async function handleImport(result) {
         
         try {
             // Préparer les données via les mappings BDD
-            const apiData = actualResult.data || actualResult;
-            console.log('[WebSearch] Données API pour mappings:', apiData);
-            console.log('[WebSearch] amazon_data.price_value =', apiData?.amazon_data?.price_value);
-            const mappedData = await prepareImportData(apiData, webapiId, primaryTypeId);
+            // Les api_keys commencent par "data." (ex: data.isbn, data.identifiers.isbn)
+            // IMPORTANT: Le spread doit être AVANT pour que data: ne soit pas écrasé
+            const wrappedData = {
+                ...actualResult,
+                data: actualResult.data || actualResult
+            };
+            console.log('[WebSearch] Données API pour mappings:', wrappedData);
+            console.log('[WebSearch] wrappedData.data existe:', !!wrappedData.data);
+            const mappedData = await prepareImportData(wrappedData, webapiId, primaryTypeId);
             console.log('[WebSearch] Résultat mappedData:', mappedData);
             
             // Compléter avec les champs sélectionnés manuellement dans l'UI
@@ -158,6 +163,12 @@ export async function handleImport(result) {
             const isNameChecked = document.querySelector('#wsImportFields .import-field-item[data-field="name"] input[type="checkbox"]')?.checked;
             const isDescChecked = document.querySelector('#wsImportFields .import-field-item[data-field="description"] input[type="checkbox"]')?.checked;
             const isPriceChecked = document.querySelector('#wsImportFields .import-field-item[data-field="price"] input[type="checkbox"]')?.checked;
+            const isImagesChecked = document.querySelector('[data-field="images"] input[type="checkbox"]')?.checked;
+            
+            // Les images sélectionnées par l'utilisateur ont TOUJOURS priorité sur les mappings BDD
+            const userSelectedImages = state.selectedImages && state.selectedImages.size > 0 
+                ? Array.from(state.selectedImages) 
+                : [];
             
             enrichedResult = {
                 raw: actualResult,
@@ -168,18 +179,17 @@ export async function handleImport(result) {
                     name: isNameChecked ? (mappedData.fieldsToImport.name || selectedFields.name) : null,
                     description: isDescChecked ? (mappedData.fieldsToImport.description || selectedFields.description) : null,
                     value: isPriceChecked ? (mappedData.fieldsToImport.value || selectedFields.value) : null,
-                    image_url: selectedFields.image_url,
-                    images: selectedFields.images,
+                    image_url: userSelectedImages[0] || selectedFields.image_url,
+                    images: userSelectedImages.length > 0 ? userSelectedImages : selectedFields.images,
                     // Métadonnées fusionnées (BDD + UI)
                     metadata: {
                         ...selectedMetadata,
                         ...mappedData.fieldsToImport.metadata
                     }
                 },
-                importImage: !!(selectedFields.image_url || (selectedFields.images && selectedFields.images.length > 0)),
-                importImages: mappedData.importImages.length > 0 
-                    ? mappedData.importImages 
-                    : (selectedFields.images || (selectedFields.image_url ? [selectedFields.image_url] : [])),
+                // Images : utiliser les images sélectionnées par l'utilisateur si checkbox coché
+                importImage: isImagesChecked && userSelectedImages.length > 0,
+                importImages: isImagesChecked ? userSelectedImages : [],
                 importVideos: mappedData.importVideos || [],
                 importAudio: mappedData.importAudio || [],
                 importDocuments: mappedData.importDocuments || [],
@@ -274,16 +284,24 @@ function buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType, fie
         processImportField(item, actualResult, selectedFields, selectedMetadata, fieldMappings);
     });
     
+    // Les images sélectionnées par l'utilisateur ont TOUJOURS priorité
+    const isImagesChecked = document.querySelector('[data-field="images"] input[type="checkbox"]')?.checked;
+    const userSelectedImages = state.selectedImages && state.selectedImages.size > 0 
+        ? Array.from(state.selectedImages) 
+        : [];
+    
     return {
         raw: actualResult,
         primaryTypeId: primaryTypeId,
         primaryTypeName: primaryType?.name || null,
         fieldsToImport: {
             ...selectedFields,
+            image_url: userSelectedImages[0] || selectedFields.image_url,
+            images: userSelectedImages.length > 0 ? userSelectedImages : selectedFields.images,
             metadata: selectedMetadata
         },
-        importImage: !!(selectedFields.image_url || (selectedFields.images && selectedFields.images.length > 0)),
-        importImages: selectedFields.images || (selectedFields.image_url ? [selectedFields.image_url] : []),
+        importImage: isImagesChecked && userSelectedImages.length > 0,
+        importImages: isImagesChecked ? userSelectedImages : [],
         importInstructions: state.selectedInstructions && state.selectedInstructions.size > 0 
             ? filterValidDocumentUrls(Array.from(state.selectedInstructions))
             : []

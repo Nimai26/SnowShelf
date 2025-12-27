@@ -57,6 +57,42 @@ function cleanImageUrl(url) {
 }
 
 /**
+ * Extrait l'année d'une date ou retourne l'année si c'est déjà une année
+ * @param {string|number} value - Valeur contenant une date ou une année
+ * @returns {number|null} - Année en nombre ou null
+ */
+function extractYear(value) {
+    if (!value) return null;
+    
+    const strValue = String(value).trim();
+    
+    // Année seule (4 chiffres)
+    if (/^\d{4}$/.test(strValue)) {
+        return parseInt(strValue, 10);
+    }
+    
+    // Format ISO (YYYY-MM-DD)
+    const isoMatch = strValue.match(/^(\d{4})-\d{2}-\d{2}/);
+    if (isoMatch) {
+        return parseInt(isoMatch[1], 10);
+    }
+    
+    // Format DD/MM/YYYY ou DD-MM-YYYY
+    const dmyMatch = strValue.match(/\d{1,2}[\/\-]\d{1,2}[\/\-](\d{4})/);
+    if (dmyMatch) {
+        return parseInt(dmyMatch[1], 10);
+    }
+    
+    // Chercher 4 chiffres consécutifs qui ressemblent à une année (19xx ou 20xx)
+    const yearMatch = strValue.match(/\b(19|20)\d{2}\b/);
+    if (yearMatch) {
+        return parseInt(yearMatch[0], 10);
+    }
+    
+    return null;
+}
+
+/**
  * Normalise les URLs d'images depuis différents formats d'API
  * Gère les formats suivants :
  * - Tableau d'URLs : ["url1", "url2"]
@@ -347,9 +383,82 @@ export function applyTransform(value, transformType, transformConfig = null) {
             }
             return value;
         
+        case 'date':
+            // Convertir en format date ISO (YYYY-MM-DD)
+            return convertToDateFormat(value);
+        
+        case 'year_extract':
+        case 'YEAR_EXTRACT':
+            // Extraire l'année d'une date, OU convertir une année en date complète (01/01/année)
+            // Si c'est juste une année (4 chiffres), on la convertit en date
+            const yearOnly = String(value).match(/^(\d{4})$/);
+            if (yearOnly) {
+                // C'est juste une année, la convertir en date (1er janvier)
+                return `${yearOnly[1]}-01-01`;
+            }
+            // Sinon extraire l'année d'une date complète et la convertir en date
+            const extractedYear = extractYear(value);
+            if (extractedYear) {
+                return `${extractedYear}-01-01`;
+            }
+            return value;
+        
         default:
             return value;
     }
+}
+
+/**
+ * Convertit une valeur en format date ISO (YYYY-MM-DD)
+ * Gère les formats : YYYY, YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, timestamps, etc.
+ * @param {*} value - Valeur à convertir
+ * @returns {string|null} Date au format YYYY-MM-DD ou null
+ */
+function convertToDateFormat(value) {
+    if (!value) return null;
+    
+    const strValue = String(value).trim();
+    
+    // Déjà au format ISO
+    if (/^\d{4}-\d{2}-\d{2}$/.test(strValue)) {
+        return strValue;
+    }
+    
+    // Juste une année (YYYY) -> convertir en 01/01/YYYY
+    if (/^\d{4}$/.test(strValue)) {
+        return `${strValue}-01-01`;
+    }
+    
+    // Format DD/MM/YYYY ou DD-MM-YYYY
+    const dmyMatch = strValue.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmyMatch) {
+        const [, day, month, year] = dmyMatch;
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Format YYYY/MM/DD ou YYYY-MM-DD (avec séparateurs variés)
+    const ymdMatch = strValue.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (ymdMatch) {
+        const [, year, month, day] = ymdMatch;
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Timestamp Unix (nombre de secondes ou millisecondes)
+    if (/^\d{10,13}$/.test(strValue)) {
+        const timestamp = strValue.length > 10 ? parseInt(strValue) : parseInt(strValue) * 1000;
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+        }
+    }
+    
+    // Essayer de parser comme Date JavaScript
+    const date = new Date(strValue);
+    if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+    }
+    
+    return null;
 }
 
 /**
@@ -371,7 +480,7 @@ export function applyMapping(data, mapping) {
     for (const path of paths) {
         rawValue = extractValueByPath(data, path);
         if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
-            console.log(`[applyMapping] Chemin "${path}" a trouvé:`, rawValue);
+            //console.log(`[applyMapping] Chemin "${path}" a trouvé:`, rawValue);
             break;
         }
     }
@@ -449,15 +558,18 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
     }
     
     // Appliquer les mappings de métadonnées
+    console.log('[prepareImportData] Traitement métadonnées, count:', metadataMappings?.length);
     for (const mapping of metadataMappings) {
         if (!mapping.is_active) continue;
         
         // Les api_keys peuvent être un tableau de chemins alternatifs
         const apiKeys = Array.isArray(mapping.api_keys) ? mapping.api_keys : [mapping.api_keys];
+        console.log(`[prepareImportData] Mapping ${mapping.field_key}, api_keys:`, apiKeys);
         
         let value = undefined;
         for (const apiKey of apiKeys) {
             value = extractValueByPath(apiResponse, apiKey);
+            console.log(`[prepareImportData] Chemin "${apiKey}" -> valeur:`, value);
             if (value !== undefined) {
                 // Appliquer la transformation
                 value = applyTransform(value, mapping.transform_type, mapping.transform_config);
@@ -469,6 +581,7 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
             // Normaliser la valeur
             value = normalizeFieldValue(mapping.field_key, value);
             result.fieldsToImport.metadata[mapping.field_key] = value;
+            console.log(`[prepareImportData] Métadonnée ${mapping.field_key} =`, value);
         }
     }
     
@@ -1337,8 +1450,10 @@ export async function applyWebSearchImport(modal, result, applyImportedMetadata,
         const filteredMetadata = {};
         
         for (const [key, value] of Object.entries(fieldsToImport.metadata)) {
-            // Ignorer les champs déjà traités
-            if (['barcode', 'isbn', 'upc'].includes(key)) continue;
+            // Note: On ne filtre plus 'isbn', 'upc' etc. car ils doivent apparaître
+            // dans les métadonnées type-specific (onglet Détails) en plus du champ barcode
+            // Seul 'barcode' est ignoré car il n'existe pas comme champ de métadonnées
+            if (key === 'barcode') continue;
             
             const conflict = fieldConflicts[key];
             const action = shouldImport(key, conflict?.isEmpty ?? true);

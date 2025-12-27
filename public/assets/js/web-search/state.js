@@ -23,6 +23,7 @@ export const state = {
     currentPrimaryTypeId: null,
     primaryTypes: [],
     primaryTypeFields: {},
+    fieldMappings: [], // Mappings de champs fixes (chargés une fois depuis item_field_mappings)
     selectedImages: new Set(),
     selectedInstructions: new Map(), // Map<url, {url, name}>
     autoTranslate: window.userInfo?.autoTrad ?? false,
