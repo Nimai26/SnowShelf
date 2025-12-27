@@ -238,6 +238,14 @@ function buildGeneralFieldsHtml(result, t) {
 function buildMediaFieldsHtml(result, t) {
     const fields = [];
     
+    // Fonction utilitaire pour extraire l'URL d'un élément
+    const extractUrl = (item) => {
+        if (!item) return null;
+        if (typeof item === 'string') return item;
+        if (typeof item === 'object' && item.url) return item.url;
+        return null;
+    };
+    
     // Normaliser les images (même logique que updateDetailModalContent)
     const rawImages = result.images || result.data?.images || {};
     let imageCount = 0;
@@ -249,13 +257,19 @@ function buildMediaFieldsHtml(result, t) {
         // Format RAWG/IGDB: {cover, screenshots, artworks, background}
         const allImages = new Set();
         if (rawImages.cover) allImages.add(rawImages.cover);
-        if (rawImages.screenshots) rawImages.screenshots.forEach(img => allImages.add(img));
-        if (rawImages.artworks) rawImages.artworks.forEach(img => allImages.add(img));
+        if (rawImages.screenshots) rawImages.screenshots.forEach(img => {
+            const url = extractUrl(img);
+            if (url) allImages.add(url);
+        });
+        if (rawImages.artworks) rawImages.artworks.forEach(img => {
+            const url = extractUrl(img);
+            if (url) allImages.add(url);
+        });
         if (rawImages.background && rawImages.background !== rawImages.cover) allImages.add(rawImages.background);
         imageCount = allImages.size;
     } else if (Array.isArray(rawImages)) {
-        // Format tableau simple
-        imageCount = rawImages.length;
+        // Format tableau (strings ou objets)
+        imageCount = rawImages.filter(img => extractUrl(img)).length;
     } else if (result.image) {
         // Image unique
         imageCount = 1;
@@ -711,6 +725,20 @@ async function loadProductDetails(result) {
 function updateDetailModalContent(result) {
     const t = getTranslations();
     
+    // Fonction utilitaire pour nettoyer les URLs des échappements JSON
+    const cleanUrl = (url) => {
+        if (!url || typeof url !== 'string') return null;
+        return url.replace(/\\\//g, '/').trim();
+    };
+    
+    // Fonction pour extraire l'URL d'un élément (string ou objet)
+    const extractUrl = (item) => {
+        if (!item) return null;
+        if (typeof item === 'string') return cleanUrl(item);
+        if (typeof item === 'object' && item.url) return cleanUrl(item.url);
+        return null;
+    };
+    
     // Normaliser les images depuis différents formats d'API
     // Format attendu: { primary: string, gallery: string[] }
     let images = { primary: null, gallery: [] };
@@ -720,40 +748,51 @@ function updateDetailModalContent(result) {
     
     // Si déjà au format {primary, gallery}
     if (rawImages.primary || rawImages.gallery) {
-        images.primary = rawImages.primary || null;
-        images.gallery = rawImages.gallery || [];
+        images.primary = cleanUrl(rawImages.primary) || null;
+        images.gallery = (rawImages.gallery || []).map(extractUrl).filter(Boolean);
     }
     // Format RAWG/IGDB: {cover, screenshots, artworks, background}
     else if (rawImages.cover || rawImages.screenshots || rawImages.artworks) {
-        images.primary = rawImages.cover || rawImages.background || null;
+        images.primary = cleanUrl(rawImages.cover) || cleanUrl(rawImages.background) || null;
         // Construire la galerie avec toutes les images disponibles
         const allImages = [];
         // D'abord le cover comme première image
         if (rawImages.cover) {
-            allImages.push(rawImages.cover);
+            allImages.push(cleanUrl(rawImages.cover));
         }
         // Puis les screenshots
         if (rawImages.screenshots && rawImages.screenshots.length > 0) {
-            allImages.push(...rawImages.screenshots);
+            allImages.push(...rawImages.screenshots.map(extractUrl).filter(Boolean));
         }
         // Puis les artworks
         if (rawImages.artworks && rawImages.artworks.length > 0) {
-            allImages.push(...rawImages.artworks);
+            allImages.push(...rawImages.artworks.map(extractUrl).filter(Boolean));
         }
         // Background seulement si différent du cover
         if (rawImages.background && rawImages.background !== rawImages.cover) {
-            allImages.push(rawImages.background);
+            allImages.push(cleanUrl(rawImages.background));
         }
         images.gallery = allImages.filter(Boolean);
     }
-    // Format simple: tableau d'URLs
+    // Format tableau d'objets [{url, thumbnail, is_main}, ...] ou tableau de strings
     else if (Array.isArray(rawImages) && rawImages.length > 0) {
-        images.primary = rawImages[0];
-        images.gallery = rawImages.slice(1);
+        // Extraire les URLs et identifier l'image principale
+        const extractedImages = rawImages.map(item => {
+            const url = extractUrl(item);
+            const isMain = item?.is_main === true;
+            return { url, isMain };
+        }).filter(img => img.url);
+        
+        // Chercher l'image principale marquée is_main
+        const mainImage = extractedImages.find(img => img.isMain);
+        images.primary = mainImage?.url || extractedImages[0]?.url || null;
+        
+        // Construire la galerie avec toutes les URLs
+        images.gallery = extractedImages.map(img => img.url).filter(Boolean);
     }
     // Fallback sur result.image
     else if (result.image) {
-        images.primary = result.image;
+        images.primary = cleanUrl(result.image);
     }
     
     const gallery = images.gallery || [];

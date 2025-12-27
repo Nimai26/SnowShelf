@@ -26,12 +26,22 @@ const metadataMappingsCache = new Map();
 // ============================================================================
 
 /**
+ * Nettoie une URL des échappements JSON et espaces
+ * @param {string} url - URL potentiellement avec échappements
+ * @returns {string|null} URL nettoyée ou null
+ */
+function cleanImageUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    return url.replace(/\\\//g, '/').trim() || null;
+}
+
+/**
  * Normalise les URLs d'images depuis différents formats d'API
  * Gère les formats suivants :
  * - Tableau d'URLs : ["url1", "url2"]
  * - Objet images : {cover: "url", screenshots: [...], artworks: [...], background: "url"}
  * - URL simple : "url"
- * - Tableau d'objets avec URL : [{url: "..."}, ...]
+ * - Tableau d'objets avec URL : [{url: "...", is_main: true}, ...]
  * 
  * @param {*} value - Valeur brute depuis l'API
  * @returns {string[]} Tableau d'URLs normalisées
@@ -39,19 +49,20 @@ const metadataMappingsCache = new Map();
 function normalizeImageUrls(value) {
     if (!value) return [];
     
-    // Si c'est déjà un tableau de strings
+    // Si c'est déjà un tableau
     if (Array.isArray(value)) {
-        // Filtrer et aplatir - peut contenir des strings, objets, ou sous-tableaux
-        return value.flatMap(item => {
-            if (typeof item === 'string') return item;
-            if (item && typeof item === 'object' && item.url) return item.url;
-            return [];
+        // Filtrer et extraire les URLs - peut contenir des strings ou objets
+        return value.map(item => {
+            if (typeof item === 'string') return cleanImageUrl(item);
+            if (item && typeof item === 'object' && item.url) return cleanImageUrl(item.url);
+            return null;
         }).filter(url => url && typeof url === 'string');
     }
     
     // Si c'est une string simple
     if (typeof value === 'string') {
-        return [value];
+        const cleaned = cleanImageUrl(value);
+        return cleaned ? [cleaned] : [];
     }
     
     // Si c'est un objet avec des propriétés images (format RAWG/IGDB/JVC)
@@ -59,37 +70,37 @@ function normalizeImageUrls(value) {
         const urls = [];
         
         // Cover principal
-        if (value.cover && typeof value.cover === 'string') {
-            urls.push(value.cover);
-        }
+        const cover = cleanImageUrl(value.cover);
+        if (cover) urls.push(cover);
+        
         // Primary (format normalisé)
-        if (value.primary && typeof value.primary === 'string' && !urls.includes(value.primary)) {
-            urls.push(value.primary);
-        }
+        const primary = cleanImageUrl(value.primary);
+        if (primary && !urls.includes(primary)) urls.push(primary);
+        
         // Gallery (format normalisé)
         if (Array.isArray(value.gallery)) {
-            value.gallery.forEach(url => {
-                if (typeof url === 'string' && !urls.includes(url)) urls.push(url);
+            value.gallery.forEach(item => {
+                const url = typeof item === 'string' ? cleanImageUrl(item) : cleanImageUrl(item?.url);
+                if (url && !urls.includes(url)) urls.push(url);
             });
         }
         // Screenshots
         if (Array.isArray(value.screenshots)) {
             value.screenshots.forEach(item => {
-                const url = typeof item === 'string' ? item : item?.url;
-                if (url && typeof url === 'string' && !urls.includes(url)) urls.push(url);
+                const url = typeof item === 'string' ? cleanImageUrl(item) : cleanImageUrl(item?.url);
+                if (url && !urls.includes(url)) urls.push(url);
             });
         }
         // Artworks
         if (Array.isArray(value.artworks)) {
             value.artworks.forEach(item => {
-                const url = typeof item === 'string' ? item : item?.url;
-                if (url && typeof url === 'string' && !urls.includes(url)) urls.push(url);
+                const url = typeof item === 'string' ? cleanImageUrl(item) : cleanImageUrl(item?.url);
+                if (url && !urls.includes(url)) urls.push(url);
             });
         }
         // Background
-        if (value.background && typeof value.background === 'string' && !urls.includes(value.background)) {
-            urls.push(value.background);
-        }
+        const bg = cleanImageUrl(value.background);
+        if (bg && !urls.includes(bg)) urls.push(bg);
         
         return urls;
     }
