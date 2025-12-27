@@ -20,6 +20,7 @@ export const ITEM_FIXED_FIELDS = [
     { key: 'name', label: 'Titre', icon: '📝', tab: 'general' },
     { key: 'description', label: 'Description', icon: '📄', tab: 'general' },
     { key: 'value', label: 'Valeur marchande', icon: '💰', tab: 'general' },
+    { key: 'code_barre', label: 'Code-barres', icon: '📊', tab: 'general' },
     { key: 'images', label: 'Images', icon: '🖼️', tab: 'medias', isArray: true },
     { key: 'videos', label: 'Vidéos', icon: '🎬', tab: 'medias', isArray: true },
     { key: 'audio', label: 'Audio', icon: '🎵', tab: 'medias', isArray: true },

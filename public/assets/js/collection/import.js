@@ -360,6 +360,7 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
             name: null,
             description: null,
             value: null,
+            code_barre: null,
             image_url: null,  // Pour compatibilité avec l'ancien format
             metadata: {}
         },
@@ -386,6 +387,9 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
                 break;
             case 'value':
                 result.fieldsToImport.value = value;
+                break;
+            case 'code_barre':
+                result.fieldsToImport.code_barre = value;
                 break;
             case 'images':
                 // Normaliser les images - peut être un tableau d'URLs, un objet {cover, screenshots, ...}, ou une URL simple

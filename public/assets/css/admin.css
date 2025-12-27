@@ -3379,8 +3379,7 @@ button {
    Item Field Mappings Modal
    ======================================== */
 .item-field-mappings-container {
-    max-height: 70vh;
-    overflow-y: auto;
+    /* Pas de max-height ici, le modal gère le scroll */
 }
 
 .item-field-mappings-container .modal-description {
@@ -3425,6 +3424,7 @@ button {
     padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
 }
 
 .mappings-table th {
@@ -3440,19 +3440,24 @@ button {
     background: rgba(var(--accent-color), 0.05);
 }
 
-/* Cellule label du champ */
+/* Cellule label du champ - ne pas utiliser flex sur td, utiliser un wrapper interne */
 .field-label-cell {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     white-space: nowrap;
 }
 
-.field-icon {
+.field-label-cell .field-icon,
+.field-label-cell .field-name,
+.field-label-cell .badge-small {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.field-label-cell .field-icon {
+    margin-right: 8px;
     font-size: 1.1rem;
 }
 
-.field-name {
+.field-label-cell .field-name {
     font-weight: 500;
     color: var(--text);
 }
@@ -3528,10 +3533,6 @@ button {
 
 /* Modal taille xl spécifique pour mappings */
 @media (max-width: 768px) {
-    .item-field-mappings-container {
-        max-height: 60vh;
-    }
-    
     .mappings-table {
         font-size: 0.8rem;
     }

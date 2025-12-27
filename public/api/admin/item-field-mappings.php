@@ -29,7 +29,7 @@ if (empty($_SESSION['user_id']) || empty($_SESSION['is_admin'])) {
 }
 
 // Liste des champs fixes valides
-const VALID_ITEM_FIELDS = ['name', 'description', 'value', 'images', 'videos', 'audio', 'documents'];
+const VALID_ITEM_FIELDS = ['name', 'description', 'value', 'code_barre', 'images', 'videos', 'audio', 'documents'];
 
 // Types de transformation valides
 const VALID_TRANSFORM_TYPES = ['direct', 'array', 'first', 'join', 'template'];
@@ -67,7 +67,7 @@ function handleGet($pdo) {
     $stmt = $pdo->query("
         SELECT id, item_field, api_path, transform_type, transform_config, created_at, updated_at
         FROM item_field_mappings
-        ORDER BY FIELD(item_field, 'name', 'description', 'value', 'images', 'videos', 'audio', 'documents')
+        ORDER BY FIELD(item_field, 'name', 'description', 'value', 'code_barre', 'images', 'videos', 'audio', 'documents')
     ");
     $mappings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
