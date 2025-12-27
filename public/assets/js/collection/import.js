@@ -770,6 +770,84 @@ export async function downloadImageDirect(url) {
 }
 
 /**
+ * Vérifie si une URL nécessite le proxy wsrv.nl (serveurs bloquant les requêtes serveur-à-serveur)
+ * NOTE: ComicVine fonctionne maintenant avec le proxy PHP amélioré (headers Referer)
+ * @param {string} url - URL à vérifier
+ * @returns {boolean} true si wsrv.nl devrait être utilisé
+ */
+function needsWsrvProxy(url) {
+    if (!url || typeof url !== 'string') return false;
+    
+    // Liste des domaines nécessitant wsrv.nl (bloquent les requêtes proxy classiques)
+    // NOTE: ComicVine retiré car le proxy PHP fonctionne avec les bons headers
+    const wsrvDomains = [
+        // Ajouter ici les domaines qui bloquent vraiment le proxy PHP
+    ];
+    
+    if (wsrvDomains.length === 0) return false;
+    
+    try {
+        const urlObj = new URL(url);
+        return wsrvDomains.some(domain => urlObj.hostname.includes(domain));
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Télécharge une image via le service wsrv.nl (contourne les blocages de hotlinking)
+ * @param {string} url - URL de l'image originale
+ * @returns {Promise<{blob: Blob, filename: string, mimeType: string}|null>}
+ */
+async function downloadViaWsrv(url) {
+    try {
+        // Validation
+        if (!url || typeof url !== 'string') {
+            console.error('[Collection] downloadViaWsrv: URL invalide', url);
+            return null;
+        }
+        
+        const cleanUrl = url.replace(/\\\//g, '/');
+        
+        // Construire l'URL wsrv.nl
+        const wsrvUrl = `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}`;
+        console.log('[Collection] Téléchargement via wsrv.nl:', wsrvUrl);
+        
+        const response = await fetch(wsrvUrl, {
+            mode: 'cors',
+            credentials: 'omit'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        
+        // Vérifier que c'est bien une image
+        if (!blob.type.startsWith('image/')) {
+            console.warn('[Collection] wsrv.nl n\'a pas retourné une image:', blob.type);
+            return null;
+        }
+        
+        // Extraire le nom de fichier depuis l'URL originale
+        const urlPath = new URL(cleanUrl).pathname;
+        const filename = urlPath.split('/').pop() || 'image.jpg';
+        
+        console.log('[Collection] Image téléchargée via wsrv.nl:', filename, blob.size, 'bytes');
+        
+        return {
+            blob,
+            filename: filename,
+            mimeType: blob.type || 'image/jpeg'
+        };
+    } catch (error) {
+        console.error('[Collection] Erreur téléchargement wsrv.nl:', error);
+        return null;
+    }
+}
+
+/**
  * Importe une image depuis une URL externe
  * @param {HTMLElement} modal - Élément modal
  * @param {string} imageUrl - URL de l'image à importer
@@ -784,17 +862,33 @@ export async function importImageFromUrl(modal, imageUrl) {
         return false;
     }
     
-    // Essayer d'abord le proxy serveur
-    let downloaded = await downloadViaProxy(imageUrl, 'image');
+    let downloaded = null;
     
-    // Si le proxy échoue, essayer le téléchargement direct
+    // Pour certains domaines (ComicVine), utiliser directement wsrv.nl car le proxy classique échoue
+    if (needsWsrvProxy(imageUrl)) {
+        console.log('[Collection] Domaine nécessitant wsrv.nl détecté, utilisation directe...');
+        downloaded = await downloadViaWsrv(imageUrl);
+    }
+    
+    // Sinon, essayer d'abord le proxy serveur
+    if (!downloaded) {
+        downloaded = await downloadViaProxy(imageUrl, 'image');
+    }
+    
+    // Si le proxy échoue, essayer wsrv.nl comme fallback (pour les domaines qui bloquent)
+    if (!downloaded && needsWsrvProxy(imageUrl)) {
+        console.log('[Collection] Proxy échoué, tentative via wsrv.nl...');
+        downloaded = await downloadViaWsrv(imageUrl);
+    }
+    
+    // En dernier recours, essayer le téléchargement direct (ne fonctionnera que si CORS est permis)
     if (!downloaded) {
         console.log('[Collection] Proxy échoué, tentative de téléchargement direct...');
         downloaded = await downloadImageDirect(imageUrl);
     }
     
     if (!downloaded) {
-        console.error('[Collection] Échec du téléchargement via proxy ET direct pour:', imageUrl);
+        console.error('[Collection] Échec du téléchargement via proxy, wsrv.nl ET direct pour:', imageUrl);
         return false;
     }
     

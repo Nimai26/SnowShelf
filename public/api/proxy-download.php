@@ -447,6 +447,18 @@ try {
     $token = generateToken();
     
     // D'abord, faire une requête HEAD pour connaître la taille
+    // Préparer les headers HTTP pour imiter un vrai navigateur
+    $httpHeaders = [
+        'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept-Language: en-US,en;q=0.9,fr;q=0.8',
+    ];
+    
+    // Pour certains domaines (ComicVine), ajouter un Referer réaliste
+    $host = $parsedUrl['host'] ?? '';
+    if (str_contains($host, 'comicvine') || str_contains($host, 'gamespot')) {
+        $httpHeaders[] = 'Referer: https://comicvine.gamespot.com/';
+    }
+    
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_NOBODY => true,
@@ -456,7 +468,8 @@ try {
         CURLOPT_MAXREDIRS => 5,
         CURLOPT_TIMEOUT => 30,
         CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        CURLOPT_HTTPHEADER => $httpHeaders,
     ]);
     
     curl_exec($ch);
@@ -519,7 +532,8 @@ try {
             CURLOPT_MAXREDIRS => 5,
             CURLOPT_TIMEOUT => 300, // 5 minutes pour les gros fichiers
             CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_HTTPHEADER => $httpHeaders,
             CURLOPT_NOPROGRESS => false,
             CURLOPT_PROGRESSFUNCTION => function($resource, $downloadSize, $downloaded) use (&$downloadedSize) {
                 $downloadedSize = $downloaded;
@@ -596,6 +610,25 @@ try {
     // MODE BASE64 (petits fichiers)
     // ========================================================================
     
+    // Préparer les headers HTTP pour imiter un vrai navigateur
+    $httpHeaders = [
+        'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept-Language: en-US,en;q=0.9,fr;q=0.8',
+        'Accept-Encoding: identity', // Pas de compression pour simplifier
+        'Cache-Control: no-cache',
+        'Pragma: no-cache',
+    ];
+    
+    // Pour certains domaines (ComicVine), ajouter un Referer réaliste
+    $host = $parsedUrl['host'] ?? '';
+    if (str_contains($host, 'comicvine') || str_contains($host, 'gamespot')) {
+        $httpHeaders[] = 'Referer: https://comicvine.gamespot.com/';
+        $httpHeaders[] = 'Origin: https://comicvine.gamespot.com';
+        $httpHeaders[] = 'Sec-Fetch-Dest: image';
+        $httpHeaders[] = 'Sec-Fetch-Mode: no-cors';
+        $httpHeaders[] = 'Sec-Fetch-Site: same-origin';
+    }
+    
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -603,7 +636,8 @@ try {
         CURLOPT_MAXREDIRS => 5,
         CURLOPT_TIMEOUT => 120,
         CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        CURLOPT_HTTPHEADER => $httpHeaders,
     ]);
     
     $content = curl_exec($ch);
