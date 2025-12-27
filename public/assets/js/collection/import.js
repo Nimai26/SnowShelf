@@ -538,6 +538,18 @@ export async function downloadViaProxy(url, type = 'image') {
  */
 export async function downloadImageDirect(url) {
     try {
+        // Validation: si url est un tableau, prendre le premier élément
+        if (Array.isArray(url)) {
+            if (url.length === 0) return null;
+            url = url[0];
+        }
+        
+        // Validation: s'assurer que c'est une string
+        if (typeof url !== 'string' || !url) {
+            console.error('[Collection] downloadImageDirect: URL invalide', url);
+            return null;
+        }
+        
         const cleanUrl = url.replace(/\\\//g, '/');
         console.log('[Collection] Téléchargement direct (fallback):', cleanUrl);
         

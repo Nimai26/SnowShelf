@@ -227,7 +227,7 @@ function handleUpload(PDO $db, int $userId, ?int $entityId, string $mediaType): 
     }
     
     // Vérifier l'accès
-    if (!canModifyItem($db, $entityId, $userId)) {
+    if (!canModifyItem($db, $entityId, $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas modifier cet item');
     }
     
@@ -314,7 +314,7 @@ function handleAddFromTemp(PDO $db, int $userId, ?int $entityId, string $mediaTy
     }
     
     // Vérifier l'accès
-    if (!canModifyItem($db, $entityId, $userId)) {
+    if (!canModifyItem($db, $entityId, $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas modifier cet item');
     }
     
@@ -441,7 +441,7 @@ function handleAddFromProxy(PDO $db, int $userId, ?int $entityId, string $mediaT
     }
     
     // Vérifier l'accès
-    if (!canModifyItem($db, $entityId, $userId)) {
+    if (!canModifyItem($db, $entityId, $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas modifier cet item');
     }
     
@@ -520,7 +520,7 @@ function handleFinalizeTemp(PDO $db, int $userId, ?int $entityId, string $mediaT
     }
     
     // Vérifier l'accès
-    if (!canModifyItem($db, $entityId, $userId)) {
+    if (!canModifyItem($db, $entityId, $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas modifier cet item');
     }
     
@@ -625,7 +625,7 @@ function handleReorder(PDO $db, int $userId, bool $isAdmin, array $data): void
         sendError(400, 'invalid_type', 'Type de média invalide');
     }
     
-    if (!canModifyItem($db, $entityId, $userId)) {
+    if (!canModifyItem($db, $entityId, $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas modifier cet item');
     }
     
@@ -668,7 +668,7 @@ function handleUpdateFromTemp(PDO $db, int $userId, bool $isAdmin, array $data):
         sendError(400, 'invalid_type', 'Type de média invalide');
     }
     
-    if (!canModifyItem($db, $entityId, $userId)) {
+    if (!canModifyItem($db, $entityId, $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas modifier cet item');
     }
     
@@ -779,7 +779,7 @@ function handleDeleteOne(PDO $db, int $userId, bool $isAdmin, ?int $fileId, stri
         sendError(404, 'not_found', 'Média non trouvé');
     }
     
-    if (!canModifyItem($db, $file['item_id'], $userId)) {
+    if (!canModifyItem($db, $file['item_id'], $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas supprimer ce média');
     }
     
@@ -814,7 +814,7 @@ function handleDeleteAll(PDO $db, int $userId, bool $isAdmin, ?int $entityId, st
     }
     
     // Vérifier l'accès
-    if (!canModifyItem($db, $entityId, $userId)) {
+    if (!canModifyItem($db, $entityId, $userId, $isAdmin)) {
         sendError(403, 'forbidden', 'Vous ne pouvez pas modifier cet item');
     }
     
@@ -869,11 +869,14 @@ function canAccessItem(PDO $db, int $itemId, int $userId, bool $isAdmin): bool
 
 /**
  * Vérifie si l'utilisateur peut modifier un item
+ * @param PDO $db - Connexion base de données
+ * @param int $itemId - ID de l'item
+ * @param int $userId - ID de l'utilisateur
+ * @param bool $isAdmin - Si l'utilisateur est admin (optionnel, défaut false)
+ * @return bool
  */
-function canModifyItem(PDO $db, int $itemId, int $userId): bool
+function canModifyItem(PDO $db, int $itemId, int $userId, bool $isAdmin = false): bool
 {
-    global $isAdmin;
-    
     if ($isAdmin) return true;
     
     $stmt = $db->prepare("SELECT user_id FROM items WHERE id = ?");
