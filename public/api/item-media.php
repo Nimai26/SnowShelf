@@ -153,16 +153,16 @@ function handlePost(PDO $db, int $userId, bool $isAdmin, bool $isPremium): void
     
     switch ($action) {
         case 'upload':
-            handleUpload($db, $userId, $entityId, $mediaType);
+            handleUpload($db, $userId, $isAdmin, $entityId, $mediaType);
             break;
         case 'add_from_temp':
-            handleAddFromTemp($db, $userId, $entityId, $mediaType, $data);
+            handleAddFromTemp($db, $userId, $isAdmin, $entityId, $mediaType, $data);
             break;
         case 'add_from_proxy':
-            handleAddFromProxy($db, $userId, $entityId, $mediaType, $data);
+            handleAddFromProxy($db, $userId, $isAdmin, $entityId, $mediaType, $data);
             break;
         case 'finalize_temp':
-            handleFinalizeTemp($db, $userId, $entityId, $mediaType, $data);
+            handleFinalizeTemp($db, $userId, $isAdmin, $entityId, $mediaType, $data);
             break;
         default:
             sendError(400, 'invalid_action', 'Action non reconnue');
@@ -172,7 +172,7 @@ function handlePost(PDO $db, int $userId, bool $isAdmin, bool $isPremium): void
 /**
  * Upload direct d'un fichier
  */
-function handleUpload(PDO $db, int $userId, ?int $entityId, string $mediaType): void
+function handleUpload(PDO $db, int $userId, bool $isAdmin, ?int $entityId, string $mediaType): void
 {
     // Augmenter les limites pour les gros fichiers
     ini_set('memory_limit', '1024M');
@@ -286,7 +286,7 @@ function handleUpload(PDO $db, int $userId, ?int $entityId, string $mediaType): 
 /**
  * Ajoute un fichier depuis le stockage temporaire (après ImageEditor)
  */
-function handleAddFromTemp(PDO $db, int $userId, ?int $entityId, string $mediaType, array $data): void
+function handleAddFromTemp(PDO $db, int $userId, bool $isAdmin, ?int $entityId, string $mediaType, array $data): void
 {
     $tempPath = $data['temp_path'] ?? null;
     $filename = $data['filename'] ?? null;
@@ -362,7 +362,7 @@ function handleAddFromTemp(PDO $db, int $userId, ?int $entityId, string $mediaTy
  * Ajoute un fichier depuis le proxy temp (gros fichiers téléchargés par le proxy)
  * Le fichier est déjà sur le serveur dans /storage/temp/proxy/
  */
-function handleAddFromProxy(PDO $db, int $userId, ?int $entityId, string $mediaType, array $data): void
+function handleAddFromProxy(PDO $db, int $userId, bool $isAdmin, ?int $entityId, string $mediaType, array $data): void
 {
     $proxyToken = $data['proxy_token'] ?? null;
     $filename = $data['filename'] ?? null;
@@ -506,7 +506,7 @@ function handleAddFromProxy(PDO $db, int $userId, ?int $entityId, string $mediaT
 /**
  * Finalise les fichiers temporaires après création de l'item
  */
-function handleFinalizeTemp(PDO $db, int $userId, ?int $entityId, string $mediaType, array $data): void
+function handleFinalizeTemp(PDO $db, int $userId, bool $isAdmin, ?int $entityId, string $mediaType, array $data): void
 {
     if (!$entityId) {
         sendError(400, 'missing_param', 'entity_id requis pour finaliser');
