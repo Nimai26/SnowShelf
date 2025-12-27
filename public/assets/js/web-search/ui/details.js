@@ -57,7 +57,7 @@ function getTypeLabel(primaryType, fallbackName = 'divers') {
  */
 export async function showResultDetails(result) {
     const t = getTranslations();
-    
+    //console.log('[WebSearch] Affichage des détails pour le résultat:', result);
     state.selectedImages = new Set();
     state.selectedInstructions = new Set();
     
@@ -105,13 +105,15 @@ export function buildDetailModalContent(result, selectedTypeId) {
     const selectedType = state.primaryTypes.find(pt => pt.id === selectedTypeId);
     const typeName = selectedType?.name || 'divers';
     
-    // Fonction pour extraire le nom depuis différents formats (string, objet, etc.)
+    // Fonction pour extraire le texte depuis différents formats (string, objet traduction)
+    // Note: Pour l'affichage initial, on utilise les champs normalisés par le backend
+    // Les vrais mappings BDD sont utilisés dans updateDetailModalContent après chargement des détails
     const extractName = (value) => {
         if (!value) return null;
         if (typeof value === 'string') return value;
-        if (typeof value === 'object') {
-            // Priorité à .text pour les objets de traduction {text: "...", translated: bool}
-            return value.text || value.name || value.title || value.label || value.value || null;
+        // Objets de traduction {text: "...", translated: bool}
+        if (typeof value === 'object' && value.text) {
+            return value.text;
         }
         return String(value);
     };
@@ -268,16 +270,6 @@ function buildInitialGeneralFieldsHtml(result, t) {
  * @returns {Promise<string>} HTML des champs généraux
  */
 async function buildGeneralFieldsHtml(result, t, webapiId = null) {
-    const fields = [];
-    
-    // Labels des champs fixes
-    const fieldLabels = {
-        name: t.detail_field_name || 'Nom suggéré',
-        description: t.detail_field_description || 'Description',
-        value: t.detail_field_price || 'Valeur marchande',
-        code_barre: t.detail_field_barcode || 'Code-barres'
-    };
-    
     // Charger les mappings depuis la BDD si webapiId disponible
     let fieldMappings = [];
     if (webapiId) {
@@ -287,6 +279,27 @@ async function buildGeneralFieldsHtml(result, t, webapiId = null) {
             console.warn('[WebSearch] Impossible de charger les mappings, utilisation des fallbacks');
         }
     }
+    
+    return buildGeneralFieldsHtmlWithMappings(result, t, fieldMappings);
+}
+
+/**
+ * Construire les champs généraux avec des mappings déjà chargés (version sync)
+ * @param {Object} result - Données du résultat
+ * @param {Object} t - Traductions
+ * @param {Array} fieldMappings - Mappings déjà chargés depuis item_field_mappings
+ * @returns {string} HTML des champs généraux
+ */
+function buildGeneralFieldsHtmlWithMappings(result, t, fieldMappings = []) {
+    const fields = [];
+    
+    // Labels des champs fixes
+    const fieldLabels = {
+        name: t.detail_field_name || 'Nom suggéré',
+        description: t.detail_field_description || 'Description',
+        value: t.detail_field_price || 'Valeur marchande',
+        code_barre: t.detail_field_barcode || 'Code-barres'
+    };
     
     // Construire un map pour accès rapide : item_field -> mapping
     const mappingsByField = {};
@@ -306,7 +319,7 @@ async function buildGeneralFieldsHtml(result, t, webapiId = null) {
         
         // Gérer les objets de traduction {text: "...", translated: bool}
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-            value = value.text || value.name || value.title || value.label || value.value || null;
+            value = value.text || null;
         }
         
         // Formater la valeur pour l'affichage
@@ -782,6 +795,7 @@ async function loadProductDetails(result) {
         }
         
         // Les données sont dans apiResult.data.data (double niveau data)
+        console.log('[WebSearch] apiResult.data:', apiResult.data);
         const data = apiResult.data?.data || apiResult.data; // Les données brutes de l'API
         const webapiId = apiResult.webapi_id; // ID du provider pour les mappings
         
@@ -859,17 +873,6 @@ async function updateDetailModalContent(result) {
         const filename = cleanedUrl.substring(lastSlashIdx + 1);
         // Le fichier doit avoir au moins 1 caractère et idéalement une extension
         return filename.length > 0 && (filename.includes('.') || filename.length > 10);
-    };
-    
-    // Fonction pour extraire le nom depuis différents formats (string, objet, etc.)
-    const extractName = (value) => {
-        if (!value) return null;
-        if (typeof value === 'string') return value;
-        if (typeof value === 'object') {
-            // Priorité à .text pour les objets de traduction {text: "...", translated: bool}
-            return value.text || value.name || value.title || value.label || value.value || null;
-        }
-        return String(value);
     };
     
     // Fonction pour extraire l'URL d'un élément (string ou objet)
@@ -1028,17 +1031,53 @@ async function updateDetailModalContent(result) {
     // Récupérer les données (depuis result directement ou result.data)
     const donnee = result.data || result;
     
-    // Mettre à jour le titre et la description (priorité à name_original)
+    // Charger les mappings BDD pour extraire nom et description
+    let fieldMappings = [];
+    if (webapiId) {
+        try {
+            fieldMappings = await fetchFieldMappings(webapiId);
+        } catch (e) {
+            console.warn('[WebSearch] Impossible de charger les mappings pour affichage');
+        }
+    }
+    
+    // Construire un map pour accès rapide : item_field -> mapping
+    const mappingsByField = {};
+    for (const mapping of fieldMappings) {
+        mappingsByField[mapping.item_field] = mapping;
+    }
+    
+    // Extraire le nom via mapping BDD
+    let extractedName = null;
+    const nameMapping = mappingsByField['name'];
+    if (nameMapping && nameMapping.api_path) {
+        extractedName = applyMapping(donnee, nameMapping);
+        // Gérer les objets de traduction {text: "...", translated: bool}
+        if (extractedName && typeof extractedName === 'object') {
+            extractedName = extractedName.text || null;
+        }
+    }
+    
+    // Mettre à jour le titre (seulement si on a une valeur du mapping BDD)
     const titleEl = document.querySelector('.web-search-detail-modal .detail-title');
-    const extractedName = extractName(donnee.name_original) || extractName(donnee.name) || extractName(donnee.title);
     if (titleEl && extractedName) {
         titleEl.textContent = extractedName;
     }
     
+    // Extraire la description via mapping BDD
+    let descriptionText = null;
+    const descMapping = mappingsByField['description'];
+    if (descMapping && descMapping.api_path) {
+        descriptionText = applyMapping(donnee, descMapping);
+        if (descriptionText && typeof descriptionText === 'object') {
+            descriptionText = descriptionText.text || null;
+        }
+    }
+    
     const descEl = document.querySelector('.web-search-detail-modal .detail-description');
     if (descEl) {
-        if (donnee.description) {
-            descEl.textContent = donnee.description;
+        if (descriptionText) {
+            descEl.textContent = descriptionText;
             descEl.classList.remove('muted');
         } else {
             descEl.textContent = t.detail_no_description;
@@ -1049,8 +1088,8 @@ async function updateDetailModalContent(result) {
     // Mettre à jour les sections
     const generalFieldsContainer = document.getElementById('wsImportFields');
     if (generalFieldsContainer) {
-        // Utiliser les mappings de la BDD pour construire les champs généraux
-        generalFieldsContainer.innerHTML = await buildGeneralFieldsHtml(donnee, t, webapiId);
+        // Réutiliser les mappings déjà chargés via buildGeneralFieldsHtmlWithMappings
+        generalFieldsContainer.innerHTML = buildGeneralFieldsHtmlWithMappings(donnee, t, fieldMappings);
     }
     
     const mediaFieldsContainer = document.getElementById('wsMediaFields');
