@@ -65,9 +65,26 @@ export function findValueFromSources(result, sources) {
     for (const source of expandedSources) {
         const value = getValueFromPath(result, source);
         if (value !== null && value !== undefined && value !== '') {
-            // Si c'est un array, le joindre
+            // Si c'est un array, traiter chaque élément
             if (Array.isArray(value)) {
-                return value.join(', ');
+                const stringValues = value.map(item => {
+                    // Si l'élément est un objet avec une propriété 'name', l'extraire
+                    if (item && typeof item === 'object' && item.name) {
+                        return item.name;
+                    }
+                    // Si l'élément est un objet avec une propriété 'label', l'extraire
+                    if (item && typeof item === 'object' && item.label) {
+                        return item.label;
+                    }
+                    // Si c'est une string ou autre primitive, la garder
+                    if (typeof item === 'string' || typeof item === 'number') {
+                        return String(item);
+                    }
+                    // Sinon ignorer (objets complexes sans name/label)
+                    return null;
+                }).filter(v => v !== null && v !== '');
+                
+                return stringValues.length > 0 ? stringValues.join(', ') : null;
             }
             return value;
         }

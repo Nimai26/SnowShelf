@@ -22,6 +22,82 @@ const fieldMappingsCache = new Map();
 const metadataMappingsCache = new Map();
 
 // ============================================================================
+// FONCTIONS UTILITAIRES
+// ============================================================================
+
+/**
+ * Normalise les URLs d'images depuis différents formats d'API
+ * Gère les formats suivants :
+ * - Tableau d'URLs : ["url1", "url2"]
+ * - Objet images : {cover: "url", screenshots: [...], artworks: [...], background: "url"}
+ * - URL simple : "url"
+ * - Tableau d'objets avec URL : [{url: "..."}, ...]
+ * 
+ * @param {*} value - Valeur brute depuis l'API
+ * @returns {string[]} Tableau d'URLs normalisées
+ */
+function normalizeImageUrls(value) {
+    if (!value) return [];
+    
+    // Si c'est déjà un tableau de strings
+    if (Array.isArray(value)) {
+        // Filtrer et aplatir - peut contenir des strings, objets, ou sous-tableaux
+        return value.flatMap(item => {
+            if (typeof item === 'string') return item;
+            if (item && typeof item === 'object' && item.url) return item.url;
+            return [];
+        }).filter(url => url && typeof url === 'string');
+    }
+    
+    // Si c'est une string simple
+    if (typeof value === 'string') {
+        return [value];
+    }
+    
+    // Si c'est un objet avec des propriétés images (format RAWG/IGDB/JVC)
+    if (typeof value === 'object' && value !== null) {
+        const urls = [];
+        
+        // Cover principal
+        if (value.cover && typeof value.cover === 'string') {
+            urls.push(value.cover);
+        }
+        // Primary (format normalisé)
+        if (value.primary && typeof value.primary === 'string' && !urls.includes(value.primary)) {
+            urls.push(value.primary);
+        }
+        // Gallery (format normalisé)
+        if (Array.isArray(value.gallery)) {
+            value.gallery.forEach(url => {
+                if (typeof url === 'string' && !urls.includes(url)) urls.push(url);
+            });
+        }
+        // Screenshots
+        if (Array.isArray(value.screenshots)) {
+            value.screenshots.forEach(item => {
+                const url = typeof item === 'string' ? item : item?.url;
+                if (url && typeof url === 'string' && !urls.includes(url)) urls.push(url);
+            });
+        }
+        // Artworks
+        if (Array.isArray(value.artworks)) {
+            value.artworks.forEach(item => {
+                const url = typeof item === 'string' ? item : item?.url;
+                if (url && typeof url === 'string' && !urls.includes(url)) urls.push(url);
+            });
+        }
+        // Background
+        if (value.background && typeof value.background === 'string' && !urls.includes(value.background)) {
+            urls.push(value.background);
+        }
+        
+        return urls;
+    }
+    
+    return [];
+}
+
+// ============================================================================
 // RÉCUPÉRATION DES MAPPINGS DEPUIS L'API
 // ============================================================================
 
@@ -280,7 +356,8 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
                 result.fieldsToImport.value = value;
                 break;
             case 'images':
-                result.importImages = Array.isArray(value) ? value : [value];
+                // Normaliser les images - peut être un tableau d'URLs, un objet {cover, screenshots, ...}, ou une URL simple
+                result.importImages = normalizeImageUrls(value);
                 break;
             case 'videos':
                 result.importVideos = Array.isArray(value) ? value : [value];
@@ -339,6 +416,18 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
  */
 export async function downloadViaProxy(url, type = 'image') {
     try {
+        // Validation: si url est un tableau, prendre le premier élément
+        if (Array.isArray(url)) {
+            if (url.length === 0) return null;
+            url = url[0];
+        }
+        
+        // Validation: s'assurer que c'est une string
+        if (typeof url !== 'string' || !url) {
+            console.error('[Collection] downloadViaProxy: URL invalide', url);
+            return null;
+        }
+        
         // Nettoyer l'URL des caractères JSON échappés (\/ -> /)
         let cleanUrl = url.replace(/\\\//g, '/');
         

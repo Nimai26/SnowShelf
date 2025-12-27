@@ -53,8 +53,9 @@ try {
     ];
     
     // Récupérer les mappings de champs fixes (item_field_mappings)
+    // Note: Ces mappings sont génériques (pas par provider), donc on retourne tous les mappings
     if ($webapiId) {
-        $stmt = $pdo->prepare("
+        $stmt = $pdo->query("
             SELECT 
                 id,
                 item_field,
@@ -62,10 +63,8 @@ try {
                 transform_type,
                 transform_config
             FROM item_field_mappings
-            WHERE webapi_id = ?
             ORDER BY id
         ");
-        $stmt->execute([$webapiId]);
         $fieldMappings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Décoder les transform_config JSON

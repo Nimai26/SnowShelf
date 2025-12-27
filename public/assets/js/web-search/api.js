@@ -92,20 +92,33 @@ export async function loadProductDetails(provider, detailUrl) {
     const apiUrl = `${config.apiEndpoint}?action=details&provider=${encodeURIComponent(provider)}&product_id=${encodeURIComponent(detailUrl)}${refreshParam}`;
     console.log('[WebSearch] Appel API détails:', apiUrl);
     
-    const response = await fetch(apiUrl);
-    const result = await response.json();
-    
-    if (!result.success) {
-        throw new Error(result.error || 'Erreur lors du chargement');
+    try {
+        const response = await fetch(apiUrl);
+        
+        // Vérifier le content-type pour s'assurer qu'on reçoit du JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('[WebSearch] Réponse non-JSON reçue:', contentType);
+            throw new Error('Erreur serveur - réponse non-JSON');
+        }
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Erreur lors du chargement');
+        }
+        
+        console.log('[WebSearch] Détails chargés:', result);
+        // Retourner aussi le webapi_id pour les mappings
+        return {
+            data: result.data,
+            webapi_id: result.webapi_id || null,
+            provider: result.provider || provider
+        };
+    } catch (error) {
+        console.error('[WebSearch] Erreur lors du chargement des détails:', error);
+        throw error;
     }
-    
-    console.log('[WebSearch] Détails chargés:', result.data);
-    // Retourner aussi le webapi_id pour les mappings
-    return {
-        data: result.data,
-        webapi_id: result.webapi_id || null,
-        provider: result.provider || provider
-    };
 }
 
 /**

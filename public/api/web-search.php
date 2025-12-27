@@ -665,8 +665,28 @@ function handleGetDetails(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin,
             'http_code' => $httpCode,
             'response' => substr($response, 0, 500),
         ]);
-        http_response_code($httpCode);
-        echo json_encode(['success' => false, 'error' => 'Produit non trouvé']);
+        
+        // Tenter de décoder l'erreur JSON de l'API externe
+        $errorData = json_decode($response, true);
+        $errorMessage = 'Produit non trouvé';
+        
+        if ($errorData && isset($errorData['error'])) {
+            $errorMessage = 'Erreur API externe: ' . $errorData['error'];
+            loger('web_search_api', 'ERROR', 'External API error', [
+                'provider' => $provider,
+                'product_id' => $productId,
+                'external_error' => $errorData['error'],
+            ]);
+        }
+        
+        // Toujours retourner du JSON propre
+        http_response_code(200); // Retourner 200 pour éviter les erreurs de parsing côté client
+        echo json_encode([
+            'success' => false, 
+            'error' => $errorMessage,
+            'http_code' => $httpCode,
+            'provider' => $provider,
+        ]);
         return;
     }
     

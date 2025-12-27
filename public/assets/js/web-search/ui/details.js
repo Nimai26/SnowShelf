@@ -238,8 +238,29 @@ function buildGeneralFieldsHtml(result, t) {
 function buildMediaFieldsHtml(result, t) {
     const fields = [];
     
-    const images = result.images || [];
-    const imageCount = images.length || (result.image ? 1 : 0);
+    // Normaliser les images (même logique que updateDetailModalContent)
+    const rawImages = result.images || result.data?.images || {};
+    let imageCount = 0;
+    
+    if (rawImages.primary || rawImages.gallery) {
+        // Format {primary, gallery}
+        imageCount = (rawImages.primary ? 1 : 0) + (rawImages.gallery?.length || 0);
+    } else if (rawImages.cover || rawImages.screenshots || rawImages.artworks) {
+        // Format RAWG/IGDB: {cover, screenshots, artworks, background}
+        const allImages = new Set();
+        if (rawImages.cover) allImages.add(rawImages.cover);
+        if (rawImages.screenshots) rawImages.screenshots.forEach(img => allImages.add(img));
+        if (rawImages.artworks) rawImages.artworks.forEach(img => allImages.add(img));
+        if (rawImages.background && rawImages.background !== rawImages.cover) allImages.add(rawImages.background);
+        imageCount = allImages.size;
+    } else if (Array.isArray(rawImages)) {
+        // Format tableau simple
+        imageCount = rawImages.length;
+    } else if (result.image) {
+        // Image unique
+        imageCount = 1;
+    }
+    
     fields.push(buildImportFieldItem('images', t.detail_field_images || 'Images', 
         imageCount > 0 ? `${imageCount} image(s)` : null, 
         imageCount > 0, 'media'));
@@ -690,19 +711,56 @@ async function loadProductDetails(result) {
 function updateDetailModalContent(result) {
     const t = getTranslations();
     
-    // Les images peuvent être directement sur result (via ...data) ou dans result.data
-    // On doit vérifier que c'est un objet avec primary/gallery, pas un tableau vide
-    let images = {};
-    if (result.images && typeof result.images === 'object' && !Array.isArray(result.images) && (result.images.primary || result.images.gallery)) {
-        images = result.images;
-    } else if (result.data?.images && typeof result.data.images === 'object') {
-        images = result.data.images;
+    // Normaliser les images depuis différents formats d'API
+    // Format attendu: { primary: string, gallery: string[] }
+    let images = { primary: null, gallery: [] };
+    
+    // Source des images brutes (peut être sur result ou result.data)
+    const rawImages = result.images || result.data?.images || {};
+    
+    // Si déjà au format {primary, gallery}
+    if (rawImages.primary || rawImages.gallery) {
+        images.primary = rawImages.primary || null;
+        images.gallery = rawImages.gallery || [];
+    }
+    // Format RAWG/IGDB: {cover, screenshots, artworks, background}
+    else if (rawImages.cover || rawImages.screenshots || rawImages.artworks) {
+        images.primary = rawImages.cover || rawImages.background || null;
+        // Construire la galerie avec toutes les images disponibles
+        const allImages = [];
+        // D'abord le cover comme première image
+        if (rawImages.cover) {
+            allImages.push(rawImages.cover);
+        }
+        // Puis les screenshots
+        if (rawImages.screenshots && rawImages.screenshots.length > 0) {
+            allImages.push(...rawImages.screenshots);
+        }
+        // Puis les artworks
+        if (rawImages.artworks && rawImages.artworks.length > 0) {
+            allImages.push(...rawImages.artworks);
+        }
+        // Background seulement si différent du cover
+        if (rawImages.background && rawImages.background !== rawImages.cover) {
+            allImages.push(rawImages.background);
+        }
+        images.gallery = allImages.filter(Boolean);
+    }
+    // Format simple: tableau d'URLs
+    else if (Array.isArray(rawImages) && rawImages.length > 0) {
+        images.primary = rawImages[0];
+        images.gallery = rawImages.slice(1);
+    }
+    // Fallback sur result.image
+    else if (result.image) {
+        images.primary = result.image;
     }
     
     const gallery = images.gallery || [];
     
     console.log('[WebSearch] updateDetailModalContent - result:', result);
-    console.log('[WebSearch] updateDetailModalContent - images:', images);
+    console.log('[WebSearch] updateDetailModalContent - rawImages:', rawImages);
+    console.log('[WebSearch] updateDetailModalContent - images (normalized):', images);
     console.log('[WebSearch] updateDetailModalContent - gallery:', gallery);
 
     // Récupérer le type depuis l'élément affiché ou le déduire du résultat

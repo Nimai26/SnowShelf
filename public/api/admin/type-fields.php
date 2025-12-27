@@ -15,11 +15,38 @@
  * @since 2025-12-18
  */
 
-session_start();
+// Définir le header JSON en PREMIER pour éviter les pages d'erreur HTML
+header('Content-Type: application/json; charset=utf-8');
+
+// Désactiver l'affichage des erreurs PHP (on les gère nous-mêmes)
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Activer l'affichage des erreurs en JSON
+set_error_handler(function($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+set_exception_handler(function($e) {
+    // Ne pas renvoyer le header si déjà envoyé
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode([
+        'error' => $e->getMessage(),
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine()
+    ]);
+    exit;
+});
+
+// Démarrer la session seulement si pas déjà active
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../core/i18n.php';
-
-header('Content-Type: application/json; charset=utf-8');
 
 // Vérifier l'authentification admin
 if (empty($_SESSION['user_id']) || empty($_SESSION['is_admin'])) {
@@ -257,8 +284,8 @@ function getField(PDO $pdo, int $id, string $lang = 'fr'): void
         return;
     }
     
-    $field['field_options'] = json_decode($field['field_options'], true);
-    $field['lang'] = json_decode($field['lang'], true) ?? [];
+    $field['field_options'] = $field['field_options'] ? json_decode($field['field_options'], true) : null;
+    $field['lang'] = $field['lang'] ? json_decode($field['lang'], true) : [];
     $field['is_required'] = (bool) $field['is_required'];
     
     // Décoder le nom du type (JSON)
@@ -283,9 +310,9 @@ function getField(PDO $pdo, int $id, string $lang = 'fr'): void
     $mappings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     foreach ($mappings as &$mapping) {
-        $mapping['api_keys'] = json_decode($mapping['api_keys'], true) ?? [];
-        $mapping['transform_config'] = json_decode($mapping['transform_config'], true);
-        $mapping['transform_lang'] = json_decode($mapping['transform_lang'], true) ?? [];
+        $mapping['api_keys'] = $mapping['api_keys'] ? json_decode($mapping['api_keys'], true) : [];
+        $mapping['transform_config'] = $mapping['transform_config'] ? json_decode($mapping['transform_config'], true) : null;
+        $mapping['transform_lang'] = $mapping['transform_lang'] ? json_decode($mapping['transform_lang'], true) : [];
         $mapping['is_active'] = (bool) $mapping['is_active'];
     }
     
@@ -352,7 +379,7 @@ function createField(PDO $pdo): void
         $input['field_key'],
         $input['field_type'] ?? 'text',
         $fieldOptions,
-        $input['is_required'] ?? 0,
+        !empty($input['is_required']) ? 1 : 0,
         $sortOrder,
         $input['icon'] ?? null,
         json_encode($lang)
