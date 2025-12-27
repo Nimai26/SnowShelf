@@ -27,11 +27,11 @@ export async function performTextSearch() {
         .filter(p => state.activeProviders.has(p.id))
         .map(p => p.display_name);
     
-    console.log('[WebSearch] === RECHERCHE ===');
-    console.log('[WebSearch] Query:', query);
-    console.log('[WebSearch] Type sélectionné:', state.selectedType);
-    console.log('[WebSearch] Fournisseurs actifs:', activeProviderNames);
-    console.log('[WebSearch] IDs fournisseurs:', Array.from(state.activeProviders));
+    //console.log('[WebSearch] === RECHERCHE ===');
+    //console.log('[WebSearch] Query:', query);
+    //console.log('[WebSearch] Type sélectionné:', state.selectedType);
+    //console.log('[WebSearch] Fournisseurs actifs:', activeProviderNames);
+    //console.log('[WebSearch] IDs fournisseurs:', Array.from(state.activeProviders));
     
     await executeSearch({
         query: query,

@@ -377,6 +377,11 @@ export async function openItemModal(itemId, editMode = false, openItemEditModal 
                 if (confirmed) {
                     await deleteItem(data.item.id);
                     ModalManager.close(id);
+                    // Notifier la suppression pour rafraîchir la liste
+                    document.dispatchEvent(new CustomEvent('collection:itemDeleted', { 
+                        detail: { itemId: data.item.id } 
+                    }));
+                    showToast(t.deleted_success || 'Item supprimé', 'success');
                 }
             }
         }

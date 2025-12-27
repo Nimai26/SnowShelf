@@ -104,6 +104,31 @@ GET /api/item-metadata.php?action=values&item_id=16  // Valeurs
 5. **Commentaires** : En français 🇫🇷
 6. **Métadonnées** : Via `primary_type_fields`, jamais colonnes directes
 
+## ⚠️ IMPORT WEB-SEARCH - CRITIQUE
+
+**JAMAIS de chemins d'API codés en dur !** Toute extraction de données doit utiliser les mappings BDD :
+
+| Table | Usage | Exemple |
+|-------|-------|---------|
+| `item_field_mappings` | Champs fixes (name, description, value, code_barre, images, videos, audio, documents) | `fetchFieldMappings(webapiId)` → `applyMapping(data, mapping)` |
+| `primary_type_key_to_field` | Métadonnées type-specific via `api_keys` | `fieldDef.api_keys` → `findValueFromSources(data, sources)` |
+
+**Transforms supportés** : `direct`, `first`, `array`, `join`, `array_join`, `template`, `date`, `none`
+
+**Objets spéciaux** :
+- Traduction : `{text: "...", translated: bool}` → extraire `.text`
+- Genres : `{genres: [...], genresOriginal: [...]}` → extraire `.genres`
+
+```javascript
+// ✅ CORRECT - Mappings BDD
+const mappings = await fetchFieldMappings(webapiId);
+const value = applyMapping(data, mappings.find(m => m.item_field === 'name'));
+
+// ❌ INTERDIT - Chemins codés en dur
+const name = data.title || data.name; // JAMAIS !
+const desc = findValueFromSources(data, ['synopsis', 'description']); // JAMAIS !
+```
+
 ## 📝 Logs
 
 ```php

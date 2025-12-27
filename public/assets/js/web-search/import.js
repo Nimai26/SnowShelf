@@ -19,6 +19,7 @@ import {
     fetchFieldMappings, 
     fetchMetadataMappings,
     extractValueByPath,
+    applyMapping,
     applyTransform,
     normalizeFieldValue
 } from '../collection/import.js';
@@ -118,6 +119,17 @@ export async function handleImport(result) {
     // Récupérer le webapi_id pour les mappings BDD
     const webapiId = actualResult.webapi_id || null;
     
+    // Charger les mappings BDD pour les champs fixes
+    let fieldMappings = [];
+    if (webapiId) {
+        try {
+            fieldMappings = await fetchFieldMappings(webapiId);
+            console.log('[WebSearch] Field mappings chargés:', fieldMappings);
+        } catch (error) {
+            console.warn('[WebSearch] Impossible de charger les mappings BDD:', error);
+        }
+    }
+    
     let enrichedResult;
     
     // Si on a un webapi_id et un primaryTypeId, utiliser les mappings BDD
@@ -127,7 +139,10 @@ export async function handleImport(result) {
         try {
             // Préparer les données via les mappings BDD
             const apiData = actualResult.data || actualResult;
+            console.log('[WebSearch] Données API pour mappings:', apiData);
+            console.log('[WebSearch] amazon_data.price_value =', apiData?.amazon_data?.price_value);
             const mappedData = await prepareImportData(apiData, webapiId, primaryTypeId);
+            console.log('[WebSearch] Résultat mappedData:', mappedData);
             
             // Compléter avec les champs sélectionnés manuellement dans l'UI
             const selectedFields = {};
@@ -135,19 +150,24 @@ export async function handleImport(result) {
             
             // Parcourir les champs sélectionnés dans l'UI pour enrichir/compléter les mappings
             document.querySelectorAll('#wsImportFields .import-field-item, #wsMediaFields .import-field-item, #wsTypeFields .import-field-item').forEach(item => {
-                processImportField(item, actualResult, selectedFields, selectedMetadata);
+                processImportField(item, actualResult, selectedFields, selectedMetadata, fieldMappings);
             });
             
-            // Fusionner : priorité aux valeurs mappées, complétées par les valeurs UI
+            // Fusionner : les valeurs mappées sont utilisées SEULEMENT si le checkbox correspondant est coché
+            // On vérifie l'état des checkboxes pour les champs fixes
+            const isNameChecked = document.querySelector('#wsImportFields .import-field-item[data-field="name"] input[type="checkbox"]')?.checked;
+            const isDescChecked = document.querySelector('#wsImportFields .import-field-item[data-field="description"] input[type="checkbox"]')?.checked;
+            const isPriceChecked = document.querySelector('#wsImportFields .import-field-item[data-field="price"] input[type="checkbox"]')?.checked;
+            
             enrichedResult = {
                 raw: actualResult,
                 primaryTypeId: primaryTypeId,
                 primaryTypeName: primaryType?.name || null,
                 fieldsToImport: {
-                    // Valeurs des mappings BDD en priorité
-                    name: mappedData.fieldsToImport.name || selectedFields.name,
-                    description: mappedData.fieldsToImport.description || selectedFields.description,
-                    value: mappedData.fieldsToImport.value || selectedFields.value,
+                    // Valeurs des mappings BDD utilisées seulement si checkbox coché
+                    name: isNameChecked ? (mappedData.fieldsToImport.name || selectedFields.name) : null,
+                    description: isDescChecked ? (mappedData.fieldsToImport.description || selectedFields.description) : null,
+                    value: isPriceChecked ? (mappedData.fieldsToImport.value || selectedFields.value) : null,
                     image_url: selectedFields.image_url,
                     images: selectedFields.images,
                     // Métadonnées fusionnées (BDD + UI)
@@ -173,12 +193,12 @@ export async function handleImport(result) {
         } catch (error) {
             console.error('[WebSearch] Erreur lors de l\'utilisation des mappings BDD, fallback sur traitement manuel:', error);
             // Fallback sur le traitement manuel
-            enrichedResult = buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType);
+            enrichedResult = buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType, fieldMappings);
         }
     } else {
         // Pas de webapi_id ou primaryTypeId, utiliser le traitement manuel
         console.log('[WebSearch] Utilisation du traitement manuel (pas de webapi_id ou primaryTypeId)');
-        enrichedResult = buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType);
+        enrichedResult = buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType, fieldMappings);
     }
     
     if (!enrichedResult || (Object.keys(enrichedResult.fieldsToImport).length === 0 && 
@@ -242,15 +262,16 @@ export async function handleImport(result) {
  * @param {Object} actualResult - Résultat avec données
  * @param {number} primaryTypeId - ID du type primaire
  * @param {Object} primaryType - Objet type primaire
+ * @param {Array} fieldMappings - Mappings des champs fixes depuis item_field_mappings
  * @returns {Object} Résultat enrichi pour l'import
  */
-function buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType) {
+function buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType, fieldMappings = []) {
     const selectedFields = {};
     const selectedMetadata = {};
     
     // Parcourir tous les champs sélectionnés
     document.querySelectorAll('#wsImportFields .import-field-item, #wsMediaFields .import-field-item, #wsTypeFields .import-field-item').forEach(item => {
-        processImportField(item, actualResult, selectedFields, selectedMetadata);
+        processImportField(item, actualResult, selectedFields, selectedMetadata, fieldMappings);
     });
     
     return {
@@ -271,12 +292,14 @@ function buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType) {
 
 /**
  * Traiter un champ d'import sélectionné
+ * Utilise les mappings BDD stockés dans state pour extraire les valeurs
  * @param {HTMLElement} item - Élément du champ
  * @param {Object} actualResult - Résultat avec données
  * @param {Object} selectedFields - Champs sélectionnés (modifié)
  * @param {Object} selectedMetadata - Métadonnées sélectionnées (modifié)
+ * @param {Array} fieldMappings - Mappings des champs fixes depuis item_field_mappings
  */
-export function processImportField(item, actualResult, selectedFields, selectedMetadata) {
+export function processImportField(item, actualResult, selectedFields, selectedMetadata, fieldMappings = []) {
     const checkbox = item.querySelector('input[type="checkbox"]');
     if (!checkbox || !checkbox.checked) return;
     
@@ -285,18 +308,30 @@ export function processImportField(item, actualResult, selectedFields, selectedM
     
     if (!field) return;
     
-    // Champs généraux
-    if (field === 'name') {
-        // Essayer plusieurs chemins possibles pour le nom
-        selectedFields.name = findValueFromSources(actualResult, ['title', 'name']) || actualResult.title || actualResult.name;
-    } else if (field === 'description') {
-        selectedFields.description = findValueFromSources(actualResult, ['description']) || actualResult.description;
-    } else if (field === 'price') {
-        const price = findValueFromSources(actualResult, ['metadata.price', 'price', 'pricing.price']);
-        if (price) selectedMetadata.price = price;
-    } else if (field === 'barcode') {
-        const barcode = findValueFromSources(actualResult, ['metadata.barcode', 'metadata.upc', 'metadata.isbn', 'metadata.isbn_13', 'metadata.isbn_10', 'barcode', 'upc', 'isbn', 'ean']);
-        if (barcode) selectedMetadata.barcode = barcode;
+    // Construire un map des mappings par item_field
+    const mappingsByField = {};
+    for (const mapping of fieldMappings) {
+        mappingsByField[mapping.item_field] = mapping;
+    }
+    
+    // Champs généraux - utiliser les mappings BDD
+    if (field === 'name' || field === 'description' || field === 'value' || field === 'code_barre') {
+        const mapping = mappingsByField[field];
+        if (mapping && mapping.api_path) {
+            // Utiliser applyMapping pour extraire la valeur selon la config BDD
+            const value = applyMapping(actualResult, mapping);
+            if (value !== null && value !== undefined) {
+                if (field === 'name') {
+                    selectedFields.name = value;
+                } else if (field === 'description') {
+                    selectedFields.description = value;
+                } else if (field === 'value') {
+                    selectedFields.value = value;
+                } else if (field === 'code_barre') {
+                    selectedMetadata.code_barre = value;
+                }
+            }
+        }
     }
     
     // Champs médias

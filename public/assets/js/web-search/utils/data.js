@@ -20,7 +20,12 @@ export function getValueFromPath(obj, path) {
     // Retourner null si la valeur est un objet complexe (sauf string)
     // EXCEPTION: les objets checklist avec {raw, total, items} doivent être conservés
     // EXCEPTION: les objets special_stickers (ont des sous-objets avec raw/items)
+    // EXCEPTION: les objets de traduction avec {text, translated} doivent retourner text
     if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        // Extraire le texte des objets de traduction {text: "...", translated: bool}
+        if (value.text !== undefined && typeof value.text === 'string') {
+            return value.text;
+        }
         // Garder les objets checklist (ont une propriété 'raw' ou 'items')
         if (value.raw !== undefined || value.items !== undefined) {
             return value;
@@ -33,6 +38,10 @@ export function getValueFromPath(obj, path) {
         })) {
             return value;
         }
+        // Extraire name/title/label si disponible dans l'objet
+        if (value.name) return value.name;
+        if (value.title) return value.title;
+        if (value.label) return value.label;
         return null;
     }
     return value;

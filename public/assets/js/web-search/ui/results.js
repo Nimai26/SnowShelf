@@ -49,6 +49,7 @@ export function showEmptyResults() {
 
 /**
  * Afficher les résultats de recherche
+ * Affiche les résultats groupés par provider dans des tiroirs dépliables
  * @param {Object} data - Données de résultats
  */
 export function displayResults(data) {
@@ -70,23 +71,65 @@ export function displayResults(data) {
     
     let html = '';
     
-    data.providers_results.forEach(providerResult => {
+    data.providers_results.forEach((providerResult, index) => {
         if (providerResult.results.length === 0) return;
         
+        // Premier provider ouvert par défaut
+        const isOpen = index === 0;
+        
         html += `
-            <div class="web-search-provider-results">
-                <div class="provider-results-header">
-                    <span class="provider-results-name">${escapeHtml(providerResult.provider_name)}</span>
-                    <span class="provider-results-count">${providerResult.results_count} résultat(s)</span>
-                </div>
-                <div class="provider-results-list">
-                    ${providerResult.results.map(r => buildResultItem(r)).join('')}
+            <div class="web-search-provider-accordion ${isOpen ? 'open' : ''}">
+                <button type="button" class="provider-accordion-header" aria-expanded="${isOpen}">
+                    <div class="provider-accordion-info">
+                        <span class="provider-accordion-name">${escapeHtml(providerResult.provider_name)}</span>
+                        <span class="provider-accordion-count">${providerResult.results_count} résultat${providerResult.results_count > 1 ? 's' : ''}</span>
+                    </div>
+                    <svg class="provider-accordion-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="provider-accordion-content" ${isOpen ? '' : 'hidden'}>
+                    <div class="provider-results-list">
+                        ${providerResult.results.map(r => buildResultItem(r)).join('')}
+                    </div>
                 </div>
             </div>
         `;
     });
     
     elements.resultsContainer.innerHTML = html;
+    
+    // Ajouter les event listeners pour les tiroirs
+    setupAccordionListeners();
+}
+
+/**
+ * Configure les event listeners pour les accordéons de providers
+ */
+function setupAccordionListeners() {
+    const accordionHeaders = elements.resultsContainer?.querySelectorAll('.provider-accordion-header');
+    if (!accordionHeaders) return;
+    
+    accordionHeaders.forEach(header => {
+        header.addEventListener('click', (e) => {
+            e.preventDefault();
+            const accordion = header.closest('.web-search-provider-accordion');
+            if (!accordion) return;
+            
+            const content = accordion.querySelector('.provider-accordion-content');
+            const isOpen = accordion.classList.contains('open');
+            
+            // Toggle l'état
+            accordion.classList.toggle('open');
+            header.setAttribute('aria-expanded', !isOpen);
+            
+            if (isOpen) {
+                content.setAttribute('hidden', '');
+            } else {
+                content.removeAttribute('hidden');
+            }
+        });
+    });
 }
 
 /**
@@ -95,12 +138,12 @@ export function displayResults(data) {
  */
 export function selectResult(detailUrl) {
     console.log('[WebSearch] selectResult called with detailUrl:', detailUrl);
-    console.log('[WebSearch] state.results:', state.results);
+    //console.log('[WebSearch] state.results:', state.results);
     
     let selectedResult = null;
     
     for (const pr of state.results) {
-        console.log('[WebSearch] Checking provider results:', pr.results.map(r => r.detailUrl));
+        //console.log('[WebSearch] Checking provider results:', pr.results.map(r => r.detailUrl));
         const found = pr.results.find(r => r.detailUrl === detailUrl);
         if (found) {
             selectedResult = found;
@@ -108,7 +151,7 @@ export function selectResult(detailUrl) {
         }
     }
     
-    console.log('[WebSearch] selectedResult:', selectedResult);
+    //console.log('[WebSearch] selectedResult:', selectedResult);
     
     if (!selectedResult) return;
     

@@ -881,6 +881,11 @@ export function openItemEditModal(item = null) {
                 if (confirmed) {
                     await apiDeleteItem(data.item.id);
                     ModalManager.close(id);
+                    // Notifier la suppression pour rafraîchir la liste
+                    document.dispatchEvent(new CustomEvent('collection:itemDeleted', { 
+                        detail: { itemId: data.item.id } 
+                    }));
+                    showToast(t.deleted_success || 'Item supprimé', 'success');
                 }
             }
         },

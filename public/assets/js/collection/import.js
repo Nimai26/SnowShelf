@@ -274,6 +274,32 @@ export function extractValueByPath(data, path) {
 export function applyTransform(value, transformType, transformConfig = null) {
     if (value === undefined || value === null) return undefined;
     
+    // Pour les transformations qui attendent un tableau (join, first, array, array_join),
+    // extraire automatiquement le tableau depuis les objets complexes
+    const needsArrayExtraction = ['join', 'first', 'array', 'array_join'].includes(transformType);
+    
+    // Gérer les objets complexes
+    if (typeof value === 'object' && !Array.isArray(value)) {
+        // Toujours extraire .text des objets de traduction {text: "...", translated: bool}
+        if (value.text !== undefined && typeof value.text === 'string') {
+            value = value.text;
+        }
+        // Pour les transformations tableau uniquement : extraire les tableaux imbriqués
+        else if (needsArrayExtraction) {
+            // Objet de genres avec sous-tableau .genres
+            if (Array.isArray(value.genres)) {
+                value = value.genres;
+            }
+            // Chercher la première propriété qui est un tableau
+            else {
+                const arrayKey = Object.keys(value).find(k => Array.isArray(value[k]));
+                if (arrayKey) {
+                    value = value[arrayKey];
+                }
+            }
+        }
+    }
+    
     switch (transformType) {
         case 'direct':
             // Retourner la valeur telle quelle
@@ -294,6 +320,7 @@ export function applyTransform(value, transformType, transformConfig = null) {
             return [value];
         
         case 'join':
+        case 'array_join':
             // Joindre les éléments d'un tableau avec un séparateur
             if (Array.isArray(value)) {
                 const separator = transformConfig?.separator || ', ';
@@ -327,6 +354,7 @@ export function applyTransform(value, transformType, transformConfig = null) {
 
 /**
  * Applique un mapping complet pour extraire une valeur
+ * Supporte les chemins multiples séparés par virgule (essaye chaque chemin jusqu'à trouver une valeur)
  * @param {Object} data - Données source
  * @param {Object} mapping - Configuration du mapping
  * @returns {*} Valeur extraite et transformée
@@ -334,8 +362,19 @@ export function applyTransform(value, transformType, transformConfig = null) {
 export function applyMapping(data, mapping) {
     const { api_path, transform_type = 'direct', transform_config = null } = mapping;
     
-    // Extraire la valeur brute
-    const rawValue = extractValueByPath(data, api_path);
+    // Gérer les chemins multiples séparés par virgule
+    const paths = api_path.split(',').map(p => p.trim()).filter(p => p);
+    
+    let rawValue = undefined;
+    
+    // Essayer chaque chemin jusqu'à trouver une valeur
+    for (const path of paths) {
+        rawValue = extractValueByPath(data, path);
+        if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+            console.log(`[applyMapping] Chemin "${path}" a trouvé:`, rawValue);
+            break;
+        }
+    }
     
     // Appliquer la transformation
     return applyTransform(rawValue, transform_type, transform_config);
@@ -354,6 +393,8 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
         fetchFieldMappings(webapiId),
         fetchMetadataMappings(primaryTypeId)
     ]);
+    
+    console.log('[prepareImportData] fieldMappings récupérés:', fieldMappings);
     
     const result = {
         fieldsToImport: {

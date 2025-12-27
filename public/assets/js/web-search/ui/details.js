@@ -5,13 +5,14 @@
 
 import { config } from '../config.js';
 import { state } from '../state.js';
-import { findValueFromSources, extractYear } from '../utils/data.js';
+import { findValueFromSources, extractYear, getValueFromPath } from '../utils/data.js';
 import { escapeHtml, getTranslations, showToast } from '../utils/helpers.js';
 import { getProviderDisplayName, providerHasDetails } from '../providers.js';
 import { loadProductDetails as loadProductDetailsApi, loadPrimaryTypeFields } from '../api.js';
 import { setupGalleryEvents, updateSelectedImagesCount, updateImageImportField } from './gallery.js';
 import { handleImport } from '../import.js';
 import { getImageUrl } from './modal.js';
+import { fetchFieldMappings, applyMapping, extractValueByPath } from '../../collection/import.js';
 
 /**
  * Obtenir le primary_type_id suggéré pour un type webapi
@@ -109,7 +110,8 @@ export function buildDetailModalContent(result, selectedTypeId) {
         if (!value) return null;
         if (typeof value === 'string') return value;
         if (typeof value === 'object') {
-            return value.name || value.title || value.label || value.text || value.value || null;
+            // Priorité à .text pour les objets de traduction {text: "...", translated: bool}
+            return value.text || value.name || value.title || value.label || value.value || null;
         }
         return String(value);
     };
@@ -125,8 +127,8 @@ export function buildDetailModalContent(result, selectedTypeId) {
         return filename.length > 0 && (filename.includes('.') || filename.length > 10);
     };
     
-    // Extraire le nom du résultat
-    const resultName = extractName(result.name) || extractName(result.title) || 'Sans nom';
+    // Extraire le nom du résultat (priorité à name_original si disponible)
+    const resultName = extractName(result.name_original) || extractName(result.name) || extractName(result.title) || 'Sans nom';
     
     // Utiliser le proxy pour les images de certains domaines (seulement si URL valide)
     const imageUrl = isValidImageUrl(result.image) ? getImageUrl(result.image) : null;
@@ -147,7 +149,9 @@ export function buildDetailModalContent(result, selectedTypeId) {
     // Obtenir le label traduit du type
     const typeLabel = getTypeLabel(selectedType, typeName);
     
-    const generalFieldsHtml = buildGeneralFieldsHtml(result, t);
+    // Les champs généraux seront mis à jour via updateDetailModalContent avec les mappings BDD
+    // Pour l'affichage initial, utiliser une version simplifiée
+    const generalFieldsHtml = buildInitialGeneralFieldsHtml(result, t);
     const mediaFieldsHtml = buildMediaFieldsHtml(result, t);
     const typeFieldsHtml = buildTypeSpecificFieldsHtml(result, selectedTypeId, t);
     
@@ -231,31 +235,93 @@ export function buildDetailModalContent(result, selectedTypeId) {
 }
 
 /**
- * Construire les champs généraux
+ * Construire les champs généraux pour l'affichage INITIAL (avant chargement des détails)
+ * Version sync simplifiée - sera mise à jour par buildGeneralFieldsHtml après chargement
+ * Affiche uniquement le nom comme placeholder
+ * @param {Object} result - Données du résultat
+ * @param {Object} t - Traductions
+ * @returns {string} HTML des champs généraux (placeholder)
  */
-function buildGeneralFieldsHtml(result, t) {
+function buildInitialGeneralFieldsHtml(result, t) {
     const fields = [];
     
-    // Extraire le nom même si c'est un objet
-    let name = findValueFromSources(result, ['name', 'title']);
+    // Extraire le nom basique pour l'affichage initial
+    let name = result.name_original || result.name || result.title || '';
     if (name && typeof name === 'object') {
-        name = name.name || name.title || name.label || name.text || name.value || null;
+        name = name.text || name.name || name.title || '';
     }
+    
+    // Afficher les champs avec indication de chargement
     fields.push(buildImportFieldItem('name', t.detail_field_name || 'Nom suggéré', name, true));
+    fields.push(buildImportFieldItem('description', t.detail_field_description || 'Description', null, false));
+    fields.push(buildImportFieldItem('value', t.detail_field_price || 'Valeur marchande', null, false));
+    fields.push(buildImportFieldItem('code_barre', t.detail_field_barcode || 'Code-barres', null, false));
     
-    const description = findValueFromSources(result, ['description']);
-    fields.push(buildImportFieldItem('description', t.detail_field_description || 'Description', 
-        description ? (description.length > 50 ? description.substring(0, 50) + '...' : description) : null,
-        !!description));
+    return fields.join('');
+}
+
+/**
+ * Construire les champs généraux en utilisant les mappings de la BDD
+ * @param {Object} result - Données du résultat
+ * @param {Object} t - Traductions
+ * @param {number|null} webapiId - ID du provider (pour charger les mappings)
+ * @returns {Promise<string>} HTML des champs généraux
+ */
+async function buildGeneralFieldsHtml(result, t, webapiId = null) {
+    const fields = [];
     
-    const price = findValueFromSources(result, ['pricing.price']);
-    fields.push(buildImportFieldItem('price', t.detail_field_price || 'Valeur marchande', price, !!price));
+    // Labels des champs fixes
+    const fieldLabels = {
+        name: t.detail_field_name || 'Nom suggéré',
+        description: t.detail_field_description || 'Description',
+        value: t.detail_field_price || 'Valeur marchande',
+        code_barre: t.detail_field_barcode || 'Code-barres'
+    };
     
-    const barcode = findValueFromSources(result, [
-        'barcode', 'upc', 'isbn', 
-        'isbn_13', 'isbn_10', 'ean'
-    ]);
-    fields.push(buildImportFieldItem('barcode', t.detail_field_barcode || 'Code-barres', barcode, !!barcode));
+    // Charger les mappings depuis la BDD si webapiId disponible
+    let fieldMappings = [];
+    if (webapiId) {
+        try {
+            fieldMappings = await fetchFieldMappings(webapiId);
+        } catch (e) {
+            console.warn('[WebSearch] Impossible de charger les mappings, utilisation des fallbacks');
+        }
+    }
+    
+    // Construire un map pour accès rapide : item_field -> mapping
+    const mappingsByField = {};
+    for (const mapping of fieldMappings) {
+        mappingsByField[mapping.item_field] = mapping;
+    }
+    
+    // Traiter chaque champ fixe
+    for (const itemField of ['name', 'description', 'value', 'code_barre']) {
+        const mapping = mappingsByField[itemField];
+        let value = null;
+        
+        if (mapping && mapping.api_path) {
+            // Utiliser le mapping de la BDD
+            value = applyMapping(result, mapping);
+        }
+        
+        // Gérer les objets de traduction {text: "...", translated: bool}
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            value = value.text || value.name || value.title || value.label || value.value || null;
+        }
+        
+        // Formater la valeur pour l'affichage
+        let displayValue = value;
+        if (itemField === 'description' && value && typeof value === 'string' && value.length > 50) {
+            displayValue = value.substring(0, 50) + '...';
+        }
+        
+        const hasValue = value !== null && value !== undefined && value !== '';
+        
+        // Le nom est toujours coché par défaut
+        const defaultChecked = itemField === 'name' ? true : hasValue;
+        
+        fields.push(buildImportFieldItem(itemField, fieldLabels[itemField], displayValue, defaultChecked));
+    }
     
     return fields.join('');
 }
@@ -350,7 +416,7 @@ function buildMediaFieldsHtml(result, t) {
  */
 function buildInstructionsListHtml(result, t) {
     const instructions = extractInstructions(result);
-    console.log('[buildInstructionsListHtml] Manuels extraits:', instructions.length);
+    //console.log('[buildInstructionsListHtml] Manuels extraits:', instructions.length);
     
     if (!instructions || instructions.length === 0) {
         return '';
@@ -415,28 +481,30 @@ export function buildTypeSpecificFieldsHtml(result, typeId, t) {
     const cachedFields = state.primaryTypeFields[typeId];
     const typeFields = cachedFields?.fields || [];
     
-    console.log('[WebSearch] Champs spécifiques pour le type ID', typeId, ':', typeFields);
+    //console.log('[WebSearch] Champs spécifiques pour le type ID', typeId, ':', typeFields);
     
     if (!typeFields || typeFields.length === 0) {
         return `<p class="detail-no-fields">${t.detail_no_type_fields || 'Aucun champ spécifique'}</p>`;
     }
     
     const fields = typeFields.map(field => {
-        console.log('[WebSearch] Traitement du champ spécifique:', field);
+        //console.log('[WebSearch] Traitement du champ spécifique:', field);
         // Utiliser api_keys du mapping pour trouver la valeur
         const sources = field.api_keys && field.api_keys.length > 0 
             ? field.api_keys 
             : [field.field_key]; // Fallback sur le field_key
 
-        console.log('[WebSearch] Recherche de la valeur pour le champ spécifique:', field.field_key, 'avec sources:', sources);    
+        //console.log('[WebSearch] Recherche de la valeur pour le champ spécifique:', field.field_key, 'avec sources:', sources);    
         const value = findValueFromSources(result, sources);
         const displayValue = formatFieldValue(field.field_key, value);
-        console.log(`[WebSearch] Champ type spécifique "${field.field_key}" - Sources:`, sources, '=> Valeur:', value);
+        // Vérifier si la valeur existe (inclut les booléens false et les nombres 0)
+        const hasValue = value !== null && value !== undefined && value !== '';
+        //console.log(`[WebSearch] Champ type spécifique "${field.field_key}" - Sources:`, sources, '=> Valeur:', value, '=> hasValue:', hasValue);
         return buildImportFieldItem(
             `type_${field.field_key}`, 
             field.label, 
             displayValue, 
-            !!value,
+            hasValue,
             'type'
         );
     });
@@ -450,7 +518,8 @@ export function buildTypeSpecificFieldsHtml(result, typeId, t) {
 function buildImportFieldItem(key, label, value, hasValue, category = 'general') {
     const disabledClass = !hasValue ? 'disabled' : '';
     const checkedAttr = hasValue ? 'checked' : 'disabled';
-    const displayValue = value || '-';
+    // Gérer les booléens et 0 comme valeurs valides
+    const displayValue = (value !== null && value !== undefined && value !== '') ? value : '-';
     
     return `
         <label class="import-field-item ${disabledClass}" data-field="${escapeHtml(key)}" data-category="${category}">
@@ -541,23 +610,23 @@ export function setupDetailModalEvents(result) {
 function extractInstructions(result) {
     // Chercher dans result.instructions (propagé via ...data)
     if (result.instructions?.manuals && Array.isArray(result.instructions.manuals)) {
-        console.log('[extractInstructions] Trouvé dans result.instructions.manuals');
+        //console.log('[extractInstructions] Trouvé dans result.instructions.manuals');
         return result.instructions.manuals;
     }
     // Chercher dans result.data.instructions (structure originale)
     if (result.data?.instructions?.manuals && Array.isArray(result.data.instructions.manuals)) {
-        console.log('[extractInstructions] Trouvé dans result.data.instructions.manuals');
+        //console.log('[extractInstructions] Trouvé dans result.data.instructions.manuals');
         return result.data.instructions.manuals;
     }
     if (result.data?.metadata?.instructions && Array.isArray(result.data.metadata.instructions)) {
-        console.log('[extractInstructions] Trouvé dans result.data.metadata.instructions');
+        //console.log('[extractInstructions] Trouvé dans result.data.metadata.instructions');
         return result.data.metadata.instructions;
     }
     if (result.metadata?.instructions && Array.isArray(result.metadata.instructions)) {
-        console.log('[extractInstructions] Trouvé dans result.metadata.instructions');
+        //console.log('[extractInstructions] Trouvé dans result.metadata.instructions');
         return result.metadata.instructions;
     }
-    console.log('[extractInstructions] Aucun manuel trouvé. result.instructions:', result.instructions, 'result.data?.instructions:', result.data?.instructions);
+    //console.log('[extractInstructions] Aucun manuel trouvé. result.instructions:', result.instructions, 'result.data?.instructions:', result.data?.instructions);
     return [];
 }
 
@@ -567,7 +636,7 @@ function extractInstructions(result) {
  */
 function setupInstructionsEvents(result) {
     const instructions = extractInstructions(result);
-    console.log('[setupInstructionsEvents] Manuels extraits:', instructions.length);
+    //console.log('[setupInstructionsEvents] Manuels extraits:', instructions.length);
     if (instructions.length === 0) return;
     
     const t = getTranslations();
@@ -651,7 +720,7 @@ function updateInstructionsSelectAllButton(instructions, t) {
  */
 function updateInstructionsSection(result, t) {
     const instructions = extractInstructions(result);
-    console.log('[updateInstructionsSection] Manuels trouvés:', instructions.length);
+    //console.log('[updateInstructionsSection] Manuels trouvés:', instructions.length);
     
     // Supprimer l'ancienne section si elle existe
     const existingSection = document.getElementById('wsInstructionsSection');
@@ -705,7 +774,7 @@ async function loadProductDetails(result) {
     
     try {
         const apiResult = await loadProductDetailsApi(provider, detailUrl);
-        console.log('[WebSearch] apiResult complet:', apiResult);
+        //console.log('[WebSearch] apiResult complet:', apiResult);
         
         // Vérifier que apiResult existe et contient data
         if (!apiResult) {
@@ -720,10 +789,10 @@ async function loadProductDetails(result) {
             throw new Error('Données vides dans la réponse');
         }
         
-        console.log('[WebSearch] Détails reçus (data):', data);
-        console.log('[WebSearch] Provider webapi_id:', webapiId);
-        console.log('[WebSearch] Images reçues:', data?.images);
-        console.log('[WebSearch] Instructions reçues:', data?.instructions);
+        //console.log('[WebSearch] Détails reçus (data):', data);
+        //console.log('[WebSearch] Provider webapi_id:', webapiId);
+        //console.log('[WebSearch] Images reçues:', data?.images);
+        //console.log('[WebSearch] Instructions reçues:', data?.instructions);
         
         const enrichedResult = {
             ...result,
@@ -737,11 +806,11 @@ async function loadProductDetails(result) {
             data: data, // Conserver les données brutes pour les mappings
         };
         
-        console.log('[WebSearch] enrichedResult.instructions:', enrichedResult.instructions);
-        console.log('[WebSearch] enrichedResult.data.instructions:', enrichedResult.data?.instructions);
+        //console.log('[WebSearch] enrichedResult.instructions:', enrichedResult.instructions);
+        //console.log('[WebSearch] enrichedResult.data.instructions:', enrichedResult.data?.instructions);
         
         state.currentDetailResult = enrichedResult;
-        updateDetailModalContent(enrichedResult);
+        await updateDetailModalContent(enrichedResult);
         
         showToast(t.detail_loaded_success || 'Détails chargés avec succès', 'success');
         
@@ -767,9 +836,11 @@ async function loadProductDetails(result) {
 
 /**
  * Mettre à jour le contenu du modal après chargement des détails
+ * @param {Object} result - Résultat enrichi avec webapi_id
  */
-function updateDetailModalContent(result) {
+async function updateDetailModalContent(result) {
     const t = getTranslations();
+    const webapiId = result.webapi_id || null;
     
     // Fonction utilitaire pour nettoyer les URLs des échappements JSON
     const cleanUrl = (url) => {
@@ -795,11 +866,12 @@ function updateDetailModalContent(result) {
         if (!value) return null;
         if (typeof value === 'string') return value;
         if (typeof value === 'object') {
-            // Essayer différentes propriétés courantes
-            return value.name || value.title || value.label || value.text || value.value || null;
+            // Priorité à .text pour les objets de traduction {text: "...", translated: bool}
+            return value.text || value.name || value.title || value.label || value.value || null;
         }
         return String(value);
-    };    
+    };
+    
     // Fonction pour extraire l'URL d'un élément (string ou objet)
     const extractUrl = (item) => {
         if (!item) return null;
@@ -866,10 +938,10 @@ function updateDetailModalContent(result) {
     
     const gallery = images.gallery || [];
     
-    console.log('[WebSearch] updateDetailModalContent - result:', result);
-    console.log('[WebSearch] updateDetailModalContent - rawImages:', rawImages);
-    console.log('[WebSearch] updateDetailModalContent - images (normalized):', images);
-    console.log('[WebSearch] updateDetailModalContent - gallery:', gallery);
+    //console.log('[WebSearch] updateDetailModalContent - result:', result);
+    //console.log('[WebSearch] updateDetailModalContent - rawImages:', rawImages);
+    //console.log('[WebSearch] updateDetailModalContent - images (normalized):', images);
+    //console.log('[WebSearch] updateDetailModalContent - gallery:', gallery);
 
     // Récupérer le type depuis l'élément affiché ou le déduire du résultat
     const typeDisplay = document.querySelector('.detail-detected-type');
@@ -888,7 +960,7 @@ function updateDetailModalContent(result) {
     const imageContainer = document.querySelector('.web-search-detail-modal .detail-image-container');
     if (imageContainer && (images.primary || gallery.length > 0)) {
         let imageHtml = '';
-        console.log('[WebSearch] Mise à jour de la galerie avec images.primary:', images.primary);
+        //console.log('[WebSearch] Mise à jour de la galerie avec images.primary:', images.primary);
         if (images.primary) {
             imageHtml = `
                 <div class="detail-main-image-wrapper">
@@ -956,9 +1028,9 @@ function updateDetailModalContent(result) {
     // Récupérer les données (depuis result directement ou result.data)
     const donnee = result.data || result;
     
-    // Mettre à jour le titre et la description
+    // Mettre à jour le titre et la description (priorité à name_original)
     const titleEl = document.querySelector('.web-search-detail-modal .detail-title');
-    const extractedName = extractName(donnee.name) || extractName(donnee.title);
+    const extractedName = extractName(donnee.name_original) || extractName(donnee.name) || extractName(donnee.title);
     if (titleEl && extractedName) {
         titleEl.textContent = extractedName;
     }
@@ -977,7 +1049,8 @@ function updateDetailModalContent(result) {
     // Mettre à jour les sections
     const generalFieldsContainer = document.getElementById('wsImportFields');
     if (generalFieldsContainer) {
-        generalFieldsContainer.innerHTML = buildGeneralFieldsHtml(donnee, t);
+        // Utiliser les mappings de la BDD pour construire les champs généraux
+        generalFieldsContainer.innerHTML = await buildGeneralFieldsHtml(donnee, t, webapiId);
     }
     
     const mediaFieldsContainer = document.getElementById('wsMediaFields');

@@ -24,7 +24,7 @@ import { selectGalleryImage } from './ui/gallery.js';
  * @param {Function} options.onImportEnd - Callback après import (succès ou échec)
  */
 async function open(options = {}) {
-    console.log('[WebSearch] Opening modal with options:', options);
+    //console.log('[WebSearch] Opening modal with options:', options);
     
     // Réinitialiser l'état
     resetState();
@@ -58,7 +58,7 @@ async function open(options = {}) {
         state.defaultProvidersByType = providersData.default_providers_by_type || {};
         state.primaryTypes = primaryTypes;
         
-        console.log('[WebSearch] Type mapping loaded:', state.typeMapping);
+        ////console.log('[WebSearch] Type mapping loaded:', state.typeMapping);
         
         // Déterminer le type webapi à partir du type primaire
         const userInfo = window.userInfo || { isPremium: false, isAdmin: false };
@@ -71,7 +71,7 @@ async function open(options = {}) {
             const typeConfig = state.defaultProvidersByType[typeIdKey];
             if (typeConfig && typeConfig.webapi_type) {
                 requestedType = typeConfig.webapi_type;
-                console.log('[WebSearch] Type webapi déduit du type primaire:', requestedType);
+                //console.log('[WebSearch] Type webapi déduit du type primaire:', requestedType);
             }
         }
         state.selectedType = requestedType || Object.keys(state.types)[0] || 'toys';
@@ -79,8 +79,8 @@ async function open(options = {}) {
         // Initialiser les fournisseurs actifs
         state.activeProviders = initializeActiveProviders(canUsePremium);
         
-        console.log('[WebSearch] Providers loaded:', state.providers.length);
-        console.log('[WebSearch] Primary types loaded:', primaryTypes.length);
+        //console.log('[WebSearch] Providers loaded:', state.providers.length);
+        //console.log('[WebSearch] Primary types loaded:', primaryTypes.length);
         
     } catch (error) {
         console.error('[WebSearch] Failed to load data:', error);
@@ -96,14 +96,14 @@ async function open(options = {}) {
     // Ouvrir le modal via ModalManager
     state.modalId = ModalManager.open({
         template: 'base',
-        title: t.modal_title,
+        title: t.title,
         content: modalContent,
         size: 'modal-xl',
         customClass: 'web-search-modal',
         closeOnOverlay: false,
         buttons: [],
         onOpen: (id) => {
-            console.log('[WebSearch] Modal opened:', id);
+            //console.log('[WebSearch] Modal opened:', id);
             initModalElements();
             setupEventListeners();
             
@@ -126,7 +126,7 @@ async function open(options = {}) {
             updateProvidersList();
         },
         onClose: (id) => {
-            console.log('[WebSearch] Modal closed:', id);
+            //console.log('[WebSearch] Modal closed:', id);
             cleanup();
         }
     });
@@ -171,7 +171,7 @@ function cleanup() {
     // Réinitialiser l'état
     resetState();
     
-    console.log('[WebSearch] Cleanup complete');
+    //console.log('[WebSearch] Cleanup complete');
 }
 
 /**

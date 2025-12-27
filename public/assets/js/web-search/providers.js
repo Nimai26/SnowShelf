@@ -42,9 +42,9 @@ export function initializeActiveProviders(canUsePremium) {
         const typeConfig = state.defaultProvidersByType[typeIdKey];
         const defaultIds = typeConfig.provider_ids || [];
         
-        console.log('[WebSearch] Type primaire:', state.currentPrimaryTypeId, 
-                    '- Config trouvée:', typeConfig.name,
-                    '- Fournisseurs par défaut:', defaultIds);
+        // //console.log('[WebSearch] Type primaire:', state.currentPrimaryTypeId, 
+        //             '- Config trouvée:', typeConfig.name,
+        //             '- Fournisseurs par défaut:', defaultIds);
         
         for (const providerId of defaultIds) {
             const provider = state.providers.find(p => p.id === providerId);
@@ -61,7 +61,7 @@ export function initializeActiveProviders(canUsePremium) {
     }
     
     // Fallback : utiliser les fournisseurs avec default_active = true
-    console.log('[WebSearch] Pas de config type primaire (id:', state.currentPrimaryTypeId, '), utilisation des défauts globaux');
+    //console.log('[WebSearch] Pas de config type primaire (id:', state.currentPrimaryTypeId, '), utilisation des défauts globaux');
     for (const provider of state.providers) {
         if (provider.default_active && (!provider.premium_only || canUsePremium)) {
             activeProviders.add(provider.id);
@@ -84,7 +84,7 @@ export function getDefaultProvidersForWebapiType(webapiType, canUsePremium) {
     const currentTypeKey = String(state.currentPrimaryTypeId);
     const currentTypeConfig = state.defaultProvidersByType[currentTypeKey];
     if (currentTypeConfig && currentTypeConfig.webapi_type === webapiType && currentTypeConfig.provider_ids?.length > 0) {
-        console.log('[WebSearch] Utilisation config du type primaire courant:', currentTypeConfig.name);
+        //console.log('[WebSearch] Utilisation config du type primaire courant:', currentTypeConfig.name);
         for (const providerId of currentTypeConfig.provider_ids) {
             const provider = state.providers.find(p => p.id === providerId);
             if (provider && provider.default_active && (!provider.premium_only || canUsePremium)) {
@@ -99,7 +99,7 @@ export function getDefaultProvidersForWebapiType(webapiType, canUsePremium) {
     // Priorité 2 : Chercher un type primaire qui correspond à ce webapi_type
     for (const [ptId, config] of Object.entries(state.defaultProvidersByType)) {
         if (config.webapi_type === webapiType && config.provider_ids?.length > 0) {
-            console.log('[WebSearch] Utilisation config du type:', config.name, 'pour webapi_type:', webapiType);
+            //console.log('[WebSearch] Utilisation config du type:', config.name, 'pour webapi_type:', webapiType);
             for (const providerId of config.provider_ids) {
                 const provider = state.providers.find(p => p.id === providerId);
                 if (provider && provider.default_active && (!provider.premium_only || canUsePremium)) {
@@ -114,7 +114,7 @@ export function getDefaultProvidersForWebapiType(webapiType, canUsePremium) {
     }
     
     // Fallback : fournisseurs default_active du type
-    console.log('[WebSearch] Fallback sur default_active pour:', webapiType);
+    //console.log('[WebSearch] Fallback sur default_active pour:', webapiType);
     const filteredProviders = state.providers.filter(p => p.type === webapiType);
     for (const provider of filteredProviders) {
         if (provider.default_active && (!provider.premium_only || canUsePremium)) {

@@ -212,6 +212,11 @@ function setupEventListeners() {
         resetAndLoad();
     });
 
+    // Écouter l'événement de suppression d'item pour rafraîchir la liste
+    document.addEventListener('collection:itemDeleted', () => {
+        resetAndLoad();
+    });
+
     // Scroll pour toolbar sticky et bouton retour haut
     window.addEventListener('scroll', handleScroll, { passive: true });
 

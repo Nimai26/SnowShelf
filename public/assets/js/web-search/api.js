@@ -90,7 +90,7 @@ export async function loadProductDetails(provider, detailUrl) {
     // Ajouter refresh=true si on n'utilise pas la BDD locale
     const refreshParam = !state.useLocalDatabase ? '&refresh=true' : '';
     const apiUrl = `${config.apiEndpoint}?action=details&provider=${encodeURIComponent(provider)}&product_id=${encodeURIComponent(detailUrl)}${refreshParam}`;
-    console.log('[WebSearch] Appel API détails:', apiUrl);
+    //console.log('[WebSearch] Appel API détails:', apiUrl);
     
     try {
         const response = await fetch(apiUrl);
@@ -108,7 +108,7 @@ export async function loadProductDetails(provider, detailUrl) {
             throw new Error(result.error || 'Erreur lors du chargement');
         }
         
-        console.log('[WebSearch] Détails chargés:', result);
+        //console.log('[WebSearch] Détails chargés:', result);
         // Retourner aussi le webapi_id pour les mappings
         return {
             data: result.data,
@@ -132,8 +132,8 @@ export async function executeSearchApi(params) {
         params.refresh = true;
     }
     
-    console.log('[WebSearch] Envoi requête API:', config.apiEndpoint + '?action=search');
-    console.log('[WebSearch] Paramètres:', JSON.stringify(params, null, 2));
+    //console.log('[WebSearch] Envoi requête API:', config.apiEndpoint + '?action=search');
+    //console.log('[WebSearch] Paramètres:', JSON.stringify(params, null, 2));
     
     const response = await fetch(`${config.apiEndpoint}?action=search`, {
         method: 'POST',
@@ -153,11 +153,11 @@ export async function executeSearchApi(params) {
     
     // Log détaillé des résultats par fournisseur
     if (data.data?.providers_results) {
-        console.log('[WebSearch] === RÉSULTATS PAR FOURNISSEUR ===');
+        //console.log('[WebSearch] === RÉSULTATS PAR FOURNISSEUR ===');
         data.data.providers_results.forEach(pr => {
-            console.log(`[WebSearch] ${pr.provider_name} (${pr.provider_type}): ${pr.results_count} résultats`);
+            //console.log(`[WebSearch] ${pr.provider_name} (${pr.provider_type}): ${pr.results_count} résultats`);
         });
-        console.log('[WebSearch] Total:', data.data.total_results, 'résultats');
+        //console.log('[WebSearch] Total:', data.data.total_results, 'résultats');
     }
     
     return data.data;
