@@ -820,8 +820,12 @@ function handleDeleteAll(PDO $db, int $userId, bool $isAdmin, ?int $entityId, st
     
     $table = MEDIA_TABLES[$mediaType];
     
-    // Récupérer tous les fichiers
-    $stmt = $db->prepare("SELECT url, thumbnail_url FROM {$table} WHERE item_id = ?");
+    // Récupérer tous les fichiers (thumbnail_url uniquement pour les vidéos)
+    if ($mediaType === 'videos') {
+        $stmt = $db->prepare("SELECT url, thumbnail_url FROM {$table} WHERE item_id = ?");
+    } else {
+        $stmt = $db->prepare("SELECT url FROM {$table} WHERE item_id = ?");
+    }
     $stmt->execute([$entityId]);
     $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
