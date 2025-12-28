@@ -658,8 +658,11 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
     };
     
     // Appliquer les mappings de champs fixes
+    console.log('[prepareImportData] Traitement champs fixes, count:', fieldMappings.length);
     for (const mapping of fieldMappings) {
+        console.log(`[prepareImportData] Mapping champ fixe "${mapping.item_field}", api_path:`, mapping.api_path);
         const value = applyMapping(apiResponse, mapping);
+        console.log(`[prepareImportData] Champ "${mapping.item_field}" -> valeur:`, value);
         
         if (value === undefined || value === null) continue;
         
@@ -672,6 +675,7 @@ export async function prepareImportData(apiResponse, webapiId, primaryTypeId) {
                 break;
             case 'value':
                 result.fieldsToImport.value = value;
+                console.log('[prepareImportData] ✅ Champ value assigné:', value);
                 break;
             case 'code_barre':
                 result.fieldsToImport.code_barre = value;
@@ -1187,6 +1191,20 @@ export function detectImportConflicts(modal, result) {
         });
     }
     
+    // Vérifier la valeur marchande
+    const marketValueField = modal.querySelector('#itemMarketValue');
+    if (fieldsToImport.value) {
+        const currentValue = marketValueField?.value.trim() || '';
+        conflicts.fields.push({
+            key: 'value',
+            label: t.import_field_value || t.field_market_value || 'Valeur marchande',
+            currentValue: currentValue,
+            newValue: String(fieldsToImport.value),
+            isEmpty: !currentValue,
+            canAppend: false  // La valeur ne peut pas être concaténée
+        });
+    }
+    
     // Vérifier les métadonnées dynamiques
     const container = modal.querySelector('#detailsFieldsContainer');
     if (container && Object.keys(metadata).length > 0) {
@@ -1573,6 +1591,18 @@ export async function applyWebSearchImport(modal, result, applyImportedMetadata,
         
         if (action === 'replace') {
             barcodeField.value = barcode;
+        }
+    }
+    
+    // Remplir la valeur marchande (market_value)
+    const marketValueField = modal.querySelector('#itemMarketValue');
+    if (fieldsToImport.value && marketValueField) {
+        const conflict = fieldConflicts['value'];
+        const action = shouldImport('value', conflict?.isEmpty ?? true);
+        
+        if (action === 'replace') {
+            marketValueField.value = fieldsToImport.value;
+            console.log('[Collection] Valeur marchande importée:', fieldsToImport.value);
         }
     }
     

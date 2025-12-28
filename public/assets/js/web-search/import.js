@@ -162,7 +162,7 @@ export async function handleImport(result) {
             // On vérifie l'état des checkboxes pour les champs fixes
             const isNameChecked = document.querySelector('#wsImportFields .import-field-item[data-field="name"] input[type="checkbox"]')?.checked;
             const isDescChecked = document.querySelector('#wsImportFields .import-field-item[data-field="description"] input[type="checkbox"]')?.checked;
-            const isPriceChecked = document.querySelector('#wsImportFields .import-field-item[data-field="price"] input[type="checkbox"]')?.checked;
+            const isPriceChecked = document.querySelector('#wsImportFields .import-field-item[data-field="value"] input[type="checkbox"]')?.checked;
             const isImagesChecked = document.querySelector('[data-field="images"] input[type="checkbox"]')?.checked;
             
             // Les images sélectionnées par l'utilisateur ont TOUJOURS priorité sur les mappings BDD
