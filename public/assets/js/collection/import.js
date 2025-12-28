@@ -291,8 +291,19 @@ export function extractValueByPath(data, path) {
     const parts = path.split('.');
     let current = data;
     
-    for (const part of parts) {
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
         if (current === null || current === undefined) return undefined;
+        
+        // Si current est un tableau et qu'on cherche une propriété,
+        // extraire cette propriété de chaque élément (équivalent implicite à [*])
+        if (Array.isArray(current)) {
+            const remainingPath = parts.slice(i).join('.');
+            return current
+                .map(item => extractValueByPath(item, remainingPath))
+                .filter(v => v !== undefined && v !== null);
+        }
+        
         if (typeof current !== 'object') return undefined;
         current = current[part];
     }
