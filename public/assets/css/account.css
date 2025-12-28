@@ -838,6 +838,30 @@
     background: var(--dropdown-bg);
 }
 
+/* Info sur les providers enfants qui partagent la clé */
+.api-key-children-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(var(--accent-color), 0.1);
+    border: 1px solid rgba(var(--accent-color), 0.2);
+    border-radius: calc(var(--border-radius, 8px) - 4px);
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.api-key-children-info svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: rgba(var(--accent-color), 1);
+}
+
+.api-key-children-info strong {
+    color: rgba(var(--accent-color), 1);
+}
+
 .api-key-notes {
     padding: 12px;
     background: rgba(var(--accent-color), 0.05);

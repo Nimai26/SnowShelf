@@ -110,6 +110,58 @@ if (empty($toysApiBaseUrl)) {
 define('TOYS_API_BASE_URL', $toysApiBaseUrl);
 define('API_ENCRYPTION_KEY', $apiEncryptionKey);
 
+/**
+ * Mapping des providers enfants vers leurs providers parents pour les clés API
+ * Les providers enfants héritent des clés API configurées sur leur provider parent
+ * Format : 'provider_enfant' => 'provider_parent'
+ */
+define('PROVIDER_PARENT_MAPPING', [
+    // TMDB sous-variantes → utilisent les clés de tmdb
+    'tmdb_movies' => 'tmdb',
+    'tmdb_series' => 'tmdb',
+    // TVDB sous-variantes → utilisent les clés de tvdb
+    'tvdb_movies' => 'tvdb',
+    'tvdb_series' => 'tvdb',
+    // IMDB sous-variantes (pas de clé API requise mais pour cohérence)
+    'imdb_movies' => 'imdb',
+    'imdb_series' => 'imdb',
+]);
+
+/**
+ * Obtenir le nom du provider parent pour les clés API
+ * @param string $providerName - Nom du provider
+ * @return string - Nom du provider parent (ou le même si pas d'héritage)
+ */
+function getParentProviderName(string $providerName): string
+{
+    return PROVIDER_PARENT_MAPPING[$providerName] ?? $providerName;
+}
+
+/**
+ * Obtenir l'ID du provider parent depuis son nom
+ * @param PDO $pdo
+ * @param string $providerName - Nom du provider enfant
+ * @return int|null - ID du provider parent ou null si non trouvé
+ */
+function getParentProviderId(PDO $pdo, string $providerName): ?int
+{
+    $parentName = getParentProviderName($providerName);
+    if ($parentName === $providerName) {
+        return null; // Pas de parent
+    }
+    
+    static $cache = [];
+    if (isset($cache[$parentName])) {
+        return $cache[$parentName];
+    }
+    
+    $stmt = $pdo->prepare("SELECT id FROM Admin_webApi WHERE name = ? LIMIT 1");
+    $stmt->execute([$parentName]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $cache[$parentName] = $row ? (int)$row['id'] : null;
+    return $cache[$parentName];
+}
+
 try {
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
     
@@ -346,22 +398,31 @@ function handleSearch(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin, str
     $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Récupérer les clés API utilisateur pour les fournisseurs qui les requièrent
+    // Inclut les providers parents pour les sous-variantes
     $userApiKeys = [];
-    $userApiProviderIds = array_filter($providerIds, function($id) use ($providers) {
-        foreach ($providers as $p) {
-            if ((int)$p['id'] === (int)$id && $p['USER_API']) {
-                return true;
+    $userApiProviderIds = [];
+    $parentProviderIds = []; // IDs des providers parents à récupérer
+    
+    foreach ($providers as $p) {
+        if ($p['USER_API']) {
+            $userApiProviderIds[] = (int)$p['id'];
+            // Si c'est un provider enfant, récupérer aussi les clés du parent
+            $parentId = getParentProviderId($pdo, $p['name']);
+            if ($parentId !== null && !in_array($parentId, $parentProviderIds)) {
+                $parentProviderIds[] = $parentId;
             }
         }
-        return false;
-    });
+    }
     
-    if (!empty($userApiProviderIds)) {
-        $userPlaceholders = implode(',', array_fill(0, count($userApiProviderIds), '?'));
+    // Fusionner les IDs à chercher (providers + leurs parents)
+    $allProviderIdsForKeys = array_unique(array_merge($userApiProviderIds, $parentProviderIds));
+    
+    if (!empty($allProviderIdsForKeys)) {
+        $userPlaceholders = implode(',', array_fill(0, count($allProviderIdsForKeys), '?'));
         $userKeysSql = "SELECT webapi_id, api_key, Cliend_ID_Token as client_id 
                         FROM users_api 
                         WHERE user_id = ? AND webapi_id IN ($userPlaceholders)";
-        $userKeysParams = array_merge([$userId], array_values($userApiProviderIds));
+        $userKeysParams = array_merge([$userId], array_values($allProviderIdsForKeys));
         $stmt = $pdo->prepare($userKeysSql);
         $stmt->execute($userKeysParams);
         $userKeysRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -372,6 +433,20 @@ function handleSearch(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin, str
             ];
         }
     }
+    
+    // Fonction pour obtenir la clé API effective (du provider ou de son parent)
+    $getEffectiveApiKey = function($providerId, $providerName) use ($userApiKeys, $pdo) {
+        // D'abord vérifier si le provider a sa propre clé
+        if (isset($userApiKeys[$providerId]) && !empty($userApiKeys[$providerId]['api_key'])) {
+            return $userApiKeys[$providerId];
+        }
+        // Sinon, vérifier le parent
+        $parentId = getParentProviderId($pdo, $providerName);
+        if ($parentId !== null && isset($userApiKeys[$parentId]) && !empty($userApiKeys[$parentId]['api_key'])) {
+            return $userApiKeys[$parentId];
+        }
+        return null;
+    };
     
     // Vérifier les permissions
     foreach ($providers as $provider) {
@@ -384,14 +459,22 @@ function handleSearch(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin, str
             return;
         }
         
-        // Vérifier que l'utilisateur a configuré sa clé si requise
-        if ($provider['USER_API'] && empty($userApiKeys[$provider['id']]['api_key'])) {
-            http_response_code(400);
-            echo json_encode([
-                'success' => false, 
-                'error' => sprintf(__('web_search.error_user_key_required'), $provider['Name_UF'])
-            ]);
-            return;
+        // Vérifier que l'utilisateur a configuré sa clé si requise (ou celle du parent)
+        if ($provider['USER_API']) {
+            $effectiveKey = $getEffectiveApiKey($provider['id'], $provider['name']);
+            if (empty($effectiveKey['api_key'])) {
+                // Afficher le nom du provider parent si applicable
+                $parentName = getParentProviderName($provider['name']);
+                $displayName = ($parentName !== $provider['name']) 
+                    ? $provider['Name_UF'] . ' (' . $parentName . ')' 
+                    : $provider['Name_UF'];
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false, 
+                    'error' => sprintf(__('web_search.error_user_key_required'), $displayName)
+                ]);
+                return;
+            }
         }
     }
     
@@ -405,13 +488,20 @@ function handleSearch(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin, str
         $apiKey = $provider['api_key'];
         $clientId = $provider['client_id'];
         
-        if ($provider['USER_API'] && isset($userApiKeys[$provider['id']])) {
-            $apiKey = $userApiKeys[$provider['id']]['api_key'];
-            $clientId = $userApiKeys[$provider['id']]['client_id'];
-            loger('web_search_api', 'DEBUG', 'Using user API key', [
-                'provider' => $provider['name'],
-                'has_key' => !empty($apiKey),
-            ]);
+        if ($provider['USER_API']) {
+            $effectiveKey = $getEffectiveApiKey($provider['id'], $provider['name']);
+            if ($effectiveKey) {
+                $apiKey = $effectiveKey['api_key'];
+                $clientId = $effectiveKey['client_id'] ?: $clientId;
+                $parentName = getParentProviderName($provider['name']);
+                $isUsingParentKey = ($parentName !== $provider['name'] && !isset($userApiKeys[$provider['id']]));
+                loger('web_search_api', 'DEBUG', 'Using user API key', [
+                    'provider' => $provider['name'],
+                    'has_key' => !empty($apiKey),
+                    'using_parent_key' => $isUsingParentKey,
+                    'parent' => $isUsingParentKey ? $parentName : null,
+                ]);
+            }
         }
         
         // Appeler l'API externe pour ce fournisseur
@@ -525,7 +615,7 @@ function handleGetDetails(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin,
     $dbProvider = $providerMapping[$provider] ?? $provider;
     
     // Vérifier si le provider nécessite un accès premium
-    $providerStmt = $pdo->prepare("SELECT id, api_key, client_id, USER_API, PREMIUM_ONLY, READ_CODE FROM Admin_webApi WHERE name = ? LIMIT 1");
+    $providerStmt = $pdo->prepare("SELECT id, name, api_key, client_id, USER_API, PREMIUM_ONLY, READ_CODE FROM Admin_webApi WHERE name = ? LIMIT 1");
     $providerStmt->execute([$dbProvider]);
     $providerInfo = $providerStmt->fetch(PDO::FETCH_ASSOC);
     
@@ -556,18 +646,48 @@ function handleGetDetails(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin,
         $apiKey = $providerInfo['api_key'];
         $clientId = $providerInfo['client_id'];
         
-        // Si USER_API est requis, récupérer la clé de l'utilisateur
+        // Si USER_API est requis, récupérer la clé de l'utilisateur (ou du provider parent)
         if ($providerInfo['USER_API']) {
+            $userApiKey = null;
+            $userClientId = null;
+            
+            // D'abord chercher la clé pour ce provider
             $userStmt = $pdo->prepare("SELECT api_key, Cliend_ID_Token FROM users_api WHERE user_id = ? AND webapi_id = ?");
             $userStmt->execute([$userId, $providerInfo['id']]);
             $userKeys = $userStmt->fetch(PDO::FETCH_ASSOC);
+            
             if ($userKeys && !empty($userKeys['api_key'])) {
-                $apiKey = $userKeys['api_key'];
-                $clientId = $userKeys['Cliend_ID_Token'] ?? $clientId;
-            } elseif ($providerInfo['USER_API'] && empty($providerInfo['api_key'])) {
-                // USER_API requis mais aucune clé disponible
+                $userApiKey = $userKeys['api_key'];
+                $userClientId = $userKeys['Cliend_ID_Token'];
+            } else {
+                // Sinon, vérifier si ce provider a un parent et récupérer ses clés
+                $parentId = getParentProviderId($pdo, $providerInfo['name']);
+                if ($parentId !== null) {
+                    $parentStmt = $pdo->prepare("SELECT api_key, Cliend_ID_Token FROM users_api WHERE user_id = ? AND webapi_id = ?");
+                    $parentStmt->execute([$userId, $parentId]);
+                    $parentKeys = $parentStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($parentKeys && !empty($parentKeys['api_key'])) {
+                        $userApiKey = $parentKeys['api_key'];
+                        $userClientId = $parentKeys['Cliend_ID_Token'];
+                        $parentName = getParentProviderName($providerInfo['name']);
+                        loger('web_search_api', 'DEBUG', 'Using parent provider API key', [
+                            'provider' => $provider,
+                            'parent' => $parentName,
+                            'user_id' => $userId,
+                        ]);
+                    }
+                }
+            }
+            
+            if ($userApiKey) {
+                $apiKey = $userApiKey;
+                $clientId = $userClientId ?: $clientId;
+            } elseif (empty($providerInfo['api_key'])) {
+                // USER_API requis mais aucune clé disponible (ni directe, ni parent)
+                $parentName = getParentProviderName($providerInfo['name']);
                 loger('web_search_api', 'WARNING', 'User API key required but not found', [
                     'provider' => $provider,
+                    'parent' => ($parentName !== $providerInfo['name']) ? $parentName : null,
                     'user_id' => $userId,
                 ]);
             }

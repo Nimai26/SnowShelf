@@ -29,9 +29,38 @@ if (!in_array($section, $validSections)) {
 // Récupérer les thèmes disponibles
 $availableThemes = $siteConfig->getAvailableThemes();
 
+// Mapping des providers enfants vers leurs parents pour les clés API
+// Les providers enfants héritent des clés API configurées sur leur provider parent
+$providerParentMapping = [
+    'tmdb_movies' => 'tmdb',
+    'tmdb_series' => 'tmdb',
+    'tvdb_movies' => 'tvdb',
+    'tvdb_series' => 'tvdb',
+    'imdb_movies' => 'imdb',
+    'imdb_series' => 'imdb',
+];
+
 // Récupérer les fournisseurs nécessitant une clé API utilisateur
 $apiProvidersStmt = $pdo->query("SELECT id, name, Name_UF, Type, Notes, CLIENT_ID_ON FROM Admin_webApi WHERE USER_API = 1 ORDER BY Type, Name_UF");
-$apiProviders = $apiProvidersStmt->fetchAll(PDO::FETCH_ASSOC);
+$apiProvidersRaw = $apiProvidersStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Séparer les providers parents et enfants
+$apiProviders = [];
+$childProviders = []; // Groupés par parent_name
+foreach ($apiProvidersRaw as $provider) {
+    $providerName = $provider['name'];
+    if (isset($providerParentMapping[$providerName])) {
+        // C'est un provider enfant
+        $parentName = $providerParentMapping[$providerName];
+        if (!isset($childProviders[$parentName])) {
+            $childProviders[$parentName] = [];
+        }
+        $childProviders[$parentName][] = $provider;
+    } else {
+        // C'est un provider parent ou indépendant
+        $apiProviders[] = $provider;
+    }
+}
 
 // Récupérer les clés API de l'utilisateur
 $userApiKeysStmt = $pdo->prepare("SELECT webapi_id, api_key, Cliend_ID_Token FROM users_api WHERE user_id = ?");
@@ -499,12 +528,15 @@ foreach ($userApiKeysRaw as $key) {
                                 
                                 <?php foreach ($providers as $provider): 
                                     $providerId = $provider['id'];
+                                    $providerName = $provider['name'];
                                     $currentKey = $userApiKeys[$providerId]['api_key'] ?? '';
                                     $currentClientId = $userApiKeys[$providerId]['client_id'] ?? '';
                                     // Une clé est considérée configurée seulement si elle n'est pas vide
                                     $hasKey = !empty(trim($currentKey));
                                     // Déterminer si ce fournisseur nécessite un Client ID (depuis la BDD)
                                     $needsClientId = ($provider['CLIENT_ID_ON'] ?? 0) == 1;
+                                    // Vérifier si ce provider a des enfants
+                                    $hasChildren = isset($childProviders[$providerName]);
                                 ?>
                                     <div class="api-key-item <?= $hasKey ? 'has-key' : '' ?>" data-provider-id="<?= $providerId ?>">
                                         <div class="api-key-header">
@@ -515,7 +547,7 @@ foreach ($userApiKeysRaw as $key) {
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                             <polyline points="20 6 9 17 4 12"></polyline>
                                                         </svg>
-                                                        Configuré
+                                                        <?= htmlspecialchars(__('account.api_key_configured')) ?>
                                                     </span>
                                                 <?php endif; ?>
                                             </div>
@@ -528,6 +560,20 @@ foreach ($userApiKeysRaw as $key) {
                                         </div>
                                         
                                         <div class="api-key-form" style="display: none;">
+                                            <?php // Afficher les providers enfants qui utilisent cette clé
+                                            if ($hasChildren): ?>
+                                            <div class="api-key-children-info">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                                </svg>
+                                                <span><?= htmlspecialchars(__('account.api_key_shared_with')) ?>: 
+                                                    <strong><?= htmlspecialchars(implode(', ', array_column($childProviders[$providerName], 'Name_UF'))) ?></strong>
+                                                </span>
+                                            </div>
+                                            <?php endif; ?>
+                                            
                                             <form class="api-key-form-inner" data-provider-id="<?= $providerId ?>">
                                                 <div class="form-group">
                                                     <label><?= htmlspecialchars(__('account.api_key_label')) ?></label>

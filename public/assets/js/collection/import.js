@@ -408,6 +408,34 @@ export function applyTransform(value, transformType, transformConfig = null) {
             // Convertir en format date ISO (YYYY-MM-DD)
             return convertToDateFormat(value);
         
+        case 'find_by_key':
+            // Trouver un élément dans un tableau selon une condition
+            // Config: { match_key: "country", match_value: "FR", return_key: "rating" }
+            // Exemple: certifications[{country: "FR", rating: "TP"}] -> "TP"
+            if (Array.isArray(value) && transformConfig) {
+                const { match_key, match_value, return_key } = transformConfig;
+                if (!match_key || match_value === undefined) {
+                    return value;
+                }
+                // Chercher l'élément correspondant
+                const found = value.find(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        return String(item[match_key]).toLowerCase() === String(match_value).toLowerCase();
+                    }
+                    return false;
+                });
+                if (found) {
+                    // Si return_key est spécifié, retourner cette propriété
+                    if (return_key) {
+                        return found[return_key] ?? null;
+                    }
+                    // Sinon retourner l'objet entier
+                    return found;
+                }
+                return null;
+            }
+            return value;
+        
         case 'year_extract':
         case 'YEAR_EXTRACT':
             // Extraire l'année d'une date, OU convertir une année en date complète (01/01/année)
@@ -421,6 +449,92 @@ export function applyTransform(value, transformType, transformConfig = null) {
             const extractedYear = extractYear(value);
             if (extractedYear) {
                 return `${extractedYear}-01-01`;
+            }
+            return value;
+        
+        case 'first_value':
+            // Prendre la première valeur (comme 'first' mais avec gestion des objets {name: ...})
+            if (Array.isArray(value)) {
+                if (value.length === 0) return null;
+                const first = value[0];
+                // Si c'est un objet avec 'name', extraire le name
+                if (first && typeof first === 'object' && first.name) {
+                    return first.name;
+                }
+                return first;
+            }
+            return value;
+        
+        case 'boolean_fr':
+            // Convertir booléen en Oui/Non français
+            const trueValues = [true, 1, '1', 'true', 'yes', 'oui', 'on'];
+            const checkValue = typeof value === 'string' ? value.toLowerCase().trim() : value;
+            return trueValues.includes(checkValue) ? 'Oui' : 'Non';
+        
+        case 'pegi_normalize':
+            // Normaliser les classifications d'âge vers PEGI
+            if (!value) return null;
+            const strVal = String(value).toLowerCase().trim();
+            
+            // Si c'est déjà au format PEGI
+            const pegiMatch = strVal.match(/pegi\s*(\d+)/i);
+            if (pegiMatch) return 'PEGI ' + pegiMatch[1];
+            
+            // Extraire un âge numérique
+            const ageMatch = strVal.match(/(\d+)/);
+            if (ageMatch) {
+                const age = parseInt(ageMatch[1]);
+                if (age <= 3) return 'PEGI 3';
+                if (age <= 7) return 'PEGI 7';
+                if (age <= 12) return 'PEGI 12';
+                if (age <= 16) return 'PEGI 16';
+                return 'PEGI 18';
+            }
+            
+            // Mappings ESRB -> PEGI
+            const esrbToPegi = {
+                'everyone': 'PEGI 3', 'e': 'PEGI 3',
+                'everyone 10+': 'PEGI 12', 'e10+': 'PEGI 12', 'e10': 'PEGI 12',
+                'teen': 'PEGI 12', 't': 'PEGI 12',
+                'mature': 'PEGI 16', 'm': 'PEGI 16',
+                'mature 17+': 'PEGI 18', 'adults only': 'PEGI 18', 'ao': 'PEGI 18'
+            };
+            return esrbToPegi[strVal] || null;
+        
+        case 'duration_format':
+            // Formater une durée
+            if (!value) return null;
+            const unit = transformConfig?.unit || 'minutes';
+            const suffix = transformConfig?.suffix || '';
+            
+            let duration;
+            if (typeof value === 'number') {
+                duration = value;
+            } else {
+                const durationMatch = String(value).match(/(\d+)/);
+                if (!durationMatch) return value;
+                duration = parseInt(durationMatch[1]);
+            }
+            
+            // Convertir en heures si demandé
+            if (unit === 'hours' && duration > 0) {
+                const hours = Math.floor(duration / 60);
+                const minutes = duration % 60;
+                return hours > 0 ? `${hours}h${minutes > 0 ? String(minutes).padStart(2, '0') : ''}` : `${minutes}min`;
+            }
+            
+            return duration + suffix;
+        
+        case 'status_mapping':
+            // Mapping de statut (anglais -> français)
+            if (!value || typeof value !== 'string' || !transformConfig) return value;
+            const lowerStatus = value.toLowerCase().trim();
+            
+            // Chercher dans les mappings (clés en minuscules)
+            for (const [key, translation] of Object.entries(transformConfig)) {
+                if (key.toLowerCase() === lowerStatus) {
+                    return translation;
+                }
             }
             return value;
         
@@ -1611,6 +1725,67 @@ export async function applyWebSearchImport(modal, result, applyImportedMetadata,
             
             setTimeout(() => checkAndApply(0), 300);
         }
+    }
+    
+    // ========================================================================
+    // MISE À JOUR DES COMPTEURS D'ONGLETS
+    // ========================================================================
+    
+    // Mettre à jour le compteur total des médias
+    updateMediaTabCount(modal);
+    
+    // Mettre à jour le compteur de métadonnées (après délai pour s'assurer que les champs sont remplis)
+    setTimeout(() => updateMetadataTabCount(modal), 500);
+}
+
+/**
+ * Met à jour le compteur de l'onglet Médias
+ * @param {HTMLElement} modal - Élément modal
+ */
+export function updateMediaTabCount(modal) {
+    const mediaManagers = modal._mediaManagers || {};
+    let total = 0;
+    
+    // Compter les fichiers de chaque type
+    for (const type of ['images', 'videos', 'audio', 'documents']) {
+        const manager = mediaManagers[type];
+        if (manager && typeof manager.getFileCount === 'function') {
+            total += manager.getFileCount();
+        }
+    }
+    
+    // Mettre à jour le compteur dans l'onglet
+    const countEl = modal.querySelector('#itemTotalMediaCount');
+    if (countEl) {
+        countEl.textContent = total;
+    }
+}
+
+/**
+ * Met à jour le compteur de l'onglet Détails (métadonnées)
+ * @param {HTMLElement} modal - Élément modal
+ */
+export function updateMetadataTabCount(modal) {
+    const container = modal.querySelector('#detailsFieldsContainer');
+    if (!container) return;
+    
+    // Compter les champs qui ont une valeur non-vide
+    let count = 0;
+    const fields = container.querySelectorAll('[data-field-key]');
+    
+    fields.forEach(field => {
+        const input = field.querySelector('input, textarea, select');
+        if (input) {
+            const value = input.value?.trim();
+            if (value && value !== '' && value !== '0') {
+                count++;
+            }
+        }
+    });
+    
+    const countEl = modal.querySelector('#itemMetadataCount');
+    if (countEl) {
+        countEl.textContent = count;
     }
 }
 

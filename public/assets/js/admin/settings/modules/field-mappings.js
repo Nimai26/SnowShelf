@@ -661,7 +661,8 @@ function toggleTransformConfigField(transformType) {
         'array_join': { hint: 'Ex: {"separator": ", "}', placeholder: '{"separator": ", "}' },
         'status_mapping': { hint: 'Ex: {"new": "Neuf", "used": "Occasion"}', placeholder: '{"mapping": {...}}' },
         'custom': { hint: 'Configuration personnalisée JSON', placeholder: '{}' },
-        'split': { hint: 'Ex: {"delimiter": ","}', placeholder: '{"delimiter": ","}' }
+        'split': { hint: 'Ex: {"delimiter": ","}', placeholder: '{"delimiter": ","}' },
+        'find_by_key': { hint: 'Ex: {"match_key": "country", "match_value": "FR", "return_key": "rating"}', placeholder: '{"match_key": "", "match_value": "", "return_key": ""}' }
     };
     
     if (transformType && transformsWithConfig[transformType]) {

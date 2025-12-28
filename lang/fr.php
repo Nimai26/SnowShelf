@@ -1007,6 +1007,8 @@ return [
         'api_key_remove_confirm' => 'Voulez-vous supprimer cette clé API ?',
         'api_provider_type' => 'Type : %s',
         'api_provider_docs' => 'Documentation',
+        'api_key_configured' => 'Configuré',
+        'api_key_shared_with' => 'Cette clé sera aussi utilisée par',
     ],
 
     // ============================================

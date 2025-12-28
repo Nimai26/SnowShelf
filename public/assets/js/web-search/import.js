@@ -376,14 +376,59 @@ export function processImportField(item, actualResult, selectedFields, selectedM
         const fieldDef = typeFields.find(f => f.field_key === fieldKey);
         
         if (fieldDef) {
-            // Utiliser api_keys du mapping pour trouver la valeur
-            const sources = fieldDef.api_keys && fieldDef.api_keys.length > 0 
-                ? fieldDef.api_keys 
-                : [fieldKey]; // Fallback sur le field_key
-            
             // Pour les champs de type tracklist ou array, préserver le tableau d'objets
             const preserveArray = fieldDef.field_type === 'tracklist' || fieldDef.field_type === 'array';
-            let value = findValueFromSources(actualResult, sources, { preserveArray });
+            let value = null;
+            
+            // Utiliser les mappings avec transformations si disponibles
+            if (fieldDef.mappings && fieldDef.mappings.length > 0) {
+                for (const mapping of fieldDef.mappings) {
+                    const sources = mapping.api_keys || [];
+                    if (sources.length === 0) continue;
+                    
+                    // Trouver la valeur brute (utiliser extractValueByPath pour supporter [*])
+                    let rawValue = null;
+                    for (const source of sources) {
+                        // Essayer avec et sans préfixe 'data.'
+                        rawValue = extractValueByPath(actualResult, source);
+                        if (rawValue === undefined && source.startsWith('data.')) {
+                            rawValue = extractValueByPath(actualResult, source.substring(5));
+                        }
+                        if (rawValue === undefined && !source.startsWith('data.')) {
+                            rawValue = extractValueByPath(actualResult, 'data.' + source);
+                        }
+                        if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+                            break;
+                        }
+                    }
+                    
+                    if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+                        // Appliquer la transformation si définie
+                        if (mapping.transform_type && mapping.transform_type !== 'none') {
+                            value = applyTransform(rawValue, mapping.transform_type, mapping.transform_config);
+                        } else if (!preserveArray && Array.isArray(rawValue)) {
+                            // Transformation par défaut pour les tableaux
+                            value = rawValue.map(item => {
+                                if (item && typeof item === 'object') {
+                                    return item.name || item.label || item.title || JSON.stringify(item);
+                                }
+                                return String(item);
+                            }).filter(v => v).join(', ');
+                        } else {
+                            value = rawValue;
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Fallback sur l'ancien comportement
+            if (value === null) {
+                const sources = fieldDef.api_keys && fieldDef.api_keys.length > 0 
+                    ? fieldDef.api_keys 
+                    : [fieldKey];
+                value = findValueFromSources(actualResult, sources, { preserveArray });
+            }
             
             if (value !== null && value !== undefined) {
                 // Normaliser les champs de date/année

@@ -35,6 +35,7 @@ class FieldTransformer
             'boolean_fr' => self::transformBooleanFr($value),
             'pegi_normalize' => self::transformPegiNormalize($value),
             'duration_format' => self::transformDurationFormat($value, $config),
+            'find_by_key' => self::transformFindByKey($value, $config),
             default => $value
         };
     }
@@ -247,6 +248,44 @@ class FieldTransformer
         return $duration . $suffix;
     }
     
+    /**
+     * Trouver un élément dans un tableau selon une condition
+     * Config: {"match_key": "country", "match_value": "FR", "return_key": "rating"}
+     * 
+     * Exemple d'entrée: [{"country": "FR", "rating": "TP"}, {"country": "US", "rating": "PG"}]
+     * Avec config: {"match_key": "country", "match_value": "FR", "return_key": "rating"}
+     * Résultat: "TP"
+     */
+    private static function transformFindByKey($value, ?array $config)
+    {
+        if (!is_array($value) || empty($config)) {
+            return $value;
+        }
+        
+        $matchKey = $config['match_key'] ?? null;
+        $matchValue = $config['match_value'] ?? null;
+        $returnKey = $config['return_key'] ?? null;
+        
+        if ($matchKey === null || $matchValue === null) {
+            return $value;
+        }
+        
+        // Chercher l'élément correspondant
+        foreach ($value as $item) {
+            if (is_array($item) && isset($item[$matchKey])) {
+                if (strtolower((string)$item[$matchKey]) === strtolower((string)$matchValue)) {
+                    // Élément trouvé
+                    if ($returnKey !== null && isset($item[$returnKey])) {
+                        return $item[$returnKey];
+                    }
+                    return $item;
+                }
+            }
+        }
+        
+        return null;
+    }
+
     /**
      * Récupère une valeur depuis un objet/tableau en utilisant une notation pointée
      * Ex: "metadata.stars" depuis ["metadata" => ["stars" => "valeur"]]

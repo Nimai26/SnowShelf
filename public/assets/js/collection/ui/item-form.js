@@ -28,12 +28,35 @@ import {
     getImportChoices,
     applyWebSearchImport as applyWebSearchImportModule,
     importImageFromUrl,
-    importDocumentFromUrl
+    importDocumentFromUrl,
+    updateMediaTabCount,
+    updateMetadataTabCount
 } from '../import.js';
 
 // Ré-export pour compatibilité avec index.js
 export { detectFieldsToReplaceImport as detectFieldsToReplace };
 export { applyWebSearchImportModule as applyWebSearchImport };
+
+/**
+ * Met à jour le compteur total de l'onglet Médias
+ * @param {HTMLElement} modal - Élément modal
+ */
+function updateTotalMediaCount(modal) {
+    const mediaManagers = modal._mediaManagers || {};
+    let total = 0;
+    
+    for (const type of ['images', 'videos', 'audio', 'documents']) {
+        const manager = mediaManagers[type];
+        if (manager && typeof manager.getFileCount === 'function') {
+            total += manager.getFileCount();
+        }
+    }
+    
+    const countEl = modal.querySelector('#itemTotalMediaCount');
+    if (countEl) {
+        countEl.textContent = total;
+    }
+}
 
 /**
  * Construit le HTML du formulaire d'édition/création d'item
@@ -467,12 +490,14 @@ export function initItemForm(modalId, item) {
                     isDefault: false,
                     readonly: false,
                     onFilesChange: (data) => {
-                        // Mettre à jour le compteur de l'onglet
+                        // Mettre à jour le compteur de l'onglet individuel
                         const count = data.files.length + data.pendingFiles.length;
                         const countEl = modal.querySelector(`#itemMediaCount${capitalizedType}`);
                         if (countEl) {
                             countEl.textContent = count;
                         }
+                        // Mettre à jour le compteur total de l'onglet Médias
+                        updateTotalMediaCount(modal);
                     },
                     onError: (message) => {
                         showToast(message, 'error');

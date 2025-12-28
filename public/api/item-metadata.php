@@ -144,11 +144,18 @@ function getFields(PDO $pdo, string $lang): void
             f.icon,
             f.lang,
             (
-                SELECT JSON_ARRAYAGG(m.api_keys)
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'api_keys', m.api_keys,
+                        'transform_type', m.transform_type,
+                        'transform_config', m.transform_config,
+                        'priority', m.priority
+                    )
+                )
                 FROM primary_type_key_to_field m
                 WHERE m.field_id = f.id AND m.is_active = 1
                 ORDER BY m.priority DESC
-            ) as api_keys_list
+            ) as mappings_list
         FROM primary_type_fields f
         WHERE f.primary_type_id = :type_id
         ORDER BY f.sort_order ASC, f.id ASC
@@ -182,19 +189,43 @@ function getFields(PDO $pdo, string $lang): void
         }
         unset($field['field_options']);
         
-        // Parser les api_keys des mappings (fusion des tableaux)
-        $apiKeysList = $field['api_keys_list'] ? json_decode($field['api_keys_list'], true) : [];
+        // Parser les mappings (api_keys, transform_type, transform_config)
+        $mappingsList = $field['mappings_list'] ? json_decode($field['mappings_list'], true) : [];
         $allApiKeys = [];
-        if (is_array($apiKeysList)) {
-            foreach ($apiKeysList as $keysJson) {
-                $keys = is_string($keysJson) ? json_decode($keysJson, true) : $keysJson;
-                if (is_array($keys)) {
-                    $allApiKeys = array_merge($allApiKeys, $keys);
+        $allMappings = [];
+        
+        if (is_array($mappingsList)) {
+            foreach ($mappingsList as $mapping) {
+                // Décoder api_keys s'il s'agit d'une chaîne JSON
+                $apiKeys = $mapping['api_keys'] ?? null;
+                if (is_string($apiKeys)) {
+                    $apiKeys = json_decode($apiKeys, true);
                 }
+                if (is_array($apiKeys)) {
+                    $allApiKeys = array_merge($allApiKeys, $apiKeys);
+                }
+                
+                // Stocker le mapping complet pour les transformations
+                $transformConfig = $mapping['transform_config'] ?? null;
+                if (is_string($transformConfig)) {
+                    $transformConfig = json_decode($transformConfig, true);
+                }
+                
+                $allMappings[] = [
+                    'api_keys' => $apiKeys,
+                    'transform_type' => $mapping['transform_type'] ?? null,
+                    'transform_config' => $transformConfig,
+                    'priority' => (int)($mapping['priority'] ?? 0)
+                ];
             }
         }
+        
+        // Trier par priorité décroissante
+        usort($allMappings, fn($a, $b) => $b['priority'] - $a['priority']);
+        
         $field['api_keys'] = array_values(array_unique($allApiKeys));
-        unset($field['api_keys_list']);
+        $field['mappings'] = $allMappings;
+        unset($field['mappings_list']);
     }
     
     echo json_encode([

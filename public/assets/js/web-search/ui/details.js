@@ -12,7 +12,7 @@ import { loadProductDetails as loadProductDetailsApi, loadPrimaryTypeFields } fr
 import { setupGalleryEvents, updateSelectedImagesCount, updateImageImportField, updateSelectAllButtonLabel } from './gallery.js';
 import { handleImport } from '../import.js';
 import { getImageUrl } from './modal.js';
-import { fetchFieldMappings, applyMapping, extractValueByPath } from '../../collection/import.js';
+import { fetchFieldMappings, applyMapping, extractValueByPath, applyTransform } from '../../collection/import.js';
 
 /**
  * Obtenir le primary_type_id suggéré pour un type webapi
@@ -517,29 +517,71 @@ export function buildTypeSpecificFieldsHtml(result, typeId, t) {
     // Le cache contient directement un tableau de champs (pas un objet avec .fields)
     const typeFields = Array.isArray(cachedFields) ? cachedFields : (cachedFields?.fields || []);
     
-    //console.log('[WebSearch] Champs spécifiques pour le type ID', typeId, ':', typeFields);
-    
     if (!typeFields || typeFields.length === 0) {
         return `<p class="detail-no-fields">${t.detail_no_type_fields || 'Aucun champ spécifique'}</p>`;
     }
     
     const fields = typeFields.map(field => {
-        //console.log('[WebSearch] Traitement du champ spécifique:', field);
-        // Utiliser api_keys du mapping pour trouver la valeur
-        const sources = field.api_keys && field.api_keys.length > 0 
-            ? field.api_keys 
-            : [field.field_key]; // Fallback sur le field_key
-
-        //console.log('[WebSearch] Recherche de la valeur pour le champ spécifique:', field.field_key, 'avec sources:', sources);
-        
         // Pour les champs de type tracklist ou array, préserver le tableau d'objets
         const preserveArray = field.field_type === 'tracklist' || field.field_type === 'array';
-        const value = findValueFromSources(result, sources, { preserveArray });
+        
+        // Utiliser les mappings avec transformations si disponibles
+        let value = null;
+        
+        if (field.mappings && field.mappings.length > 0) {
+            // Parcourir les mappings par priorité (déjà triés)
+            for (const mapping of field.mappings) {
+                const sources = mapping.api_keys || [];
+                if (sources.length === 0) continue;
+                
+                // Trouver la valeur brute avec les sources (utiliser extractValueByPath pour supporter [*])
+                let rawValue = null;
+                for (const source of sources) {
+                    // Essayer avec et sans préfixe 'data.'
+                    rawValue = extractValueByPath(result, source);
+                    if (rawValue === undefined && source.startsWith('data.')) {
+                        rawValue = extractValueByPath(result, source.substring(5));
+                    }
+                    if (rawValue === undefined && !source.startsWith('data.')) {
+                        rawValue = extractValueByPath(result, 'data.' + source);
+                    }
+                    if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+                        break;
+                    }
+                }
+                
+                if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+                    // Appliquer la transformation si définie
+                    if (mapping.transform_type && mapping.transform_type !== 'none') {
+                        value = applyTransform(rawValue, mapping.transform_type, mapping.transform_config);
+                    } else if (!preserveArray && Array.isArray(rawValue)) {
+                        // Transformation par défaut pour les tableaux : joindre les noms
+                        value = rawValue.map(item => {
+                            if (item && typeof item === 'object') {
+                                return item.name || item.label || item.title || JSON.stringify(item);
+                            }
+                            return String(item);
+                        }).filter(v => v).join(', ');
+                    } else {
+                        value = rawValue;
+                    }
+                    break; // Arrêter dès qu'on a une valeur
+                }
+            }
+        }
+        
+        // Fallback sur l'ancien comportement si pas de mappings ou valeur non trouvée
+        if (value === null) {
+            const sources = field.api_keys && field.api_keys.length > 0 
+                ? field.api_keys 
+                : [field.field_key];
+            value = findValueFromSources(result, sources, { preserveArray });
+        }
         
         const displayValue = formatFieldValue(field.field_key, value);
         // Vérifier si la valeur existe (inclut les booléens false et les nombres 0)
         const hasValue = value !== null && value !== undefined && value !== '';
-        //console.log(`[WebSearch] Champ type spécifique "${field.field_key}" - Sources:`, sources, '=> Valeur:', value, '=> hasValue:', hasValue);
+        //console.log(`[WebSearch] Champ type spécifique "${field.field_key}" - Valeur:`, value, '=> hasValue:', hasValue);
         return buildImportFieldItem(
             `type_${field.field_key}`, 
             field.label, 
