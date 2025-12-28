@@ -579,6 +579,10 @@ return [
         'media_hint_audio' => 'Add audio files (music, sound effects, voice comments...). Accepted formats: MP3, WAV, OGG, FLAC. Direct playback in the interface.',
         'media_hint_documents' => 'Add documents (manuals, invoices, certificates...). Accepted formats: PDF, DOC, XLS, TXT, ZIP. Downloadable from the interface.',
         'take_photo' => 'Take a photo',
+        // Media lightbox
+        'prev_image' => 'Previous image',
+        'next_image' => 'Next image',
+        'video_not_supported' => 'Your browser does not support video playback.',
         
         // Copy
         'copy_success' => 'Category copied successfully.',

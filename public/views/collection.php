@@ -402,6 +402,13 @@ window.collectionTranslations = {
     media_hint_audio: <?= json_encode(__('categories_page.media_hint_audio')) ?>,
     media_hint_documents: <?= json_encode(__('categories_page.media_hint_documents')) ?>,
     take_photo: <?= json_encode(__('categories_page.take_photo')) ?>,
+    // Lightbox médias
+    prev_image: <?= json_encode(__('categories_page.prev_image')) ?>,
+    next_image: <?= json_encode(__('categories_page.next_image')) ?>,
+    video_not_supported: <?= json_encode(__('categories_page.video_not_supported')) ?>,
+    view: <?= json_encode(__('media.view')) ?>,
+    download: <?= json_encode(__('media.download')) ?>,
+    play: <?= json_encode(__('media.play')) ?>,
     
     // Actions
     save: <?= json_encode(__('collection.save')) ?>,

@@ -469,6 +469,19 @@ export function buildStickerGridHtml(fieldId, fieldKey, value, cells) {
 }
 
 /**
+ * Vérifie si une URL de preview audio est verrouillée par IP (token hdnea de Deezer)
+ * Ces URLs sont signées cryptographiquement pour l'IP du serveur API et ne peuvent
+ * pas être lues depuis le navigateur client ou via proxy.
+ * @param {string} url - URL de preview
+ * @returns {boolean} true si l'URL est inaccessible
+ */
+function isIpLockedUrl(url) {
+    if (!url) return false;
+    // Les URLs Deezer avec token hdnea sont verrouillées par IP
+    return url.includes('dzcdn.net') && url.includes('hdnea');
+}
+
+/**
  * Build HTML for a tracklist field (list of audio tracks)
  * @param {number} fieldId - DB id of the field
  * @param {string} fieldKey - field_key string
@@ -505,6 +518,9 @@ export function buildTracklistHtml(fieldId, fieldKey, value) {
         ${totalSeconds > 0 ? `<span class="tracklist-duration">Durée totale: ${totalFormatted}</span>` : ''}
     </div>`;
     
+    // Vérifier si au moins une URL de preview est lisible
+    const hasPlayablePreviewHeader = tracks.some(t => t.preview_url && !isIpLockedUrl(t.preview_url));
+    
     if (tracks.length > 0) {
         html += `<div class="tracklist-container">`;
         html += `<table class="tracklist-table">
@@ -513,10 +529,13 @@ export function buildTracklistHtml(fieldId, fieldKey, value) {
                     <th class="track-num">#</th>
                     <th class="track-title">Titre</th>
                     <th class="track-duration">Durée</th>
-                    ${tracks.some(t => t.preview_url) ? '<th class="track-preview"></th>' : ''}
+                    ${hasPlayablePreviewHeader ? '<th class="track-preview"></th>' : ''}
                 </tr>
             </thead>
             <tbody>`;
+        
+        // Vérifier si au moins une URL de preview est lisible (pas de token hdnea)
+        const hasPlayablePreview = tracks.some(t => t.preview_url && !isIpLockedUrl(t.preview_url));
         
         tracks.forEach((track, idx) => {
             const position = track.position || (idx + 1);
@@ -529,9 +548,10 @@ export function buildTracklistHtml(fieldId, fieldKey, value) {
                 <td class="track-title">${escapeHtml(title)}</td>
                 <td class="track-duration">${duration}</td>`;
             
-            if (tracks.some(t => t.preview_url)) {
+            // N'afficher la colonne preview que si au moins une piste a une URL lisible
+            if (hasPlayablePreview) {
                 html += `<td class="track-preview">`;
-                if (track.preview_url) {
+                if (track.preview_url && !isIpLockedUrl(track.preview_url)) {
                     html += `<button type="button" class="btn-track-preview" data-preview-url="${escapeHtml(track.preview_url)}" title="Écouter un extrait">
                         <span class="mdi mdi-play-circle-outline"></span>
                     </button>`;

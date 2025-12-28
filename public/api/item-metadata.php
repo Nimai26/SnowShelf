@@ -274,9 +274,9 @@ function getValues(PDO $pdo, int $userId, string $lang): void
                 $value = $meta['value_text'];
         }
         
-        // Extraire le label depuis la colonne JSON 'lang'
+        // Extraire le label depuis la colonne JSON 'lang' (la clé est 'name' pas 'label')
         $langData = $meta['lang'] ? json_decode($meta['lang'], true) : [];
-        $label = $langData[$lang]['label'] ?? $langData['fr']['label'] ?? $meta['field_key'];
+        $label = $langData[$lang]['name'] ?? $langData['fr']['name'] ?? $langData[$lang]['label'] ?? $langData['fr']['label'] ?? $meta['field_key'];
         
         $values[$meta['field_key']] = [
             'field_id' => (int)$meta['field_id'],

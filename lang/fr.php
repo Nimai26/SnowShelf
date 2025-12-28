@@ -567,6 +567,10 @@ return [
         'media_hint_audio' => 'Ajoutez des fichiers audio (musiques, effets sonores, commentaires...). Formats acceptés : MP3, WAV, OGG, FLAC. Lecture directe dans l\'interface.',
         'media_hint_documents' => 'Ajoutez des documents (manuels, factures, certificats...). Formats acceptés : PDF, DOC, XLS, TXT, ZIP. Téléchargeables depuis l\'interface.',
         'take_photo' => 'Prendre une photo',
+        // Lightbox médias
+        'prev_image' => 'Image précédente',
+        'next_image' => 'Image suivante',
+        'video_not_supported' => 'Votre navigateur ne supporte pas la lecture vidéo.',
         
         // Copie
         'copy_success' => 'Catégorie copiée avec succès.',
