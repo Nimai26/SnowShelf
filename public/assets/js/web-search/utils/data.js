@@ -52,10 +52,14 @@ export function getValueFromPath(obj, path) {
  * Essaie automatiquement les chemins avec et sans préfixe 'data.' pour plus de flexibilité
  * @param {Object} result - Objet contenant les données
  * @param {string[]} sources - Liste des chemins à tester
+ * @param {Object} options - Options supplémentaires
+ * @param {boolean} options.preserveArray - Si true, retourne le tableau d'objets brut sans transformation
  * @returns {*} - Première valeur trouvée ou null
  */
-export function findValueFromSources(result, sources) {
+export function findValueFromSources(result, sources, options = {}) {
     if (!sources || !Array.isArray(sources)) return null;
+    
+    const { preserveArray = false } = options;
     
     // Étendre les sources pour inclure les variantes avec/sans préfixe 'data.'
     const expandedSources = [];
@@ -74,8 +78,13 @@ export function findValueFromSources(result, sources) {
     for (const source of expandedSources) {
         const value = getValueFromPath(result, source);
         if (value !== null && value !== undefined && value !== '') {
-            // Si c'est un array, traiter chaque élément
+            // Si c'est un array, traiter selon l'option preserveArray
             if (Array.isArray(value)) {
+                // Si preserveArray est activé, retourner le tableau brut
+                if (preserveArray) {
+                    return value;
+                }
+                
                 const stringValues = value.map(item => {
                     // Si l'élément est un objet avec une propriété 'name', l'extraire
                     if (item && typeof item === 'object' && item.name) {

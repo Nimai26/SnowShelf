@@ -164,7 +164,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'images.brickset.com',
             'img.bricklink.com',
             'images.lego.com',
-            'lego.com'
+            'lego.com',
+            // Deezer
+            'e-cdns-images.dzcdn.net', 'cdns-images.dzcdn.net', 'dzcdn.net',
+            // Discogs
+            'i.discogs.com', 'st.discogs.com',
+            // Spotify
+            'i.scdn.co', 'mosaic.scdn.co'
         ];
         
         $isAllowed = false;
@@ -228,10 +234,106 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
     
+    // Mode 3: Preview audio via URL (pour les extraits musicaux Deezer, etc.)
+    // Pas d'authentification requise, mais limité aux domaines audio whitelist
+    if (isset($_GET['url']) && isset($_GET['mode']) && $_GET['mode'] === 'audio') {
+        $url = $_GET['url'];
+        
+        // Log pour debug
+        loger('proxy-download', 'DEBUG', 'Audio proxy request', ['url' => $url, 'raw_query' => $_SERVER['QUERY_STRING'] ?? '']);
+        
+        // Valider l'URL
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            loger('proxy-download', 'WARNING', 'Invalid audio URL', ['url' => $url]);
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Invalid URL', 'url' => $url]);
+            exit;
+        }
+        
+        // Vérifier que le domaine est dans la whitelist audio
+        $host = parse_url($url, PHP_URL_HOST);
+        $allowedAudioDomains = [
+            // Deezer previews - plusieurs formats de CDN
+            'cdns-preview-0.dzcdn.net', 'cdns-preview-1.dzcdn.net', 'cdns-preview-2.dzcdn.net',
+            'cdns-preview-3.dzcdn.net', 'cdns-preview-4.dzcdn.net', 'cdns-preview-5.dzcdn.net',
+            'cdns-preview-6.dzcdn.net', 'cdns-preview-7.dzcdn.net', 'cdns-preview-8.dzcdn.net',
+            'cdns-preview-9.dzcdn.net', 'cdns-preview-a.dzcdn.net', 'cdns-preview-b.dzcdn.net',
+            'cdns-preview-c.dzcdn.net', 'cdns-preview-d.dzcdn.net', 'cdns-preview-e.dzcdn.net',
+            'cdns-preview-f.dzcdn.net',
+            // Deezer CDN alternatifs (cdnt = CDN Token-based)
+            'cdnt-preview.dzcdn.net', 'cdnt-preview-0.dzcdn.net', 'cdnt-preview-1.dzcdn.net',
+            'cdnt-preview-2.dzcdn.net', 'cdnt-preview-3.dzcdn.net', 'cdnt-preview-4.dzcdn.net',
+            // Wildcards génériques Deezer
+            'dzcdn.net',
+        ];
+        
+        $isAllowed = false;
+        foreach ($allowedAudioDomains as $domain) {
+            if (str_contains($host, $domain)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+        
+        if (!$isAllowed) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Domain not allowed']);
+            exit;
+        }
+        
+        // Télécharger l'audio avec timeout
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_HTTPHEADER => [
+                'Accept: audio/mpeg, audio/*;q=0.9, */*;q=0.8',
+                'Referer: https://www.deezer.com/',
+            ]
+        ]);
+        
+        $audioData = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $curlError = curl_error($ch);
+        $curlErrno = curl_errno($ch);
+        curl_close($ch);
+        
+        if ($httpCode !== 200 || !$audioData) {
+            loger('proxy-download', 'WARNING', 'Audio fetch failed', [
+                'url' => $url,
+                'http_code' => $httpCode,
+                'curl_error' => $curlError,
+                'curl_errno' => $curlErrno
+            ]);
+            http_response_code(502);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Failed to fetch audio', 'http_code' => $httpCode, 'curl_error' => $curlError]);
+            exit;
+        }
+        
+        // Envoyer l'audio avec cache et headers CORS
+        header('Content-Type: ' . ($contentType ?: 'audio/mpeg'));
+        header('Content-Length: ' . strlen($audioData));
+        header('Cache-Control: public, max-age=3600'); // Cache 1h
+        header('Access-Control-Allow-Origin: *');
+        header('Accept-Ranges: bytes');
+        echo $audioData;
+        exit;
+    }
+    
     // GET sans token ni url valide = erreur
     http_response_code(400);
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'error' => 'Paramètres manquants (token ou url+mode=image)']);
+    echo json_encode(['success' => false, 'error' => 'Paramètres manquants (token ou url+mode=image|audio)']);
     exit;
 }
 
@@ -402,6 +504,21 @@ $allowedDomains = [
     
     // Vimeo
     'i.vimeocdn.com', 'vimeocdn.com',
+    
+    // Deezer (images et previews audio)
+    'e-cdns-images.dzcdn.net', 'cdns-images.dzcdn.net', 'dzcdn.net',
+    'cdns-preview-0.dzcdn.net', 'cdns-preview-1.dzcdn.net', 'cdns-preview-2.dzcdn.net',
+    'cdns-preview-3.dzcdn.net', 'cdns-preview-4.dzcdn.net', 'cdns-preview-5.dzcdn.net',
+    'cdns-preview-6.dzcdn.net', 'cdns-preview-7.dzcdn.net', 'cdns-preview-8.dzcdn.net',
+    'cdns-preview-9.dzcdn.net', 'cdns-preview-a.dzcdn.net', 'cdns-preview-b.dzcdn.net',
+    'cdns-preview-c.dzcdn.net', 'cdns-preview-d.dzcdn.net', 'cdns-preview-e.dzcdn.net',
+    'cdns-preview-f.dzcdn.net',
+    
+    // Discogs (images musique)
+    'i.discogs.com', 'st.discogs.com', 'discogs.com',
+    
+    // Spotify (images)
+    'i.scdn.co', 'mosaic.scdn.co', 'scdn.co',
 ];
 
 // Vérifier le domaine

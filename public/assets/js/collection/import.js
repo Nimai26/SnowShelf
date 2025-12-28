@@ -366,6 +366,16 @@ export function applyTransform(value, transformType, transformConfig = null) {
             }
             return [value];
         
+        case 'array_json':
+            // Garder le tableau d'objets tel quel pour stockage JSON (tracklist, etc.)
+            if (Array.isArray(value)) {
+                return JSON.stringify(value);
+            }
+            if (typeof value === 'object') {
+                return JSON.stringify([value]);
+            }
+            return value;
+        
         case 'join':
         case 'array_join':
             // Joindre les éléments d'un tableau avec un séparateur
@@ -1612,6 +1622,16 @@ export async function applyWebSearchImport(modal, result, applyImportedMetadata,
  */
 export function normalizeFieldValue(fieldKey, value) {
     if (value === null || value === undefined) return value;
+    
+    // Ne pas normaliser les tableaux (tracklist, etc.) - les retourner tels quels
+    if (Array.isArray(value)) {
+        return value;
+    }
+    
+    // Ne pas normaliser les objets complexes
+    if (typeof value === 'object' && value !== null) {
+        return value;
+    }
     
     const strValue = String(value).trim();
     

@@ -176,6 +176,8 @@ function getFieldTypes(): void
         ['value' => 'url', 'label' => 'URL', 'icon' => 'link'],
         ['value' => 'rating', 'label' => 'Note / Rating', 'icon' => 'star'],
         ['value' => 'duration', 'label' => 'Durée', 'icon' => 'clock'],
+        ['value' => 'tracklist', 'label' => 'Liste de pistes (audio)', 'icon' => 'playlist-music'],
+        ['value' => 'array', 'label' => 'Tableau (JSON)', 'icon' => 'code-json'],
     ];
     
     echo json_encode(['success' => true, 'data' => $types]);

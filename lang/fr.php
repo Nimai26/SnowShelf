@@ -1252,6 +1252,7 @@ return [
         'item_created' => 'Item créé avec succès',
         'item_updated' => 'Item mis à jour avec succès',
         'item_deleted' => 'Item supprimé avec succès',
+        'audio_preview_unavailable' => 'Aperçu audio non disponible (protection du service)',
         
         // Catégories
         'personal_categories' => 'Mes catégories',

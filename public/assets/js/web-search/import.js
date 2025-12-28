@@ -371,7 +371,8 @@ export function processImportField(item, actualResult, selectedFields, selectedM
         const typeId = getSelectedTypeId();
         // Récupérer les champs depuis le cache
         const cachedFields = state.primaryTypeFields[typeId];
-        const typeFields = cachedFields?.fields || [];
+        // Le cache contient directement un tableau de champs (pas un objet avec .fields)
+        const typeFields = Array.isArray(cachedFields) ? cachedFields : (cachedFields?.fields || []);
         const fieldDef = typeFields.find(f => f.field_key === fieldKey);
         
         if (fieldDef) {
@@ -379,7 +380,11 @@ export function processImportField(item, actualResult, selectedFields, selectedM
             const sources = fieldDef.api_keys && fieldDef.api_keys.length > 0 
                 ? fieldDef.api_keys 
                 : [fieldKey]; // Fallback sur le field_key
-            let value = findValueFromSources(actualResult, sources);
+            
+            // Pour les champs de type tracklist ou array, préserver le tableau d'objets
+            const preserveArray = fieldDef.field_type === 'tracklist' || fieldDef.field_type === 'array';
+            let value = findValueFromSources(actualResult, sources, { preserveArray });
+            
             if (value !== null && value !== undefined) {
                 // Normaliser les champs de date/année
                 if (fieldKey === 'year' || fieldKey === 'year_start' || fieldKey === 'year_end' || 

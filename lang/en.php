@@ -1252,6 +1252,7 @@ return [
         'item_created' => 'Item created successfully',
         'item_updated' => 'Item updated successfully',
         'item_deleted' => 'Item deleted successfully',
+        'audio_preview_unavailable' => 'Audio preview unavailable (service protection)',
         
         // Categories
         'personal_categories' => 'My categories',

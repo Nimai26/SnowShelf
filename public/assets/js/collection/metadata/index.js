@@ -10,8 +10,10 @@ export {
     loadMetadataFields,
     renderMetadataFields,
     buildStickerGridHtml,
+    buildTracklistHtml,
     refreshStickerGrid,
     initStickerGridEvents,
+    initTracklistEvents,
     initMetadataDropdowns,
     applyImportedMetadata,
     collectMetadataValues

@@ -1780,6 +1780,8 @@ if (!in_array($section, $validSections)) {
                                 <option value="url">URL</option>
                                 <option value="rating">Note / Rating</option>
                                 <option value="duration">Durée</option>
+                                <option value="tracklist">Liste de pistes (audio)</option>
+                                <option value="array">Tableau (JSON)</option>
                             </select>
                         </div>
                         <div class="form-group">

@@ -267,6 +267,7 @@ function getValues(PDO $pdo, int $userId, string $lang): void
                 $value = $meta['value_date'];
                 break;
             case 'multiselect':
+            case 'tracklist':
                 $value = $meta['value_json'] ? json_decode($meta['value_json'], true) : null;
                 break;
             default:
@@ -381,7 +382,31 @@ function handlePost(PDO $pdo, int $userId): void
                     $valueDate = $value;
                     break;
                 case 'multiselect':
-                    $valueJson = json_encode($value);
+                case 'tracklist':
+                    // Pour tracklist, stocker en JSON (array ou string JSON)
+                    if (is_array($value)) {
+                        $valueJson = json_encode($value);
+                    } elseif (is_string($value)) {
+                        // Si c'est déjà une chaîne JSON, vérifier et stocker directement
+                        $decoded = json_decode($value, true);
+                        if ($decoded !== null && is_array($decoded)) {
+                            // C'est du JSON valide représentant un tableau, le stocker tel quel
+                            $valueJson = $value;
+                        } else {
+                            // Ce n'est pas du JSON tableau valide, l'encapsuler
+                            $valueJson = json_encode([$value]);
+                        }
+                    } else {
+                        $valueJson = json_encode($value);
+                    }
+                    
+                    // Debug
+                    if ($fieldType === 'tracklist') {
+                        loger('item_metadata_api', 'DEBUG', 'Tracklist value to store', [
+                            'field_id' => $fieldId,
+                            'valueJson_preview' => substr($valueJson, 0, 200)
+                        ]);
+                    }
                     break;
                 default:
                     $valueText = is_string($value) ? trim($value) : (string)$value;

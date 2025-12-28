@@ -77,6 +77,16 @@ export function parseChecklistString(checklistStr) {
 export function normalizeFieldValue(fieldKey, value) {
     if (value === null || value === undefined) return value;
     
+    // Ne pas normaliser les tableaux (tracklist, etc.) - les retourner tels quels
+    if (Array.isArray(value)) {
+        return value;
+    }
+    
+    // Ne pas normaliser les objets complexes
+    if (typeof value === 'object' && value !== null) {
+        return value;
+    }
+    
     const strValue = String(value).trim();
     
     // Normalisation des classifications d'âge (PEGI, ESRB, etc.)
@@ -203,6 +213,8 @@ export async function loadMetadataFields(modal, typeId, itemId) {
         initMetadataDropdowns(container);
         // Initialiser les events pour la grille de stickers si présente
         initStickerGridEvents(container);
+        // Initialiser les events pour la tracklist si présente
+        initTracklistEvents(container);
         
         // Ajouter un listener sur le champ checklist
         const checklistInput = container.querySelector('[data-field-key="checklist"] input, [data-field-key="checklist"] textarea');
@@ -380,6 +392,11 @@ export function renderMetadataFields(fields, values) {
                 }
                 html += `</select></div>`;
                 break;
+            
+            case 'tracklist':
+                // Type spécial pour les listes de pistes audio
+                html += buildTracklistHtml(field.id, field.field_key, value);
+                break;
                 
             default: // text
                 html += `<input type="text" 
@@ -449,6 +466,212 @@ export function buildStickerGridHtml(fieldId, fieldKey, value, cells) {
 
     html += `</select></div>`;
     return html;
+}
+
+/**
+ * Build HTML for a tracklist field (list of audio tracks)
+ * @param {number} fieldId - DB id of the field
+ * @param {string} fieldKey - field_key string
+ * @param {Array|string} value - existing value (array of track objects or JSON string)
+ * @returns {string} HTML string
+ */
+export function buildTracklistHtml(fieldId, fieldKey, value) {
+    let tracks = [];
+    
+    try {
+        if (Array.isArray(value)) {
+            tracks = value;
+        } else if (typeof value === 'string' && value.trim()) {
+            tracks = JSON.parse(value);
+        }
+    } catch (e) {
+        console.warn('[Collection] buildTracklistHtml parse error:', e);
+    }
+    
+    if (!Array.isArray(tracks)) tracks = [];
+    
+    // Calculate total duration
+    let totalSeconds = 0;
+    tracks.forEach(t => {
+        if (t.duration_seconds) totalSeconds += t.duration_seconds;
+    });
+    const totalFormatted = formatDuration(totalSeconds);
+    
+    let html = `<div class="metadata-tracklist-wrapper" data-field-id="${fieldId}" data-field-key="${escapeHtml(fieldKey)}">`;
+    
+    // Header with track count and total duration
+    html += `<div class="tracklist-header">
+        <span class="tracklist-count">${tracks.length} piste${tracks.length > 1 ? 's' : ''}</span>
+        ${totalSeconds > 0 ? `<span class="tracklist-duration">Durée totale: ${totalFormatted}</span>` : ''}
+    </div>`;
+    
+    if (tracks.length > 0) {
+        html += `<div class="tracklist-container">`;
+        html += `<table class="tracklist-table">
+            <thead>
+                <tr>
+                    <th class="track-num">#</th>
+                    <th class="track-title">Titre</th>
+                    <th class="track-duration">Durée</th>
+                    ${tracks.some(t => t.preview_url) ? '<th class="track-preview"></th>' : ''}
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        tracks.forEach((track, idx) => {
+            const position = track.position || (idx + 1);
+            const title = track.title || track.name || `Piste ${position}`;
+            const duration = track.duration_formatted || formatDuration(track.duration_seconds || 0);
+            const disc = track.disc && track.disc > 1 ? `<span class="track-disc">CD${track.disc}</span>` : '';
+            
+            html += `<tr data-track-index="${idx}">
+                <td class="track-num">${disc}${position}</td>
+                <td class="track-title">${escapeHtml(title)}</td>
+                <td class="track-duration">${duration}</td>`;
+            
+            if (tracks.some(t => t.preview_url)) {
+                html += `<td class="track-preview">`;
+                if (track.preview_url) {
+                    html += `<button type="button" class="btn-track-preview" data-preview-url="${escapeHtml(track.preview_url)}" title="Écouter un extrait">
+                        <span class="mdi mdi-play-circle-outline"></span>
+                    </button>`;
+                }
+                html += `</td>`;
+            }
+            
+            html += `</tr>`;
+        });
+        
+        html += `</tbody></table></div>`;
+    } else {
+        html += `<div class="tracklist-empty">Aucune piste enregistrée</div>`;
+    }
+    
+    // Hidden input to store the JSON data
+    // Utiliser une chaîne JSON encodée proprement pour éviter les problèmes d'échappement HTML
+    const jsonValue = JSON.stringify(tracks);
+    // Encoder en base64 pour éviter tout problème d'échappement
+    const base64Value = btoa(unescape(encodeURIComponent(jsonValue)));
+    html += `<input type="hidden" 
+                    name="metadata[${escapeHtml(fieldKey)}]" 
+                    value="${base64Value}"
+                    data-tracklist-data
+                    data-encoding="base64">`;
+    
+    html += `</div>`;
+    return html;
+}
+
+/**
+ * Format seconds to MM:SS or HH:MM:SS
+ * @param {number} seconds
+ * @returns {string}
+ */
+function formatDuration(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hrs > 0) {
+        return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Initialize tracklist preview events
+ * @param {HTMLElement} container
+ */
+export function initTracklistEvents(container) {
+    const wrapper = container.querySelector('.metadata-tracklist-wrapper');
+    if (!wrapper) return;
+    
+    let currentAudio = null;
+    let currentButton = null;
+    
+    wrapper.addEventListener('click', (e) => {
+        const previewBtn = e.target.closest('.btn-track-preview');
+        if (!previewBtn) return;
+        
+        const previewUrl = previewBtn.dataset.previewUrl;
+        if (!previewUrl) return;
+        
+        // Stop current audio if playing
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+            if (currentButton) {
+                currentButton.querySelector('.mdi').classList.remove('mdi-pause-circle-outline');
+                currentButton.querySelector('.mdi').classList.add('mdi-play-circle-outline');
+            }
+            
+            // If same button, just stop
+            if (currentButton === previewBtn) {
+                currentButton = null;
+                return;
+            }
+        }
+        
+        // Deezer previews avec tokens (hdnea) sont signés pour une IP spécifique
+        // Ces tokens sont générés par l'API Deezer pour l'IP du serveur API, pas pour le client
+        // On ne peut malheureusement pas les lire directement ni via proxy
+        const isDeezerTokenUrl = previewUrl.includes('dzcdn.net') && previewUrl.includes('hdnea');
+        
+        if (isDeezerTokenUrl) {
+            // Les URLs avec token hdnea ne fonctionnent pas car signées pour une autre IP
+            console.warn('[Collection] Deezer preview URL has IP-locked token, cannot play');
+            if (typeof showToast === 'function') {
+                showToast(__('collection.audio_preview_unavailable') || 'Aperçu audio non disponible (protection Deezer)', 'warning');
+            }
+            return;
+        }
+        
+        // Utiliser le proxy pour les URLs Deezer classiques et autres sources
+        const encodedUrl = encodeURIComponent(previewUrl)
+            .replace(/~/g, '%7E')
+            .replace(/\*/g, '%2A');
+        const audioUrl = `/api/proxy-download.php?mode=audio&url=${encodedUrl}`;
+        
+        // Play new audio
+        currentAudio = new Audio(audioUrl);
+        currentButton = previewBtn;
+        
+        // Show loading state
+        const icon = previewBtn.querySelector('.mdi');
+        icon.classList.remove('mdi-play-circle-outline');
+        icon.classList.add('mdi-loading', 'mdi-spin');
+        
+        // Handle successful load
+        currentAudio.addEventListener('canplaythrough', () => {
+            icon.classList.remove('mdi-loading', 'mdi-spin');
+            icon.classList.add('mdi-pause-circle-outline');
+        }, { once: true });
+        
+        currentAudio.play().catch(err => {
+            console.warn('[Collection] Preview audio error:', err);
+            icon.classList.remove('mdi-loading', 'mdi-spin', 'mdi-pause-circle-outline');
+            icon.classList.add('mdi-play-circle-outline');
+            currentAudio = null;
+            currentButton = null;
+        });
+        
+        currentAudio.addEventListener('ended', () => {
+            icon.classList.remove('mdi-pause-circle-outline', 'mdi-loading', 'mdi-spin');
+            icon.classList.add('mdi-play-circle-outline');
+            currentAudio = null;
+            currentButton = null;
+        });
+        
+        currentAudio.addEventListener('error', () => {
+            console.warn('[Collection] Audio playback error');
+            icon.classList.remove('mdi-loading', 'mdi-spin', 'mdi-pause-circle-outline');
+            icon.classList.add('mdi-play-circle-outline');
+            currentAudio = null;
+            currentButton = null;
+        });
+    });
 }
 
 /**
@@ -897,7 +1120,8 @@ export function applyImportedMetadata(modal, metadata) {
         if (value === null || value === undefined || value === '') return;
         
         let processedValue = value;
-        if (Array.isArray(value)) {
+        // Ne pas convertir les tableaux en chaîne pour les champs de type tracklist
+        if (Array.isArray(value) && key !== 'tracklist') {
             processedValue = value.join(', ');
         }
         
@@ -989,6 +1213,27 @@ export function applyImportedMetadata(modal, metadata) {
                     }
                 } catch (e) {
                     console.warn('[Collection] parseChecklistString failed', e);
+                }
+            }
+            
+            // Traitement spécial pour tracklist - régénérer le HTML complet
+            if (key === 'tracklist' || effectiveFieldKey === 'tracklist') {
+                const tracklistWrapper = field.querySelector('.metadata-tracklist-wrapper');
+                if (tracklistWrapper) {
+                    const fieldId = tracklistWrapper.dataset.fieldId;
+                    const fieldKey = tracklistWrapper.dataset.fieldKey || 'tracklist';
+                    // Régénérer le HTML avec les nouvelles données
+                    const newHtml = buildTracklistHtml(fieldId, fieldKey, processedValue);
+                    // Remplacer l'ancien wrapper
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newHtml;
+                    const newWrapper = tempDiv.firstElementChild;
+                    tracklistWrapper.parentNode.replaceChild(newWrapper, tracklistWrapper);
+                    // Réinitialiser les événements de preview
+                    initTracklistEvents(field);
+                    appliedCount++;
+                    console.log(`[Collection] Métadonnée tracklist importée avec ${Array.isArray(processedValue) ? processedValue.length : 0} pistes`);
+                    return;
                 }
             }
             
@@ -1096,6 +1341,24 @@ export function collectMetadataValues(container) {
         if (multiSelect) {
             const selectedValues = Array.from(multiSelect.selectedOptions).map(o => o.value);
             values[fieldId] = selectedValues.length > 0 ? JSON.stringify(selectedValues) : '';
+            return;
+        }
+        
+        // Check for tracklist field (base64 encoded)
+        const tracklistInput = field.querySelector('input[data-tracklist-data]');
+        if (tracklistInput) {
+            const encoding = tracklistInput.dataset.encoding;
+            if (encoding === 'base64' && tracklistInput.value) {
+                try {
+                    // Décoder base64 → JSON string
+                    values[fieldId] = decodeURIComponent(escape(atob(tracklistInput.value)));
+                } catch (e) {
+                    console.warn('[Collection] Failed to decode tracklist base64:', e);
+                    values[fieldId] = tracklistInput.value;
+                }
+            } else {
+                values[fieldId] = tracklistInput.value;
+            }
             return;
         }
         

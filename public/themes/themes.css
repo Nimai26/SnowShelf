@@ -2353,3 +2353,111 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--button-danger);
   pointer-events: none;
 }
+
+/* ========================================
+   Tracklist (liste de pistes audio)
+   ======================================== */
+.metadata-tracklist-wrapper {
+  margin-top: 0.5rem;
+}
+.tracklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0.5rem;
+}
+.tracklist-count {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tracklist-duration {
+  font-size: 0.8rem;
+}
+.tracklist-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--card-bg);
+}
+.tracklist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.tracklist-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  z-index: 1;
+}
+.tracklist-table th {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+}
+.tracklist-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-color-light, rgba(var(--border-color), 0.5));
+  vertical-align: middle;
+}
+.tracklist-table tbody tr:hover {
+  background: rgba(var(--accent-color), 0.05);
+}
+.tracklist-table .track-num {
+  width: 3rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.tracklist-table .track-disc {
+  display: inline-block;
+  font-size: 0.65rem;
+  background: var(--bg-tertiary);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  margin-right: 0.25rem;
+}
+.tracklist-table .track-title {
+  font-weight: 500;
+}
+.tracklist-table .track-duration {
+  width: 4rem;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+}
+.tracklist-table .track-preview {
+  width: 3rem;
+  text-align: center;
+}
+.btn-track-preview {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: rgba(var(--accent-color), 1);
+  transition: transform 0.15s, color 0.15s;
+}
+.btn-track-preview:hover {
+  transform: scale(1.2);
+  color: rgba(var(--accent-color), 0.8);
+}
+.btn-track-preview .mdi {
+  font-size: 1.3rem;
+}
+.tracklist-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}

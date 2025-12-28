@@ -514,7 +514,8 @@ function buildInstructionsListHtml(result, t) {
 export function buildTypeSpecificFieldsHtml(result, typeId, t) {
     // Récupérer les champs depuis le cache (chargés par loadPrimaryTypeFields)
     const cachedFields = state.primaryTypeFields[typeId];
-    const typeFields = cachedFields?.fields || [];
+    // Le cache contient directement un tableau de champs (pas un objet avec .fields)
+    const typeFields = Array.isArray(cachedFields) ? cachedFields : (cachedFields?.fields || []);
     
     //console.log('[WebSearch] Champs spécifiques pour le type ID', typeId, ':', typeFields);
     
@@ -529,8 +530,12 @@ export function buildTypeSpecificFieldsHtml(result, typeId, t) {
             ? field.api_keys 
             : [field.field_key]; // Fallback sur le field_key
 
-        //console.log('[WebSearch] Recherche de la valeur pour le champ spécifique:', field.field_key, 'avec sources:', sources);    
-        const value = findValueFromSources(result, sources);
+        //console.log('[WebSearch] Recherche de la valeur pour le champ spécifique:', field.field_key, 'avec sources:', sources);
+        
+        // Pour les champs de type tracklist ou array, préserver le tableau d'objets
+        const preserveArray = field.field_type === 'tracklist' || field.field_type === 'array';
+        const value = findValueFromSources(result, sources, { preserveArray });
+        
         const displayValue = formatFieldValue(field.field_key, value);
         // Vérifier si la valeur existe (inclut les booléens false et les nombres 0)
         const hasValue = value !== null && value !== undefined && value !== '';
@@ -593,6 +598,21 @@ function formatFieldValue(key, value) {
             }
         }
         return parts.length > 0 ? parts.join(', ') : null;
+    }
+    
+    // Tracklist : afficher le nombre de pistes
+    if ((key === 'tracklist' || key === 'tracks') && Array.isArray(value)) {
+        const trackCount = value.length;
+        // Calculer la durée totale si disponible
+        let totalSeconds = 0;
+        value.forEach(t => {
+            if (t.duration_seconds) totalSeconds += t.duration_seconds;
+        });
+        if (totalSeconds > 0) {
+            const mins = Math.floor(totalSeconds / 60);
+            return `${trackCount} piste${trackCount > 1 ? 's' : ''} (${mins} min)`;
+        }
+        return `${trackCount} piste${trackCount > 1 ? 's' : ''}`;
     }
     
     if (key === 'year' || key === 'year_start' || key === 'year_end' || 
@@ -816,10 +836,23 @@ async function loadProductDetails(result) {
             throw new Error('Aucune réponse de l\'API');
         }
         
-        // Les données sont dans apiResult.data.data (double niveau data)
+        // Structure de la réponse:
+        // apiResult = { data: responseFromToysApi, webapi_id: 33, provider: "deezer" }
+        // responseFromToysApi = { success: true, provider: "music", id: "...", data: {...album avec tracks...}, meta: {...} }
+        // Donc les vraies données sont dans apiResult.data.data
         console.log('[WebSearch] apiResult.data:', apiResult.data);
-        const data = apiResult.data?.data || apiResult.data; // Les données brutes de l'API
+        
+        // Extraire les données de l'album (peuvent être à différents niveaux selon la structure)
+        let data = apiResult.data;
+        // Si la réponse contient un niveau "data" supplémentaire (structure toys_api)
+        if (data && typeof data === 'object' && data.data && typeof data.data === 'object') {
+            data = data.data;
+        }
+        
         const webapiId = apiResult.webapi_id; // ID du provider pour les mappings
+        
+        console.log('[WebSearch] Données extraites:', data);
+        console.log('[WebSearch] webapi_id:', webapiId);
         
         if (!data) {
             throw new Error('Données vides dans la réponse');
