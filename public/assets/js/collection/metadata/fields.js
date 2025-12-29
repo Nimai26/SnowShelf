@@ -1235,8 +1235,8 @@ export function applyImportedMetadata(modal, metadata) {
         if (value === null || value === undefined || value === '') return;
         
         let processedValue = value;
-        // Ne pas convertir les tableaux en chaîne pour les champs de type tracklist
-        if (Array.isArray(value) && key !== 'tracklist') {
+        // Ne pas convertir les tableaux en chaîne pour les champs spéciaux (tracklist, image_list)
+        if (Array.isArray(value) && key !== 'tracklist' && !key.includes('_list')) {
             processedValue = value.join(', ');
         }
         
@@ -1348,6 +1348,25 @@ export function applyImportedMetadata(modal, metadata) {
                     initTracklistEvents(field);
                     appliedCount++;
                     console.log(`[Collection] Métadonnée tracklist importée avec ${Array.isArray(processedValue) ? processedValue.length : 0} pistes`);
+                    return;
+                }
+            }
+            
+            // Traitement spécial pour image_list (minifigs, personnages, etc.) - régénérer le HTML complet
+            if (key.includes('_list') && Array.isArray(processedValue)) {
+                const imageListWrapper = field.querySelector('.metadata-image-list-wrapper');
+                if (imageListWrapper) {
+                    const fieldId = imageListWrapper.dataset.fieldId;
+                    const fieldKey = imageListWrapper.dataset.fieldKey || key;
+                    // Régénérer le HTML avec les nouvelles données
+                    const newHtml = buildImageListHtml(fieldId, fieldKey, processedValue);
+                    // Remplacer l'ancien wrapper
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newHtml;
+                    const newWrapper = tempDiv.firstElementChild;
+                    imageListWrapper.parentNode.replaceChild(newWrapper, imageListWrapper);
+                    appliedCount++;
+                    console.log(`[Collection] Métadonnée image_list "${key}" importée avec ${processedValue.length} éléments`);
                     return;
                 }
             }
@@ -1473,6 +1492,24 @@ export function collectMetadataValues(container) {
                 }
             } else {
                 values[fieldId] = tracklistInput.value;
+            }
+            return;
+        }
+        
+        // Check for image_list field (base64 encoded)
+        const imageListInput = field.querySelector('input[data-image-list-data]');
+        if (imageListInput) {
+            const encoding = imageListInput.dataset.encoding;
+            if (encoding === 'base64' && imageListInput.value) {
+                try {
+                    // Décoder base64 → JSON string
+                    values[fieldId] = decodeURIComponent(escape(atob(imageListInput.value)));
+                } catch (e) {
+                    console.warn('[Collection] Failed to decode image_list base64:', e);
+                    values[fieldId] = imageListInput.value;
+                }
+            } else {
+                values[fieldId] = imageListInput.value;
             }
             return;
         }
