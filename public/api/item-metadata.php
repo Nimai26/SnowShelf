@@ -300,6 +300,7 @@ function getValues(PDO $pdo, int $userId, string $lang): void
                 break;
             case 'multiselect':
             case 'tracklist':
+            case 'image_list':
                 $value = $meta['value_json'] ? json_decode($meta['value_json'], true) : null;
                 break;
             default:
