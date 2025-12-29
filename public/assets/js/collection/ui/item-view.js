@@ -171,7 +171,7 @@ function buildMediaGalleryHtml(item, t) {
                 <div class="media-gallery-grid media-gallery-images">
                     ${images.map((img, index) => `
                         <div class="media-gallery-item image-item" data-type="image" data-url="${escapeHtml(img.url)}" data-index="${index}">
-                            <img data-src="${escapeHtml(img.url)}" alt="Image ${index + 1}" class="lazy-image">
+                            <img data-src="${escapeHtml(img.url)}" alt="Image ${index + 1}" class="lazy-image" decoding="async" fetchpriority="low">
                             <div class="media-gallery-overlay">
                                 <button type="button" class="media-view-btn" title="${t.view || 'Voir'}">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
