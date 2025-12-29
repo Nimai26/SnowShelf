@@ -12,6 +12,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../core/i18n.php';
 require_once __DIR__ . '/../../core/logger.php';
+require_once __DIR__ . '/../../core/UploadConfig.php';
 
 // Headers CORS et JSON
 header('Content-Type: application/json; charset=utf-8');
@@ -439,6 +440,29 @@ function handlePost(PDO $pdo, int $userId): void
                         ]);
                     }
                     break;
+                
+                case 'image_list':
+                    // Champ liste d'images avec noms (minifigs, personnages, etc.)
+                    // Télécharger les images externes et stocker localement
+                    $items = $value;
+                    if (is_string($value)) {
+                        $items = json_decode($value, true);
+                    }
+                    
+                    if (is_array($items) && !empty($items)) {
+                        // Récupérer le field_key pour le nom du dossier
+                        $fieldKeyStmt = $pdo->prepare("SELECT field_key FROM primary_type_fields WHERE id = ?");
+                        $fieldKeyStmt->execute([$fieldId]);
+                        $fieldKeyData = $fieldKeyStmt->fetch(PDO::FETCH_ASSOC);
+                        $fieldKey = $fieldKeyData['field_key'] ?? 'image_list';
+                        
+                        // Télécharger les images externes
+                        $items = downloadImageListImages($items, $userId, $itemId, $fieldKey);
+                    }
+                    
+                    $valueJson = is_array($items) ? json_encode($items) : $value;
+                    break;
+                    
                 default:
                     $valueText = is_string($value) ? trim($value) : (string)$value;
             }
@@ -470,4 +494,174 @@ function handlePost(PDO $pdo, int $userId): void
         $pdo->rollBack();
         throw $e;
     }
+}
+
+/**
+ * Télécharge les images externes d'un champ image_list et les stocke localement
+ * 
+ * @param array $items - Tableau d'items avec imageUrl/image_url
+ * @param int $userId - ID de l'utilisateur
+ * @param int $itemId - ID de l'item
+ * @param string $fieldKey - Clé du champ (ex: minifig_list)
+ * @return array - Items mis à jour avec local_image
+ */
+function downloadImageListImages(array $items, int $userId, int $itemId, string $fieldKey): array
+{
+    // Dossier de destination
+    $baseDir = __DIR__ . '/../../storage/users/' . $userId . '/items/' . $itemId . '/metadata_images/' . $fieldKey;
+    
+    // Créer le dossier si nécessaire
+    if (!is_dir($baseDir)) {
+        if (!mkdir($baseDir, 0775, true)) {
+            loger('item_metadata_api', 'ERROR', 'Impossible de créer le dossier metadata_images', [
+                'path' => $baseDir
+            ]);
+            return $items;
+        }
+    }
+    
+    $downloadedCount = 0;
+    $skippedCount = 0;
+    
+    foreach ($items as &$item) {
+        // Récupérer l'URL de l'image (supporter les deux formats)
+        $imageUrl = $item['imageUrl'] ?? $item['image_url'] ?? null;
+        
+        // Si pas d'URL externe ou déjà une image locale, passer
+        if (empty($imageUrl)) {
+            $skippedCount++;
+            continue;
+        }
+        
+        // Si l'image locale existe déjà, ne pas re-télécharger
+        if (!empty($item['local_image']) && file_exists(__DIR__ . '/../../' . ltrim($item['local_image'], '/'))) {
+            $skippedCount++;
+            continue;
+        }
+        
+        // Générer un nom de fichier basé sur l'ID de l'élément (minifig, personnage, etc.)
+        $elementId = $item['id'] ?? ('item_' . uniqid());
+        $extension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+        $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $elementId) . '.' . $extension;
+        $localPath = $baseDir . '/' . $filename;
+        
+        // Télécharger l'image
+        $downloaded = downloadExternalImage($imageUrl, $localPath);
+        
+        if ($downloaded) {
+            // Stocker le chemin relatif
+            $relativePath = '/storage/users/' . $userId . '/items/' . $itemId . '/metadata_images/' . $fieldKey . '/' . $filename;
+            $item['local_image'] = $relativePath;
+            $downloadedCount++;
+            
+            loger('item_metadata_api', 'DEBUG', 'Image téléchargée', [
+                'id' => $item['id'] ?? 'unknown',
+                'url' => substr($imageUrl, 0, 80),
+                'local' => $relativePath
+            ]);
+        } else {
+            $skippedCount++;
+        }
+    }
+    
+    loger('item_metadata_api', 'INFO', 'Image list traité', [
+        'field_key' => $fieldKey,
+        'total' => count($items),
+        'downloaded' => $downloadedCount,
+        'skipped' => $skippedCount
+    ]);
+    
+    return $items;
+}
+
+/**
+ * Télécharge une image externe et la sauvegarde localement
+ * 
+ * @param string $url - URL de l'image
+ * @param string $localPath - Chemin local de destination
+ * @return bool - Succès du téléchargement
+ */
+function downloadExternalImage(string $url, string $localPath): bool
+{
+    // Valider l'URL
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return false;
+    }
+    
+    // Whitelist des domaines autorisés pour les images
+    $allowedDomains = [
+        'cdn.rebrickable.com',
+        'rebrickable.com',
+        'img.rebrickable.com',
+        'images.igdb.com',
+        'cdn.thegamesdb.net',
+        'media.rawg.io',
+        'upload.wikimedia.org',
+        'i.imgur.com',
+    ];
+    
+    $host = parse_url($url, PHP_URL_HOST);
+    $isAllowed = false;
+    foreach ($allowedDomains as $domain) {
+        if ($host === $domain || str_ends_with($host, '.' . $domain)) {
+            $isAllowed = true;
+            break;
+        }
+    }
+    
+    if (!$isAllowed) {
+        loger('item_metadata_api', 'WARNING', 'Domaine non autorisé pour téléchargement', [
+            'host' => $host,
+            'url' => $url
+        ]);
+        return false;
+    }
+    
+    // Télécharger avec cURL
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 5,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+    
+    $imageData = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    $error = curl_error($ch);
+    curl_close($ch);
+    
+    // Vérifier la réponse
+    if ($httpCode !== 200 || empty($imageData)) {
+        loger('item_metadata_api', 'WARNING', 'Échec téléchargement image', [
+            'url' => $url,
+            'http_code' => $httpCode,
+            'error' => $error
+        ]);
+        return false;
+    }
+    
+    // Vérifier que c'est une image
+    if (!str_starts_with($contentType ?? '', 'image/')) {
+        loger('item_metadata_api', 'WARNING', 'Contenu non-image', [
+            'url' => $url,
+            'content_type' => $contentType
+        ]);
+        return false;
+    }
+    
+    // Sauvegarder le fichier
+    if (file_put_contents($localPath, $imageData) === false) {
+        loger('item_metadata_api', 'ERROR', 'Impossible de sauvegarder l\'image', [
+            'path' => $localPath
+        ]);
+        return false;
+    }
+    
+    return true;
 }
