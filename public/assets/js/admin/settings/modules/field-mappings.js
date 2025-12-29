@@ -662,7 +662,8 @@ function toggleTransformConfigField(transformType) {
         'status_mapping': { hint: 'Ex: {"new": "Neuf", "used": "Occasion"}', placeholder: '{"mapping": {...}}' },
         'custom': { hint: 'Configuration personnalisée JSON', placeholder: '{}' },
         'split': { hint: 'Ex: {"delimiter": ","}', placeholder: '{"delimiter": ","}' },
-        'find_by_key': { hint: 'Ex: {"match_key": "country", "match_value": "FR", "return_key": "rating"}', placeholder: '{"match_key": "", "match_value": "", "return_key": ""}' }
+        'find_by_key': { hint: 'Ex: {"match_key": "country", "match_value": "FR", "return_key": "rating"}', placeholder: '{"match_key": "", "match_value": "", "return_key": ""}' },
+        'image_list_extract': { hint: 'Ex: {"image_key": "set_img_url", "name_key": "set_name"}', placeholder: '{"image_key": "set_img_url", "name_key": "set_name"}' }
     };
     
     if (transformType && transformsWithConfig[transformType]) {
