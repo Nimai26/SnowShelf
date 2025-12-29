@@ -112,7 +112,7 @@ try {
             if (isset($input['action']) && $input['action'] === 'reorder') {
                 reorderFields($pdo, $input);
             } else {
-                createField($pdo);
+                createField($pdo, $input);
             }
             break;
             
@@ -327,9 +327,12 @@ function getField(PDO $pdo, int $id, string $lang = 'fr'): void
 /**
  * Créer un nouveau champ
  */
-function createField(PDO $pdo): void
+function createField(PDO $pdo, ?array $input = null): void
 {
-    $input = json_decode(file_get_contents('php://input'), true);
+    // Si $input n'est pas fourni, le lire (rétro-compatibilité)
+    if ($input === null) {
+        $input = json_decode(file_get_contents('php://input'), true);
+    }
     
     // Validation
     if (empty($input['primary_type_id']) || empty($input['field_key'])) {
