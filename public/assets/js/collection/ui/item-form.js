@@ -664,7 +664,7 @@ export function initItemForm(modalId, item) {
                             if (!userResponse.confirmed) {
                                 console.log('[Collection] Import annulé par l\'utilisateur');
                                 showToast(t.import_cancelled || 'Import annulé', 'info');
-                                return;
+                                return { cancelled: true };
                             }
                             
                             // Procéder à l'import avec les choix

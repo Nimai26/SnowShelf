@@ -272,9 +272,10 @@ export async function handleImport(result) {
         }
     }
     
+    let importResult = null;
     try {
         if (state.onSelect) {
-            await state.onSelect(enrichedResult);
+            importResult = await state.onSelect(enrichedResult);
         }
     } catch (error) {
         console.error('[WebSearch] Import error:', error);
@@ -285,7 +286,13 @@ export async function handleImport(result) {
         }
     }
     
-    // Fermer les deux modals
+    // Si l'import a été annulé, ne pas fermer les modals
+    if (importResult && importResult.cancelled) {
+        console.log('[WebSearch] Import annulé, modals conservés');
+        return;
+    }
+    
+    // Fermer les deux modals seulement si l'import a réussi
     if (state.detailModalId) {
         ModalManager.close(state.detailModalId);
         state.detailModalId = null;
