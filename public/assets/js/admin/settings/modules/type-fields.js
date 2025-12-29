@@ -194,19 +194,21 @@ function populateFieldTypeDropdown(selectedValue = 'text') {
  */
 function renderIconForDropdown(icon) {
     if (!icon) return '📋';
-    // Si c'est une icône MDI
-    if (icon.startsWith('mdi') || icon.includes(':')) {
-        let mdiClass = icon;
-        if (icon.includes(':')) {
-            mdiClass = icon.replace(':', '-');
-        }
-        if (!mdiClass.startsWith('mdi-')) {
-            mdiClass = 'mdi-' + mdiClass;
-        }
-        return `<i class="mdi ${mdiClass}"></i>`;
+    
+    // Si c'est un emoji ou caractère unicode, retourner tel quel
+    if (/^[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(icon)) {
+        return icon;
     }
-    // C'est un émoji
-    return icon;
+    
+    // C'est une icône MDI - normaliser le nom
+    let mdiClass = icon;
+    if (icon.includes(':')) {
+        mdiClass = icon.replace(':', '-');
+    }
+    if (!mdiClass.startsWith('mdi-')) {
+        mdiClass = 'mdi-' + mdiClass;
+    }
+    return `<i class="mdi ${mdiClass}"></i>`;
 }
 
 /**
