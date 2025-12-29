@@ -17,6 +17,9 @@ let onDeleteCallback = null;
 // Données locales pour le filtrage
 let localTypeFieldsData = [];
 
+// Types de champs disponibles (chargés depuis l'API)
+let fieldTypesData = [];
+
 /**
  * Charge les champs par type
  */
@@ -24,6 +27,9 @@ export async function loadTypeFields() {
     if (!elements.typeFieldsTableBody) return;
 
     try {
+        // Charger aussi les types de champs disponibles
+        await loadFieldTypes();
+        
         const response = await fetch(TYPE_FIELDS_API, {
             credentials: 'same-origin'
         });
@@ -90,6 +96,95 @@ function populateTypeFieldsFilterDropdown() {
     });
     
     menu.innerHTML = html;
+}
+
+/**
+ * Charge les types de champs disponibles depuis l'API
+ */
+async function loadFieldTypes() {
+    try {
+        const response = await fetch(`${TYPE_FIELDS_API}?field_types=1`, {
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            fieldTypesData = result.data;
+        } else {
+            // Fallback avec les types par défaut
+            fieldTypesData = [
+                { value: 'text', label: 'Texte court', icon: 'form-textbox' },
+                { value: 'textarea', label: 'Texte long', icon: 'text' },
+                { value: 'number', label: 'Nombre', icon: 'numeric' },
+                { value: 'year', label: 'Année', icon: 'calendar' },
+                { value: 'date', label: 'Date', icon: 'calendar-range' },
+                { value: 'select', label: 'Liste déroulante', icon: 'form-dropdown' },
+                { value: 'multiselect', label: 'Sélection multiple', icon: 'format-list-checks' },
+                { value: 'url', label: 'URL', icon: 'link' },
+                { value: 'rating', label: 'Note / Rating', icon: 'star' },
+                { value: 'duration', label: 'Durée', icon: 'timer-outline' },
+                { value: 'tracklist', label: 'Liste de pistes (audio)', icon: 'playlist-music' },
+                { value: 'image_list', label: 'Liste d\'images avec nom', icon: 'image-multiple' },
+                { value: 'array', label: 'Tableau (JSON)', icon: 'code-json' }
+            ];
+        }
+    } catch (error) {
+        console.error('Error loading field types:', error);
+        // Fallback
+        fieldTypesData = [
+            { value: 'text', label: 'Texte court', icon: 'form-textbox' }
+        ];
+    }
+}
+
+/**
+ * Peuple le dropdown des types de champs
+ * @param {string} selectedValue - Valeur sélectionnée
+ */
+function populateFieldTypeDropdown(selectedValue = 'text') {
+    const select = document.getElementById('typeFieldType');
+    const menu = document.querySelector('#fieldTypeDropdown .custom-dropdown-menu');
+    const trigger = document.querySelector('#fieldTypeDropdown .custom-dropdown-trigger');
+    
+    if (!select) return;
+    
+    // Peupler le select natif
+    select.innerHTML = '';
+    fieldTypesData.forEach(type => {
+        const selected = type.value === selectedValue ? 'selected' : '';
+        select.innerHTML += `<option value="${type.value}" ${selected}>${escapeHtml(type.label)}</option>`;
+    });
+    
+    // Peupler le custom dropdown menu
+    if (menu) {
+        let html = '';
+        fieldTypesData.forEach(type => {
+            const icon = type.icon || 'form-textbox';
+            const iconHtml = renderIconForDropdown(icon);
+            const isSelected = type.value === selectedValue ? 'selected' : '';
+            html += `
+                <div class="custom-dropdown-option ${isSelected}" data-value="${type.value}" data-icon="${escapeHtml(icon)}">
+                    <span class="custom-dropdown-option-icon">${iconHtml}</span>
+                    <span class="custom-dropdown-option-text">${escapeHtml(type.label)}</span>
+                </div>
+            `;
+        });
+        menu.innerHTML = html;
+    }
+    
+    // Mettre à jour le trigger
+    if (trigger) {
+        const selectedType = fieldTypesData.find(t => t.value === selectedValue);
+        if (selectedType) {
+            const iconEl = trigger.querySelector('.custom-dropdown-icon');
+            const textEl = trigger.querySelector('.custom-dropdown-text');
+            if (iconEl) iconEl.innerHTML = renderIconForDropdown(selectedType.icon);
+            if (textEl) textEl.textContent = selectedType.label;
+        }
+    }
+    
+    // Initialiser le custom dropdown
+    initModalCustomDropdown('fieldTypeDropdown', 'typeFieldType');
 }
 
 /**
@@ -235,6 +330,7 @@ export function openAddTypeFieldModal() {
     if (optionsGroup) optionsGroup.style.display = 'none';
     
     populateTypeFieldDropdown();
+    populateFieldTypeDropdown('text');
     initFieldTypeOptionsToggle();
     elements.typeFieldModal.classList.add('active');
 }
@@ -259,7 +355,6 @@ export async function openEditTypeFieldModal(id) {
             
             document.getElementById('typeFieldId').value = field.id;
             document.getElementById('typeFieldKey').value = field.field_key || '';
-            document.getElementById('typeFieldType').value = field.field_type || 'text';
             document.getElementById('typeFieldRequired').checked = field.is_required == 1;
             document.getElementById('typeFieldSortOrder').value = field.sort_order || 0;
             
@@ -283,6 +378,7 @@ export async function openEditTypeFieldModal(id) {
             }
             
             populateTypeFieldDropdown(field.primary_type_id);
+            populateFieldTypeDropdown(field.field_type || 'text');
             initFieldTypeOptionsToggle();
             
             elements.typeFieldModal.classList.add('active');

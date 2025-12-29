@@ -1769,20 +1769,20 @@ if (!in_array($section, $validSections)) {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="typeFieldType"><?= __('admin.field_type') ?? 'Type de champ' ?> *</label>
-                            <select id="typeFieldType" name="field_type" required>
-                                <option value="text">Texte court</option>
-                                <option value="textarea">Texte long</option>
-                                <option value="number">Nombre</option>
-                                <option value="year">Année</option>
-                                <option value="date">Date</option>
-                                <option value="select">Liste déroulante</option>
-                                <option value="multiselect">Sélection multiple</option>
-                                <option value="url">URL</option>
-                                <option value="rating">Note / Rating</option>
-                                <option value="duration">Durée</option>
-                                <option value="tracklist">Liste de pistes (audio)</option>
-                                <option value="array">Tableau (JSON)</option>
-                            </select>
+                            <div class="custom-dropdown" id="fieldTypeDropdown">
+                                <select id="typeFieldType" name="field_type" class="custom-dropdown-select" required>
+                                    <option value="text">Texte court</option>
+                                    <!-- Options chargées dynamiquement -->
+                                </select>
+                                <button type="button" class="custom-dropdown-trigger">
+                                    <span class="custom-dropdown-icon"><i class="mdi mdi-form-textbox"></i></span>
+                                    <span class="custom-dropdown-text">Texte court</span>
+                                    <svg class="custom-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="custom-dropdown-menu"></div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="typeFieldSortOrder"><?= __('admin.display_order') ?? 'Ordre d\'affichage' ?></label>
