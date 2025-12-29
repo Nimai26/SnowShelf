@@ -137,6 +137,21 @@ function initLazyLoadImages(container) {
 }
 
 /**
+ * Génère l'URL du thumbnail pour une image
+ * @param {string} url - URL originale de l'image
+ * @param {number} size - Taille du thumbnail (défaut: 200)
+ * @returns {string} URL du thumbnail
+ */
+function getThumbnailUrl(url, size = 200) {
+    // Si c'est déjà une URL externe (http/https), ne pas transformer
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+    }
+    // Générer l'URL du thumbnail pour les images locales
+    return `/api/thumbnail.php?path=${encodeURIComponent(url)}&size=${size}`;
+}
+
+/**
  * Construit le HTML pour l'affichage de la galerie de médias en mode consultation
  * @param {Object} item - L'item avec ses médias
  * @param {Object} t - Traductions
@@ -163,15 +178,18 @@ function buildMediaGalleryHtml(item, t) {
         <h4 class="section-title">${t.section_media}</h4>
         <div class="media-gallery-view">`;
     
-    // Section Images - avec lazy loading via data-src (chargement différé)
+    // Section Images - avec thumbnails pour la performance
     if (images.length > 0) {
         html += `
             <div class="media-gallery-group">
                 <h5 class="media-gallery-group-title">🖼️ ${t.images_count.replace('%d', images.length)}</h5>
                 <div class="media-gallery-grid media-gallery-images">
-                    ${images.map((img, index) => `
+                    ${images.map((img, index) => {
+                        // Utiliser un thumbnail de 200px pour la galerie
+                        const thumbUrl = getThumbnailUrl(img.url, 200);
+                        return `
                         <div class="media-gallery-item image-item" data-type="image" data-url="${escapeHtml(img.url)}" data-index="${index}">
-                            <img data-src="${escapeHtml(img.url)}" alt="Image ${index + 1}" class="lazy-image" decoding="async" fetchpriority="low">
+                            <img src="${escapeHtml(thumbUrl)}" alt="Image ${index + 1}" loading="lazy" decoding="async">
                             <div class="media-gallery-overlay">
                                 <button type="button" class="media-view-btn" title="${t.view || 'Voir'}">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -181,7 +199,7 @@ function buildMediaGalleryHtml(item, t) {
                                 </button>
                             </div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
             </div>`;
     }

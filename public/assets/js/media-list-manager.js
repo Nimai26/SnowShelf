@@ -205,6 +205,25 @@ const MediaListManager = (function() {
             }
         }
     }
+    
+    /**
+     * Génère l'URL du thumbnail pour une image
+     * @param {string} url - URL originale de l'image
+     * @param {number} size - Taille du thumbnail (défaut: 150)
+     * @returns {string} URL du thumbnail
+     */
+    function getThumbnailUrl(url, size = 150) {
+        // Si c'est une URL externe (http/https), ne pas transformer
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            return url;
+        }
+        // Si c'est un fichier temporaire, ne pas transformer
+        if (url.includes('/temp/')) {
+            return url;
+        }
+        // Générer l'URL du thumbnail pour les images locales
+        return `/api/thumbnail.php?path=${encodeURIComponent(url)}&size=${size}`;
+    }
 
     // ========================================
     // Classe MediaListManager
@@ -722,9 +741,11 @@ const MediaListManager = (function() {
             let content = '';
 
             if (this.typeConfig.displayMode === 'thumbnail' && fileData.thumbnailPath) {
+                // Utiliser un thumbnail pour les images locales
+                const thumbUrl = this.getThumbnailUrl(fileData.thumbnailPath, 150);
                 // Utiliser data-bg pour lazy loading avec Intersection Observer
                 content = `
-                    <div class="media-item-thumb lazy-bg" data-bg="${fileData.thumbnailPath}">
+                    <div class="media-item-thumb lazy-bg" data-bg="${thumbUrl}">
                         ${this.type === 'videos' ? `<span class="video-badge">${ICONS.play}</span>` : ''}
                     </div>
                 `;
@@ -1297,6 +1318,13 @@ const MediaListManager = (function() {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        /**
+         * Génère l'URL du thumbnail pour une image (wrapper de la fonction globale)
+         */
+        getThumbnailUrl(url, size = 150) {
+            return getThumbnailUrl(url, size);
         }
 
         /**
