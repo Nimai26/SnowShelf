@@ -153,6 +153,19 @@ export async function handleImport(result) {
             const selectedFields = {};
             const selectedMetadata = {};
             
+            // Collecter les field_keys des métadonnées cochées dans l'UI
+            const checkedMetadataKeys = new Set();
+            document.querySelectorAll('#wsTypeFields .import-field-item').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox && checkbox.checked) {
+                    const field = item.dataset.field;
+                    if (field && field.startsWith('type_')) {
+                        checkedMetadataKeys.add(field.replace('type_', ''));
+                    }
+                }
+            });
+            console.log('[WebSearch] Métadonnées cochées:', Array.from(checkedMetadataKeys));
+            
             // Parcourir les champs sélectionnés dans l'UI pour enrichir/compléter les mappings
             document.querySelectorAll('#wsImportFields .import-field-item, #wsMediaFields .import-field-item, #wsTypeFields .import-field-item').forEach(item => {
                 processImportField(item, actualResult, selectedFields, selectedMetadata, fieldMappings);
@@ -175,6 +188,17 @@ export async function handleImport(result) {
                 console.log(`[WebSearch] ${userSelectedImages.length} image(s) sélectionnée(s) (dédupliquées)`);
             }
             
+            // Filtrer les métadonnées BDD pour ne garder que celles cochées
+            const filteredBddMetadata = {};
+            if (mappedData.fieldsToImport.metadata) {
+                for (const [key, value] of Object.entries(mappedData.fieldsToImport.metadata)) {
+                    if (checkedMetadataKeys.has(key)) {
+                        filteredBddMetadata[key] = value;
+                    }
+                }
+            }
+            console.log('[WebSearch] Métadonnées BDD filtrées:', filteredBddMetadata);
+            
             enrichedResult = {
                 raw: actualResult,
                 primaryTypeId: primaryTypeId,
@@ -186,10 +210,10 @@ export async function handleImport(result) {
                     value: isPriceChecked ? (mappedData.fieldsToImport.value || selectedFields.value) : null,
                     image_url: userSelectedImages[0] || selectedFields.image_url,
                     images: userSelectedImages.length > 0 ? userSelectedImages : selectedFields.images,
-                    // Métadonnées fusionnées (BDD + UI)
+                    // Métadonnées fusionnées : UI + BDD (filtrées par checkboxes)
                     metadata: {
                         ...selectedMetadata,
-                        ...mappedData.fieldsToImport.metadata
+                        ...filteredBddMetadata
                     }
                 },
                 // Images : utiliser les images sélectionnées par l'utilisateur si checkbox coché
