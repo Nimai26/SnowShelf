@@ -13,6 +13,7 @@ storage/cache/
 storage/framework/
 storage/sessions/
 storage/temp/
+storage/thumbnails/
 storage/users/
 storage/VG_DB/
 
