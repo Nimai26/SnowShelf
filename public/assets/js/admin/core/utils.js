@@ -39,11 +39,6 @@ export function formatDate(dateString) {
 export function normalizeMdiIcon(icon) {
     if (!icon) return 'mdi-folder';
     
-    // Si c'est un émoji (ne commence pas par 'mdi' et ne contient pas ':'), retourner null
-    if (!icon.startsWith('mdi') && !icon.includes(':')) {
-        return null;
-    }
-    
     // Format Iconify "mdi:icon-name" -> "mdi-icon-name"
     if (icon.includes(':')) {
         icon = icon.replace(':', '-');
@@ -83,14 +78,14 @@ export function renderIcon(icon, classNameOrSize = '', color = '') {
     
     const styleAttr = style ? ` style="${style.trim()}"` : '';
     
-    // Vérifier si c'est une icône MDI (commence par "mdi" ou contient ":")
-    if (icon.startsWith('mdi') || icon.includes(':')) {
-        const mdiClass = normalizeMdiIcon(icon);
-        return `<i class="mdi ${mdiClass} ${className}"${styleAttr}></i>`;
+    // Si c'est un emoji ou caractère unicode, retourner tel quel
+    if (/^[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(icon)) {
+        return `<span class="${className}"${styleAttr}>${icon}</span>`;
     }
     
-    // C'est un émoji
-    return `<span class="${className}"${styleAttr}>${icon}</span>`;
+    // C'est une icône MDI
+    const mdiClass = normalizeMdiIcon(icon);
+    return `<i class="mdi ${mdiClass} ${className}"${styleAttr}></i>`;
 }
 
 /**
