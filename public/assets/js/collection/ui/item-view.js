@@ -98,8 +98,8 @@ function formatImageListForView(items, fieldKey = '') {
     for (const item of itemList) {
         const name = item.name || item.id || 'Sans nom';
         const quantity = item.quantity || 1;
-        // Prioriser l'image locale si elle existe
-        const imageUrl = item.local_image || item.image_url || '';
+        // Prioriser l'image locale si elle existe (supporter imageUrl et image_url)
+        const imageUrl = item.local_image || item.image_url || item.imageUrl || '';
         const hasImage = !!imageUrl;
         
         html += `<div class="image-list-view-item">`;

@@ -657,6 +657,22 @@ function formatFieldValue(key, value) {
         return `${trackCount} piste${trackCount > 1 ? 's' : ''}`;
     }
     
+    // Image list (minifigs, personnages, etc.) : afficher le nombre d'éléments
+    if (key.includes('_list') && Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+        const count = value.length;
+        // Calculer le total avec quantités
+        let totalQty = 0;
+        value.forEach(item => {
+            totalQty += (item.quantity || 1);
+        });
+        const label = key.includes('minifig') ? 'minifigurine' : 'élément';
+        const labelPlural = key.includes('minifig') ? 'minifigurines' : 'éléments';
+        if (totalQty !== count) {
+            return `${totalQty} ${totalQty > 1 ? labelPlural : label} (${count} unique${count > 1 ? 's' : ''})`;
+        }
+        return `${count} ${count > 1 ? labelPlural : label}`;
+    }
+    
     if (key === 'year' || key === 'year_start' || key === 'year_end' || 
         key.includes('release') || key.includes('publication')) {
         const yearValue = extractYear(value);

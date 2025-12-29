@@ -633,8 +633,8 @@ export function buildImageListHtml(fieldId, fieldKey, value) {
             const id = item.id || '';
             const name = item.name || item.id || `Item ${idx + 1}`;
             const quantity = item.quantity || 1;
-            // Prioriser l'image locale si elle existe, sinon URL externe
-            const imageUrl = item.local_image || item.image_url || '';
+            // Prioriser l'image locale si elle existe, sinon URL externe (supporter imageUrl et image_url)
+            const imageUrl = item.local_image || item.image_url || item.imageUrl || '';
             const hasImage = !!imageUrl;
             
             html += `<div class="image-list-item" data-item-index="${idx}" data-item-id="${escapeHtml(id)}">`;
