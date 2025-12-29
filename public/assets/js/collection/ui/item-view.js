@@ -56,6 +56,80 @@ function formatTracklistForView(tracks) {
 }
 
 /**
+ * Formate une liste d'images avec noms pour l'affichage
+ * @param {Array|string} items - Tableau d'items ou JSON stringifié
+ * @param {string} fieldKey - Clé du champ (pour déterminer le label)
+ * @returns {string} HTML de la liste d'images
+ */
+function formatImageListForView(items, fieldKey = '') {
+    // Parser si c'est une string JSON
+    let itemList = items;
+    if (typeof items === 'string') {
+        try {
+            itemList = JSON.parse(items);
+        } catch (e) {
+            return escapeHtml(items);
+        }
+    }
+    
+    if (!Array.isArray(itemList) || itemList.length === 0) {
+        return '<span class="text-muted">-</span>';
+    }
+    
+    // Calculer le total avec quantités
+    let totalQuantity = 0;
+    itemList.forEach(item => {
+        totalQuantity += (item.quantity || 1);
+    });
+    
+    // Déterminer le label selon le fieldKey
+    const itemLabel = fieldKey.toLowerCase().includes('minifig') ? 'minifigurine' : 'élément';
+    const itemLabelPlural = fieldKey.toLowerCase().includes('minifig') ? 'minifigurines' : 'éléments';
+    
+    // Construire la grille d'images
+    let html = `<div class="image-list-view-wrapper">`;
+    html += `<div class="image-list-view-header">
+        <span class="image-list-view-count">${totalQuantity} ${totalQuantity > 1 ? itemLabelPlural : itemLabel}</span>
+        <span class="image-list-view-unique">(${itemList.length} unique${itemList.length > 1 ? 's' : ''})</span>
+    </div>`;
+    
+    html += `<div class="image-list-view-grid">`;
+    
+    for (const item of itemList) {
+        const name = item.name || item.id || 'Sans nom';
+        const quantity = item.quantity || 1;
+        // Prioriser l'image locale si elle existe
+        const imageUrl = item.local_image || item.image_url || '';
+        const hasImage = !!imageUrl;
+        
+        html += `<div class="image-list-view-item">`;
+        
+        // Image ou placeholder
+        html += `<div class="image-list-view-item-image ${!hasImage ? 'no-image' : ''}">`;
+        if (hasImage) {
+            html += `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.parentElement.classList.add('no-image'); this.style.display='none';">`;
+        } else {
+            html += `<span class="mdi mdi-image-off-outline"></span>`;
+        }
+        html += `</div>`;
+        
+        // Nom et quantité
+        html += `<div class="image-list-view-item-info">`;
+        html += `<span class="image-list-view-item-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>`;
+        if (quantity > 1) {
+            html += `<span class="image-list-view-item-quantity">×${quantity}</span>`;
+        }
+        html += `</div>`;
+        
+        html += `</div>`;
+    }
+    
+    html += `</div></div>`;
+    
+    return html;
+}
+
+/**
  * Récupère l'extension d'un fichier depuis son URL
  * @param {string} url - URL du fichier
  * @returns {string} Extension en minuscules
@@ -546,6 +620,9 @@ export function buildMetadataViewHtml(metadata, t) {
         } else if (data.type === 'tracklist') {
             // Afficher la tracklist sous forme de liste numérotée
             displayValue = formatTracklistForView(data.value);
+        } else if (data.type === 'image_list') {
+            // Afficher la liste d'images avec noms (minifigs, personnages, etc.)
+            displayValue = formatImageListForView(data.value, key);
         } else if (data.type === 'number' || data.type === 'year') {
             displayValue = escapeHtml(data.value.toString());
         } else {

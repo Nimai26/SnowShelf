@@ -177,6 +177,7 @@ function getFieldTypes(): void
         ['value' => 'rating', 'label' => 'Note / Rating', 'icon' => 'star'],
         ['value' => 'duration', 'label' => 'Durée', 'icon' => 'clock'],
         ['value' => 'tracklist', 'label' => 'Liste de pistes (audio)', 'icon' => 'playlist-music'],
+        ['value' => 'image_list', 'label' => 'Liste d\'images avec nom', 'icon' => 'image-multiple'],
         ['value' => 'array', 'label' => 'Tableau (JSON)', 'icon' => 'code-json'],
     ];
     

@@ -397,6 +397,11 @@ export function renderMetadataFields(fields, values) {
                 // Type spécial pour les listes de pistes audio
                 html += buildTracklistHtml(field.id, field.field_key, value);
                 break;
+            
+            case 'image_list':
+                // Type spécial pour les listes d'images avec noms (minifigs, personnages, etc.)
+                html += buildImageListHtml(field.id, field.field_key, value);
+                break;
                 
             default: // text
                 html += `<input type="text" 
@@ -576,6 +581,96 @@ export function buildTracklistHtml(fieldId, fieldKey, value) {
                     name="metadata[${escapeHtml(fieldKey)}]" 
                     value="${base64Value}"
                     data-tracklist-data
+                    data-encoding="base64">`;
+    
+    html += `</div>`;
+    return html;
+}
+
+/**
+ * Build HTML for an image list field (list of images with names)
+ * Used for minifigures, characters, collectibles, etc.
+ * @param {number} fieldId - DB id of the field
+ * @param {string} fieldKey - field_key string
+ * @param {Array|string} value - existing value (array of image objects or JSON string)
+ * @returns {string} HTML string
+ */
+export function buildImageListHtml(fieldId, fieldKey, value) {
+    let items = [];
+    
+    try {
+        if (Array.isArray(value)) {
+            items = value;
+        } else if (typeof value === 'string' && value.trim()) {
+            items = JSON.parse(value);
+        }
+    } catch (e) {
+        console.warn('[Collection] buildImageListHtml parse error:', e);
+    }
+    
+    if (!Array.isArray(items)) items = [];
+    
+    // Calculer le total en tenant compte des quantités
+    let totalQuantity = 0;
+    items.forEach(item => {
+        totalQuantity += (item.quantity || 1);
+    });
+    
+    let html = `<div class="metadata-image-list-wrapper" data-field-id="${fieldId}" data-field-key="${escapeHtml(fieldKey)}">`;
+    
+    // Header avec compteur
+    const itemLabel = fieldKey.toLowerCase().includes('minifig') ? 'minifigurine' : 'élément';
+    const itemLabelPlural = fieldKey.toLowerCase().includes('minifig') ? 'minifigurines' : 'éléments';
+    html += `<div class="image-list-header">
+        <span class="image-list-count">${totalQuantity} ${totalQuantity > 1 ? itemLabelPlural : itemLabel}</span>
+        <span class="image-list-unique">(${items.length} unique${items.length > 1 ? 's' : ''})</span>
+    </div>`;
+    
+    if (items.length > 0) {
+        html += `<div class="image-list-grid">`;
+        
+        items.forEach((item, idx) => {
+            const id = item.id || '';
+            const name = item.name || item.id || `Item ${idx + 1}`;
+            const quantity = item.quantity || 1;
+            // Prioriser l'image locale si elle existe, sinon URL externe
+            const imageUrl = item.local_image || item.image_url || '';
+            const hasImage = !!imageUrl;
+            
+            html += `<div class="image-list-item" data-item-index="${idx}" data-item-id="${escapeHtml(id)}">`;
+            
+            // Image ou placeholder
+            html += `<div class="image-list-item-image ${!hasImage ? 'no-image' : ''}">`;
+            if (hasImage) {
+                html += `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.parentElement.classList.add('no-image'); this.style.display='none';">`;
+            } else {
+                html += `<span class="mdi mdi-image-off-outline"></span>`;
+            }
+            html += `</div>`;
+            
+            // Nom et quantité
+            html += `<div class="image-list-item-info">`;
+            html += `<span class="image-list-item-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>`;
+            if (quantity > 1) {
+                html += `<span class="image-list-item-quantity">×${quantity}</span>`;
+            }
+            html += `</div>`;
+            
+            html += `</div>`;
+        });
+        
+        html += `</div>`;
+    } else {
+        html += `<div class="image-list-empty">Aucun élément enregistré</div>`;
+    }
+    
+    // Hidden input pour stocker les données JSON (encodé en base64)
+    const jsonValue = JSON.stringify(items);
+    const base64Value = btoa(unescape(encodeURIComponent(jsonValue)));
+    html += `<input type="hidden" 
+                    name="metadata[${escapeHtml(fieldKey)}]" 
+                    value="${base64Value}"
+                    data-image-list-data
                     data-encoding="base64">`;
     
     html += `</div>`;

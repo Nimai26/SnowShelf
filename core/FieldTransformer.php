@@ -36,6 +36,7 @@ class FieldTransformer
             'pegi_normalize' => self::transformPegiNormalize($value),
             'duration_format' => self::transformDurationFormat($value, $config),
             'find_by_key' => self::transformFindByKey($value, $config),
+            'image_list_extract' => self::transformImageListExtract($value, $config),
             default => $value
         };
     }
@@ -284,6 +285,93 @@ class FieldTransformer
         }
         
         return null;
+    }
+
+    /**
+     * Extraction et normalisation d'une liste d'images avec noms
+     * Transforme des données de minifigs/figurines en format standardisé pour image_list
+     * 
+     * Config possible:
+     * - items_path: chemin vers le tableau d'items (ex: "items", "minifigs.items")
+     * - id_key: clé pour l'identifiant (défaut: "id")
+     * - name_key: clé pour le nom (défaut: "name")
+     * - image_key: clé pour l'URL de l'image (défaut: "imageUrl")
+     * - quantity_key: clé pour la quantité (défaut: "quantity")
+     * - count_path: chemin vers le compteur total (ex: "count", "minifigs.count")
+     * 
+     * Exemple d'entrée (Rebrickable minifigs):
+     * {
+     *   "minifigs": {
+     *     "count": 2,
+     *     "items": [
+     *       {"id": "fig-001", "name": "Batman", "quantity": 1, "imageUrl": "https://..."},
+     *       {"id": "fig-002", "name": "Robin", "quantity": 1, "imageUrl": null}
+     *     ]
+     *   }
+     * }
+     * 
+     * Sortie normalisée:
+     * [
+     *   {"id": "fig-001", "name": "Batman", "quantity": 1, "image_url": "https://...", "local_image": null},
+     *   {"id": "fig-002", "name": "Robin", "quantity": 1, "image_url": null, "local_image": null}
+     * ]
+     */
+    private static function transformImageListExtract($value, ?array $config): ?array
+    {
+        if (empty($value)) {
+            return null;
+        }
+        
+        // Configuration par défaut
+        $itemsPath = $config['items_path'] ?? 'items';
+        $idKey = $config['id_key'] ?? 'id';
+        $nameKey = $config['name_key'] ?? 'name';
+        $imageKey = $config['image_key'] ?? 'imageUrl';
+        $quantityKey = $config['quantity_key'] ?? 'quantity';
+        
+        // Si $value est déjà un tableau indexé, l'utiliser directement
+        $items = $value;
+        
+        // Sinon, extraire selon le chemin configuré
+        if (is_array($value) && !isset($value[0])) {
+            $items = self::getValueByPath($value, $itemsPath);
+        }
+        
+        if (!is_array($items) || empty($items)) {
+            return null;
+        }
+        
+        $result = [];
+        
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            
+            // Extraire les valeurs avec les clés configurées
+            $id = $item[$idKey] ?? null;
+            $name = $item[$nameKey] ?? null;
+            $imageUrl = $item[$imageKey] ?? null;
+            $quantity = (int) ($item[$quantityKey] ?? 1);
+            
+            // Si pas de nom, utiliser l'ID
+            if (empty($name) && !empty($id)) {
+                $name = $id;
+            }
+            
+            // Ajouter seulement si on a au moins un nom ou ID
+            if (!empty($name) || !empty($id)) {
+                $result[] = [
+                    'id' => $id,
+                    'name' => $name,
+                    'quantity' => $quantity,
+                    'image_url' => $imageUrl,
+                    'local_image' => null  // Sera rempli lors de l'upload local
+                ];
+            }
+        }
+        
+        return !empty($result) ? $result : null;
     }
 
     /**
