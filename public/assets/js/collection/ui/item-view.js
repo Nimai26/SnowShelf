@@ -86,6 +86,57 @@ function getDocumentIcon(extension) {
 }
 
 /**
+ * Initialise le lazy loading des images avec Intersection Observer
+ * Charge les images uniquement quand elles sont visibles dans le viewport
+ * @param {HTMLElement} container - Conteneur avec les images à charger
+ */
+function initLazyLoadImages(container) {
+    const lazyImages = container.querySelectorAll('img.lazy-image');
+    
+    if (lazyImages.length === 0) return;
+    
+    // Utiliser Intersection Observer pour un vrai lazy loading performant
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.dataset.src;
+                    if (src) {
+                        img.src = src;
+                        img.classList.add('lazy-loaded');
+                        img.classList.remove('lazy-image');
+                        // Supprimer le data-src une fois chargé
+                        delete img.dataset.src;
+                    }
+                    // Ne plus observer cette image
+                    observer.unobserve(img);
+                }
+            });
+        }, {
+            // Options : charger les images légèrement avant qu'elles soient visibles
+            rootMargin: '50px 0px',
+            threshold: 0.01
+        });
+        
+        lazyImages.forEach(img => {
+            imageObserver.observe(img);
+        });
+    } else {
+        // Fallback pour les navigateurs sans Intersection Observer
+        // Charger toutes les images immédiatement
+        lazyImages.forEach(img => {
+            const src = img.dataset.src;
+            if (src) {
+                img.src = src;
+                img.classList.add('lazy-loaded');
+                img.classList.remove('lazy-image');
+            }
+        });
+    }
+}
+
+/**
  * Construit le HTML pour l'affichage de la galerie de médias en mode consultation
  * @param {Object} item - L'item avec ses médias
  * @param {Object} t - Traductions
@@ -112,7 +163,7 @@ function buildMediaGalleryHtml(item, t) {
         <h4 class="section-title">${t.section_media}</h4>
         <div class="media-gallery-view">`;
     
-    // Section Images
+    // Section Images - avec lazy loading via data-src (chargement différé)
     if (images.length > 0) {
         html += `
             <div class="media-gallery-group">
@@ -120,7 +171,7 @@ function buildMediaGalleryHtml(item, t) {
                 <div class="media-gallery-grid media-gallery-images">
                     ${images.map((img, index) => `
                         <div class="media-gallery-item image-item" data-type="image" data-url="${escapeHtml(img.url)}" data-index="${index}">
-                            <img src="${escapeHtml(img.url)}" alt="Image ${index + 1}" loading="lazy">
+                            <img data-src="${escapeHtml(img.url)}" alt="Image ${index + 1}" class="lazy-image">
                             <div class="media-gallery-overlay">
                                 <button type="button" class="media-view-btn" title="${t.view || 'Voir'}">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -382,6 +433,9 @@ function openVideoPlayer(url) {
  */
 function initMediaGalleryEvents(modal, item) {
     const t = getTranslations();
+    
+    // Initialiser le lazy loading des images pour la performance
+    initLazyLoadImages(modal);
     
     // Clic sur les images - ouvrir dans lightbox simple
     const imageItems = modal.querySelectorAll('.media-gallery-item.image-item');

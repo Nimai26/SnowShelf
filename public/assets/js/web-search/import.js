@@ -166,9 +166,14 @@ export async function handleImport(result) {
             const isImagesChecked = document.querySelector('[data-field="images"] input[type="checkbox"]')?.checked;
             
             // Les images sélectionnées par l'utilisateur ont TOUJOURS priorité sur les mappings BDD
+            // Déduplication basée sur l'URL complète (Set garantit l'unicité)
             const userSelectedImages = state.selectedImages && state.selectedImages.size > 0 
-                ? Array.from(state.selectedImages) 
+                ? [...new Set(Array.from(state.selectedImages))] 
                 : [];
+            
+            if (userSelectedImages.length > 0) {
+                console.log(`[WebSearch] ${userSelectedImages.length} image(s) sélectionnée(s) (dédupliquées)`);
+            }
             
             enrichedResult = {
                 raw: actualResult,
@@ -285,9 +290,10 @@ function buildEnrichedResultFromUI(actualResult, primaryTypeId, primaryType, fie
     });
     
     // Les images sélectionnées par l'utilisateur ont TOUJOURS priorité
+    // Déduplication basée sur l'URL complète (Set garantit l'unicité)
     const isImagesChecked = document.querySelector('[data-field="images"] input[type="checkbox"]')?.checked;
     const userSelectedImages = state.selectedImages && state.selectedImages.size > 0 
-        ? Array.from(state.selectedImages) 
+        ? [...new Set(Array.from(state.selectedImages))] 
         : [];
     
     return {

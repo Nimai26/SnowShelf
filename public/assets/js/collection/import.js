@@ -26,6 +26,66 @@ const metadataMappingsCache = new Map();
 // ============================================================================
 
 /**
+ * Parse une valeur monétaire et extrait le nombre
+ * Gère les formats: "199,99 €", "€199.99", "$19.99", "199.99", "19,99€", etc.
+ * @param {string|number} value - Valeur à parser
+ * @returns {number|null} Valeur numérique ou null si non parsable
+ */
+function parseMonetaryValue(value) {
+    if (value === null || value === undefined) return null;
+    
+    // Si c'est déjà un nombre, le retourner directement
+    if (typeof value === 'number') return value;
+    
+    // Convertir en string
+    let str = String(value).trim();
+    if (!str) return null;
+    
+    // Supprimer les symboles de devises courants et espaces
+    // EUR: €, USD: $, GBP: £, JPY: ¥, etc.
+    str = str.replace(/[€$£¥₹₽₩₪₴₿฿₫₱₸₺₼₾₿\s]/g, '');
+    // Supprimer aussi les codes de devise textuels (EUR, USD, etc.)
+    str = str.replace(/\b(EUR|USD|GBP|JPY|CNY|CAD|AUD|CHF|SEK|NOK|DKK|PLN|CZK|HUF|RON|BGN|HRK|RUB|TRY|BRL|MXN|INR|KRW|SGD|HKD|TWD|THB|MYR|IDR|PHP|VND|AED|SAR|ZAR|NZD)\b/gi, '');
+    str = str.trim();
+    
+    // Détecter le format: virgule décimale (européen) ou point décimal (US)
+    // Format européen: 1.234,56 ou 1234,56
+    // Format US: 1,234.56 ou 1234.56
+    
+    const hasComma = str.includes(',');
+    const hasDot = str.includes('.');
+    
+    if (hasComma && hasDot) {
+        // Les deux présents: déterminer lequel est le séparateur décimal
+        const lastComma = str.lastIndexOf(',');
+        const lastDot = str.lastIndexOf('.');
+        
+        if (lastComma > lastDot) {
+            // Format européen: 1.234,56 -> virgule = décimale
+            str = str.replace(/\./g, '').replace(',', '.');
+        } else {
+            // Format US: 1,234.56 -> point = décimale
+            str = str.replace(/,/g, '');
+        }
+    } else if (hasComma) {
+        // Seulement virgule: probablement format européen (décimale)
+        // Mais vérifier si c'est un séparateur de milliers (ex: 1,234)
+        const parts = str.split(',');
+        if (parts.length === 2 && parts[1].length <= 2) {
+            // Virgule décimale: 199,99
+            str = str.replace(',', '.');
+        } else {
+            // Virgule comme séparateur de milliers: 1,234 -> 1234
+            str = str.replace(/,/g, '');
+        }
+    }
+    // Si seulement point, c'est déjà au bon format
+    
+    const parsed = parseFloat(str);
+    return isNaN(parsed) ? null : parsed;
+}
+
+/**
  * Vérifie si une URL pointe vers une vraie image (pas juste un dossier)
  * @param {string} url - URL à valider
  * @returns {boolean} true si l'URL est valide
@@ -54,6 +114,169 @@ function cleanImageUrl(url) {
     // Valider que l'URL pointe vers une vraie image
     if (!isValidImageUrl(cleaned)) return null;
     return cleaned || null;
+}
+
+/**
+ * Normalise une URL d'image pour la comparaison (détection de doublons)
+ * Supporte Amazon, TMDB, IGDB et autres patterns
+ * @param {string} url - URL à normaliser
+ * @returns {string} - Clé de comparaison normalisée
+ */
+function normalizeImageUrlForComparison(url) {
+    if (!url || typeof url !== 'string') return '';
+    const cleaned = url.replace(/\\\//g, '/').trim();
+    if (!cleaned) return '';
+    
+    // Pattern Amazon: /images/I/{ID}._{SIZE_PARAMS}.jpg
+    const amazonMatch = cleaned.match(/\/images\/I\/([A-Za-z0-9+%-]+)\._[^/]+$/);
+    if (amazonMatch) {
+        return `amazon:${amazonMatch[1]}`;
+    }
+    
+    // Pattern TMDB: https://image.tmdb.org/t/p/w500/abc123.jpg
+    const tmdbMatch = cleaned.match(/image\.tmdb\.org\/t\/p\/[^/]+\/([^/]+)$/);
+    if (tmdbMatch) {
+        return `tmdb:${tmdbMatch[1]}`;
+    }
+    
+    // Pattern IGDB: https://images.igdb.com/igdb/image/upload/t_cover_big/abc123.jpg
+    const igdbMatch = cleaned.match(/images\.igdb\.com\/[^/]+\/[^/]+\/[^/]+\/t_[^/]+\/([^/]+)$/);
+    if (igdbMatch) {
+        return `igdb:${igdbMatch[1]}`;
+    }
+    
+    // Pattern Lulu-Berlu et sites similaires: image-{ID}-{taille}.jpg
+    // Ex: p-image-250137-moyenne.jpg, p-image-250137-grande.jpg
+    const luluberluMatch = cleaned.match(/image-(\d+)-(?:mini|petite|moyenne|grande|original)\.(?:jpg|png|webp)/i);
+    if (luluberluMatch) {
+        // Extraire aussi le nom de base pour éviter collision entre produits différents
+        const baseNameMatch = cleaned.match(/\/([^/]+)-p-image-\d+/);
+        const baseName = baseNameMatch ? baseNameMatch[1].substring(0, 30) : '';
+        return `luluberlu:${baseName}:${luluberluMatch[1]}`;
+    }
+    
+    // Pattern générique avec suffixes de taille: filename-{taille}.jpg
+    // Ex: product-small.jpg, product-medium.jpg, product-large.jpg
+    const genericSizeMatch = cleaned.match(/\/([^/]+?)[-_](mini|small|thumb|petite|medium|moyenne|large|grande|big|xl|xxl|original|hd|full)\.(?:jpg|jpeg|png|webp|gif)/i);
+    if (genericSizeMatch) {
+        return `generic:${genericSizeMatch[1].toLowerCase()}`;
+    }
+    
+    // Pour les autres URLs, utiliser l'URL complète nettoyée en minuscules
+    return cleaned.toLowerCase();
+}
+
+/**
+ * Extrait la taille d'une URL d'image (tous providers)
+ * Supporte: Amazon, TMDB, IGDB, paramètres URL génériques
+ * @param {string} url - URL de l'image
+ * @returns {number} - Taille en pixels (0 si non trouvée)
+ */
+function getImageSize(url) {
+    if (!url || typeof url !== 'string') return 0;
+    
+    // === Amazon ===
+    // Patterns: _SL500_, _AC_SL1500_, _UX500_, _UY500_, etc.
+    const amazonMatch = url.match(/[._](SL|UX|UY|SS|SX|SY)(\d+)[._]/i);
+    if (amazonMatch) {
+        return parseInt(amazonMatch[2], 10);
+    }
+    const amazonAltMatch = url.match(/_(?:AC_)?(?:SL|UX|UY|SS|SX|SY)(\d+)_/i);
+    if (amazonAltMatch) {
+        return parseInt(amazonAltMatch[1], 10);
+    }
+    
+    // === TMDB ===
+    // Patterns: /w500/, /w780/, /w1280/, /original/ (considéré comme très grand)
+    const tmdbMatch = url.match(/\/w(\d+)\//i);
+    if (tmdbMatch) {
+        return parseInt(tmdbMatch[1], 10);
+    }
+    if (url.includes('/original/')) {
+        return 10000; // Original = meilleure qualité
+    }
+    
+    // === IGDB ===
+    // Patterns: t_thumb (90), t_cover_small (90), t_cover_big (264), t_720p (720), t_1080p (1080)
+    const igdbSizes = {
+        't_thumb': 90,
+        't_micro': 35,
+        't_cover_small': 90,
+        't_cover_big': 264,
+        't_logo_med': 284,
+        't_screenshot_med': 569,
+        't_screenshot_big': 889,
+        't_screenshot_huge': 1280,
+        't_720p': 720,
+        't_1080p': 1080
+    };
+    for (const [pattern, size] of Object.entries(igdbSizes)) {
+        if (url.includes(pattern)) {
+            return size;
+        }
+    }
+    
+    // === Paramètres URL génériques ===
+    // Patterns: ?width=500, ?w=500, ?size=500, &width=500, etc.
+    const paramMatch = url.match(/[?&](width|w|size|height|h)=(\d+)/i);
+    if (paramMatch) {
+        return parseInt(paramMatch[2], 10);
+    }
+    
+    // === Dimensions dans le nom de fichier ===
+    // Patterns: image_1920x1080.jpg, image-800x600.png
+    const dimensionMatch = url.match(/[_-](\d{3,4})x(\d{3,4})\./i);
+    if (dimensionMatch) {
+        // Retourner la plus grande dimension
+        return Math.max(parseInt(dimensionMatch[1], 10), parseInt(dimensionMatch[2], 10));
+    }
+    
+    // === Suffixes de taille textuels (Lulu-Berlu, etc.) ===
+    // Patterns: -mini, -petite, -moyenne, -grande, -original
+    const textSizes = {
+        'mini': 50, 'thumb': 80, 'small': 100, 'petite': 100,
+        'medium': 300, 'moyenne': 300,
+        'large': 600, 'grande': 600, 'big': 600,
+        'xl': 800, 'xxl': 1000, 'hd': 1080, 'full': 1200, 'original': 2000
+    };
+    for (const [suffix, size] of Object.entries(textSizes)) {
+        if (url.toLowerCase().includes(`-${suffix}.`) || url.toLowerCase().includes(`_${suffix}.`)) {
+            return size;
+        }
+    }
+    
+    return 0;
+}
+
+/**
+ * Déduplique un tableau d'URLs d'images basé sur leur contenu normalisé
+ * Pour tous les providers, garde celle avec la meilleure résolution
+ * @param {string[]} urls - Tableau d'URLs
+ * @returns {string[]} - Tableau d'URLs dédupliquées (meilleure qualité)
+ */
+function deduplicateImageUrls(urls) {
+    const seen = new Map(); // normalizedKey → {url, size}
+    
+    for (const url of urls) {
+        if (!url) continue;
+        const key = normalizeImageUrlForComparison(url);
+        if (!key) continue;
+        
+        const currentSize = getImageSize(url);
+        const existing = seen.get(key);
+        
+        if (!existing) {
+            // Première occurrence
+            seen.set(key, { url, size: currentSize });
+        } else if (currentSize > existing.size) {
+            // Meilleure résolution trouvée, remplacer
+            seen.set(key, { url, size: currentSize });
+        }
+        // Sinon, garder l'existante (même taille ou plus grande)
+    }
+    
+    // Retourner les URLs dans l'ordre d'insertion (Map conserve l'ordre)
+    return Array.from(seen.values()).map(item => item.url);
 }
 
 /**
@@ -101,68 +324,65 @@ function extractYear(value) {
  * - Tableau d'objets avec URL : [{url: "...", is_main: true}, ...]
  * 
  * @param {*} value - Valeur brute depuis l'API
- * @returns {string[]} Tableau d'URLs normalisées
+ * @returns {string[]} Tableau d'URLs normalisées et dédupliquées
  */
 function normalizeImageUrls(value) {
     if (!value) return [];
     
+    let urls = [];
+    
     // Si c'est déjà un tableau
     if (Array.isArray(value)) {
         // Filtrer et extraire les URLs - peut contenir des strings ou objets
-        return value.map(item => {
+        urls = value.map(item => {
             if (typeof item === 'string') return cleanImageUrl(item);
             if (item && typeof item === 'object' && item.url) return cleanImageUrl(item.url);
             return null;
         }).filter(url => url && typeof url === 'string');
     }
-    
     // Si c'est une string simple
-    if (typeof value === 'string') {
+    else if (typeof value === 'string') {
         const cleaned = cleanImageUrl(value);
         return cleaned ? [cleaned] : [];
     }
-    
     // Si c'est un objet avec des propriétés images (format RAWG/IGDB/JVC)
-    if (typeof value === 'object' && value !== null) {
-        const urls = [];
-        
+    else if (typeof value === 'object' && value !== null) {
         // Cover principal
         const cover = cleanImageUrl(value.cover);
         if (cover) urls.push(cover);
         
         // Primary (format normalisé)
         const primary = cleanImageUrl(value.primary);
-        if (primary && !urls.includes(primary)) urls.push(primary);
+        if (primary) urls.push(primary);
         
         // Gallery (format normalisé)
         if (Array.isArray(value.gallery)) {
             value.gallery.forEach(item => {
                 const url = typeof item === 'string' ? cleanImageUrl(item) : cleanImageUrl(item?.url);
-                if (url && !urls.includes(url)) urls.push(url);
+                if (url) urls.push(url);
             });
         }
         // Screenshots
         if (Array.isArray(value.screenshots)) {
             value.screenshots.forEach(item => {
                 const url = typeof item === 'string' ? cleanImageUrl(item) : cleanImageUrl(item?.url);
-                if (url && !urls.includes(url)) urls.push(url);
+                if (url) urls.push(url);
             });
         }
         // Artworks
         if (Array.isArray(value.artworks)) {
             value.artworks.forEach(item => {
                 const url = typeof item === 'string' ? cleanImageUrl(item) : cleanImageUrl(item?.url);
-                if (url && !urls.includes(url)) urls.push(url);
+                if (url) urls.push(url);
             });
         }
         // Background
         const bg = cleanImageUrl(value.background);
-        if (bg && !urls.includes(bg)) urls.push(bg);
-        
-        return urls;
+        if (bg) urls.push(bg);
     }
     
-    return [];
+    // Dédupliquer avec détection des variantes Amazon
+    return deduplicateImageUrls(urls);
 }
 
 // ============================================================================
@@ -1601,8 +1821,15 @@ export async function applyWebSearchImport(modal, result, applyImportedMetadata,
         const action = shouldImport('value', conflict?.isEmpty ?? true);
         
         if (action === 'replace') {
-            marketValueField.value = fieldsToImport.value;
-            console.log('[Collection] Valeur marchande importée:', fieldsToImport.value);
+            // Nettoyer la valeur pour extraire uniquement le nombre
+            // Gère les formats: "199,99 €", "€199.99", "199.99", "$19.99", etc.
+            const cleanedValue = parseMonetaryValue(fieldsToImport.value);
+            if (cleanedValue !== null) {
+                marketValueField.value = cleanedValue;
+                console.log('[Collection] Valeur marchande importée:', cleanedValue, '(original:', fieldsToImport.value, ')');
+            } else {
+                console.warn('[Collection] Impossible de parser la valeur marchande:', fieldsToImport.value);
+            }
         }
     }
     
@@ -1615,9 +1842,12 @@ export async function applyWebSearchImport(modal, result, applyImportedMetadata,
     // Importer les images
     let imagesImported = 0;
     let imagesAttempted = 0;
-    const imageUrls = result.importImages?.length > 0 
+    let imageUrls = result.importImages?.length > 0 
         ? result.importImages 
         : (fieldsToImport.image_url && result.importImage ? [fieldsToImport.image_url] : []);
+    
+    // Dédupliquer les URLs d'images (inclut détection variantes Amazon)
+    imageUrls = deduplicateImageUrls(imageUrls);
     
     if (imageUrls.length > 0) {
         const conflict = mediaConflicts['images'];

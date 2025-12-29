@@ -957,7 +957,148 @@ async function updateDetailModalContent(result) {
     const cleanUrl = (url) => {
         if (!url || typeof url !== 'string') return null;
         return url.replace(/\\\//g, '/').trim();
-    };    
+    };
+    
+    /**
+     * Normalise une URL d'image pour la comparaison (détection de doublons)
+     * Supporte Amazon, TMDB, IGDB et autres patterns
+     * @param {string} url - URL à normaliser
+     * @returns {string} - Clé de comparaison normalisée
+     */
+    const normalizeImageUrlForComparison = (url) => {
+        if (!url || typeof url !== 'string') return '';
+        const cleaned = cleanUrl(url);
+        if (!cleaned) return '';
+        
+        // Pattern Amazon: /images/I/{ID}._{SIZE_PARAMS}.jpg
+        const amazonMatch = cleaned.match(/\/images\/I\/([A-Za-z0-9+%-]+)\._[^/]+$/);
+        if (amazonMatch) {
+            return `amazon:${amazonMatch[1]}`;
+        }
+        
+        // Pattern TMDB: https://image.tmdb.org/t/p/w500/abc123.jpg
+        const tmdbMatch = cleaned.match(/image\.tmdb\.org\/t\/p\/[^/]+\/([^/]+)$/);
+        if (tmdbMatch) {
+            return `tmdb:${tmdbMatch[1]}`;
+        }
+        
+        // Pattern IGDB: https://images.igdb.com/igdb/image/upload/t_cover_big/abc123.jpg
+        const igdbMatch = cleaned.match(/images\.igdb\.com\/[^/]+\/[^/]+\/[^/]+\/t_[^/]+\/([^/]+)$/);
+        if (igdbMatch) {
+            return `igdb:${igdbMatch[1]}`;
+        }
+        
+        // Pattern Lulu-Berlu et sites similaires: image-{ID}-{taille}.jpg
+        const luluberluMatch = cleaned.match(/image-(\d+)-(?:mini|petite|moyenne|grande|original)\.(?:jpg|png|webp)/i);
+        if (luluberluMatch) {
+            const baseNameMatch = cleaned.match(/\/([^/]+)-p-image-\d+/);
+            const baseName = baseNameMatch ? baseNameMatch[1].substring(0, 30) : '';
+            return `luluberlu:${baseName}:${luluberluMatch[1]}`;
+        }
+        
+        // Pattern générique avec suffixes de taille
+        const genericSizeMatch = cleaned.match(/\/([^/]+?)[-_](mini|small|thumb|petite|medium|moyenne|large|grande|big|xl|xxl|original|hd|full)\.(?:jpg|jpeg|png|webp|gif)/i);
+        if (genericSizeMatch) {
+            return `generic:${genericSizeMatch[1].toLowerCase()}`;
+        }
+        
+        // Pour les autres URLs, utiliser l'URL complète nettoyée
+        return cleaned.toLowerCase();
+    };
+    
+    /**
+     * Extrait la taille d'une URL d'image (tous providers)
+     * Supporte: Amazon, TMDB, IGDB, paramètres URL génériques
+     * @param {string} url - URL de l'image
+     * @returns {number} - Taille en pixels (0 si non trouvée)
+     */
+    const getImageSize = (url) => {
+        if (!url || typeof url !== 'string') return 0;
+        
+        // === Amazon ===
+        const amazonMatch = url.match(/[._](SL|UX|UY|SS|SX|SY)(\d+)[._]/i);
+        if (amazonMatch) {
+            return parseInt(amazonMatch[2], 10);
+        }
+        const amazonAltMatch = url.match(/_(?:AC_)?(?:SL|UX|UY|SS|SX|SY)(\d+)_/i);
+        if (amazonAltMatch) {
+            return parseInt(amazonAltMatch[1], 10);
+        }
+        
+        // === TMDB ===
+        const tmdbMatch = url.match(/\/w(\d+)\//i);
+        if (tmdbMatch) {
+            return parseInt(tmdbMatch[1], 10);
+        }
+        if (url.includes('/original/')) {
+            return 10000;
+        }
+        
+        // === IGDB ===
+        const igdbSizes = {
+            't_thumb': 90, 't_micro': 35, 't_cover_small': 90, 't_cover_big': 264,
+            't_logo_med': 284, 't_screenshot_med': 569, 't_screenshot_big': 889,
+            't_screenshot_huge': 1280, 't_720p': 720, 't_1080p': 1080
+        };
+        for (const [pattern, size] of Object.entries(igdbSizes)) {
+            if (url.includes(pattern)) return size;
+        }
+        
+        // === Paramètres URL génériques ===
+        const paramMatch = url.match(/[?&](width|w|size|height|h)=(\d+)/i);
+        if (paramMatch) {
+            return parseInt(paramMatch[2], 10);
+        }
+        
+        // === Dimensions dans le nom de fichier ===
+        const dimensionMatch = url.match(/[_-](\d{3,4})x(\d{3,4})\./i);
+        if (dimensionMatch) {
+            return Math.max(parseInt(dimensionMatch[1], 10), parseInt(dimensionMatch[2], 10));
+        }
+        
+        // === Suffixes de taille textuels (Lulu-Berlu, etc.) ===
+        const textSizes = {
+            'mini': 50, 'thumb': 80, 'small': 100, 'petite': 100,
+            'medium': 300, 'moyenne': 300,
+            'large': 600, 'grande': 600, 'big': 600,
+            'xl': 800, 'xxl': 1000, 'hd': 1080, 'full': 1200, 'original': 2000
+        };
+        for (const [suffix, size] of Object.entries(textSizes)) {
+            if (url.toLowerCase().includes(`-${suffix}.`) || url.toLowerCase().includes(`_${suffix}.`)) {
+                return size;
+            }
+        }
+        
+        return 0;
+    };
+    
+    /**
+     * Déduplique un tableau d'URLs d'images basé sur leur contenu normalisé
+     * Pour tous les providers, garde celle avec la meilleure résolution
+     * @param {string[]} urls - Tableau d'URLs
+     * @returns {string[]} - Tableau d'URLs dédupliquées (meilleure qualité)
+     */
+    const deduplicateImageUrls = (urls) => {
+        const seen = new Map();
+        
+        for (const url of urls) {
+            if (!url) continue;
+            const key = normalizeImageUrlForComparison(url);
+            if (!key) continue;
+            
+            const currentSize = getImageSize(url);
+            const existing = seen.get(key);
+            
+            if (!existing) {
+                seen.set(key, { url, size: currentSize });
+            } else if (currentSize > existing.size) {
+                seen.set(key, { url, size: currentSize });
+            }
+        }
+        
+        return Array.from(seen.values()).map(item => item.url);
+    };
+    
     // Fonction pour valider qu'une URL pointe vers une vraie image (pas juste un dossier)
     const isValidImageUrl = (url) => {
         if (!url || typeof url !== 'string') return false;
@@ -990,7 +1131,9 @@ async function updateDetailModalContent(result) {
     // Si déjà au format {primary, gallery}
     if (rawImages.primary || rawImages.gallery) {
         images.primary = cleanUrl(rawImages.primary) || null;
-        images.gallery = (rawImages.gallery || []).map(extractUrl).filter(Boolean);
+        // Extraire et dédupliquer les URLs de la galerie (inclut détection variantes Amazon)
+        const galleryUrls = (rawImages.gallery || []).map(extractUrl).filter(Boolean);
+        images.gallery = deduplicateImageUrls(galleryUrls);
     }
     // Format RAWG/IGDB: {cover, screenshots, artworks, background}
     else if (rawImages.cover || rawImages.screenshots || rawImages.artworks) {
@@ -1013,7 +1156,8 @@ async function updateDetailModalContent(result) {
         if (rawImages.background && rawImages.background !== rawImages.cover) {
             allImages.push(cleanUrl(rawImages.background));
         }
-        images.gallery = allImages.filter(Boolean);
+        // Dédupliquer les images (inclut détection variantes Amazon)
+        images.gallery = deduplicateImageUrls(allImages.filter(Boolean));
     }
     // Format tableau d'objets [{url, thumbnail, is_main}, ...] ou tableau de strings
     else if (Array.isArray(rawImages) && rawImages.length > 0) {
@@ -1028,8 +1172,9 @@ async function updateDetailModalContent(result) {
         const mainImage = extractedImages.find(img => img.isMain);
         images.primary = mainImage?.url || extractedImages[0]?.url || null;
         
-        // Construire la galerie avec toutes les URLs
-        images.gallery = extractedImages.map(img => img.url).filter(Boolean);
+        // Construire la galerie avec toutes les URLs et dédupliquer (inclut détection variantes Amazon)
+        const allUrls = extractedImages.map(img => img.url).filter(Boolean);
+        images.gallery = deduplicateImageUrls(allUrls);
     }
     // Fallback sur result.image
     else if (result.image && isValidImageUrl(result.image)) {
@@ -1055,14 +1200,18 @@ async function updateDetailModalContent(result) {
     
     // Conserver l'image originale si elle n'est pas dans la nouvelle galerie
     const originalImage = result.image || null;
-    const originalImageInGallery = originalImage && gallery.includes(originalImage);
     
-    // Construire la galerie complète (inclure l'image originale si pas dans gallery)
-    let fullGallery = [...gallery];
-    if (originalImage && !originalImageInGallery && !fullGallery.includes(originalImage)) {
-        // Ajouter l'image originale au début de la galerie
-        fullGallery.unshift(originalImage);
-    }
+    // Vérifier si l'image originale est déjà dans la galerie (comparaison normalisée)
+    const originalImageNormalized = originalImage ? normalizeImageUrlForComparison(originalImage) : null;
+    const originalImageInGallery = originalImageNormalized 
+        ? gallery.some(img => normalizeImageUrlForComparison(img) === originalImageNormalized)
+        : false;
+    
+    // Construire la galerie complète (inclure l'image originale)
+    let fullGallery = originalImage ? [originalImage, ...gallery] : [...gallery];
+    
+    // Dédupliquer la galerie complète (inclut détection variantes Amazon comme _SL500_ vs _AC_SL1500_)
+    fullGallery = deduplicateImageUrls(fullGallery);
     
     // Réinitialiser les images sélectionnées et sélectionner TOUTES les images de la galerie
     state.selectedImages.clear();

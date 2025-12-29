@@ -2781,6 +2781,26 @@ img.categories-option-icon {
     object-fit: cover;
 }
 
+/* Lazy loading des images - placeholder animé avant chargement */
+.media-gallery-item img.lazy-image {
+    background: linear-gradient(135deg, var(--input-bg) 0%, var(--card-bg) 100%);
+    animation: lazyPulse 1.5s ease-in-out infinite;
+}
+
+.media-gallery-item img.lazy-loaded {
+    animation: lazyFadeIn 0.3s ease-out;
+}
+
+@keyframes lazyPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+@keyframes lazyFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 .media-gallery-item.video-item {
     display: flex;
     align-items: center;

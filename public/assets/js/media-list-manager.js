@@ -155,6 +155,58 @@ const MediaListManager = (function() {
     };
 
     // ========================================
+    // Lazy Loading - Intersection Observer
+    // ========================================
+    let lazyBgObserver = null;
+    
+    /**
+     * Initialise l'Intersection Observer global pour le lazy loading des background-images
+     */
+    function initLazyBgObserver() {
+        if (lazyBgObserver) return lazyBgObserver;
+        
+        if ('IntersectionObserver' in window) {
+            lazyBgObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const el = entry.target;
+                        const bgUrl = el.dataset.bg;
+                        if (bgUrl) {
+                            el.style.backgroundImage = `url('${bgUrl}')`;
+                            el.classList.remove('lazy-bg');
+                            el.classList.add('lazy-bg-loaded');
+                            delete el.dataset.bg;
+                        }
+                        lazyBgObserver.unobserve(el);
+                    }
+                });
+            }, {
+                rootMargin: '50px 0px',
+                threshold: 0.01
+            });
+        }
+        return lazyBgObserver;
+    }
+    
+    /**
+     * Ajoute un élément à l'observation pour lazy loading
+     * @param {HTMLElement} element - Élément avec data-bg à charger
+     */
+    function observeLazyBg(element) {
+        const observer = initLazyBgObserver();
+        if (observer) {
+            observer.observe(element);
+        } else {
+            // Fallback : charger immédiatement
+            const bgUrl = element.dataset.bg;
+            if (bgUrl) {
+                element.style.backgroundImage = `url('${bgUrl}')`;
+                element.classList.remove('lazy-bg');
+            }
+        }
+    }
+
+    // ========================================
     // Classe MediaListManager
     // ========================================
     class MediaList {
@@ -641,6 +693,12 @@ const MediaListManager = (function() {
             // Créer l'élément DOM
             const item = this.createFileItem(fileData);
             this.itemsContainer.appendChild(item);
+            
+            // Initialiser le lazy loading pour les thumbnails
+            const lazyBgEl = item.querySelector('.lazy-bg');
+            if (lazyBgEl) {
+                observeLazyBg(lazyBgEl);
+            }
 
             // Mettre à jour l'UI
             this.updateEmptyState();
@@ -664,8 +722,9 @@ const MediaListManager = (function() {
             let content = '';
 
             if (this.typeConfig.displayMode === 'thumbnail' && fileData.thumbnailPath) {
+                // Utiliser data-bg pour lazy loading avec Intersection Observer
                 content = `
-                    <div class="media-item-thumb" style="background-image: url('${fileData.thumbnailPath}')">
+                    <div class="media-item-thumb lazy-bg" data-bg="${fileData.thumbnailPath}">
                         ${this.type === 'videos' ? `<span class="video-badge">${ICONS.play}</span>` : ''}
                     </div>
                 `;
