@@ -94,8 +94,13 @@ export async function showResultDetails(result) {
             { text: t.detail_cancel_btn, action: 'close', class: 'btn-secondary' },
             { text: t.detail_import_btn, action: 'import', class: 'btn-primary' }
         ],
-        onOpen: (id) => {
+        onOpen: async (id) => {
             setupDetailModalEvents(result);
+            
+            // Auto-charger les détails si le provider le supporte
+            if (providerHasDetails(result.source) && result.detailUrl) {
+                await loadProductDetails(result);
+            }
         },
         onAction: async (action, id) => {
             if (action === 'import') {
@@ -695,8 +700,10 @@ function formatFieldValue(key, value) {
 export function setupDetailModalEvents(result) {
     state.currentDetailResult = result;
     
+    // Le bouton devient "Actualiser" après le premier chargement (géré dans updateDetailModalContent)
     document.getElementById('wsLoadDetails')?.addEventListener('click', async () => {
-        await loadProductDetails(result);
+        // Toujours forcer le refresh quand on clique sur le bouton (car il devient "Actualiser")
+        await loadProductDetails(result, true);
     });
     
     document.getElementById('wsSelectAll')?.addEventListener('click', () => {
@@ -860,12 +867,14 @@ function updateInstructionsSection(result, t) {
 
 /**
  * Charger les détails complets d'un produit
+ * @param {Object} result - Résultat de recherche
+ * @param {boolean} forceRefresh - Si true, ignore le cache et force un rechargement
  */
-async function loadProductDetails(result) {
+async function loadProductDetails(result, forceRefresh = false) {
     if (state.isLoadingDetails) return;
     
     const t = getTranslations();
-    const loadBtn = document.getElementById('wsLoadDetails');
+    const detailsBtn = document.getElementById('wsLoadDetails');
     
     const provider = result.source;
     const detailUrl = result.detailUrl;
@@ -875,11 +884,23 @@ async function loadProductDetails(result) {
         return;
     }
     
+    // Clé unique pour le cache
+    const cacheKey = `${provider}:${detailUrl}`;
+    
+    // Vérifier le cache si pas de forceRefresh
+    if (!forceRefresh && state.cachedDetails[cacheKey]) {
+        console.log('[WebSearch] Utilisation des données en cache pour:', cacheKey);
+        const cachedData = state.cachedDetails[cacheKey];
+        state.currentDetailResult = cachedData;
+        await updateDetailModalContent(cachedData, true); // true = fromCache
+        return;
+    }
+    
     state.isLoadingDetails = true;
     
-    if (loadBtn) {
-        loadBtn.disabled = true;
-        loadBtn.innerHTML = `
+    if (detailsBtn) {
+        detailsBtn.disabled = true;
+        detailsBtn.innerHTML = `
             <span class="spinner-small"></span>
             ${t.detail_loading || 'Chargement...'}
         `;
@@ -936,8 +957,11 @@ async function loadProductDetails(result) {
         //console.log('[WebSearch] enrichedResult.instructions:', enrichedResult.instructions);
         //console.log('[WebSearch] enrichedResult.data.instructions:', enrichedResult.data?.instructions);
         
+        // Mettre en cache
+        state.cachedDetails[cacheKey] = enrichedResult;
+        
         state.currentDetailResult = enrichedResult;
-        await updateDetailModalContent(enrichedResult);
+        await updateDetailModalContent(enrichedResult, false); // false = pas du cache
         
         showToast(t.detail_loaded_success || 'Détails chargés avec succès', 'success');
         
@@ -945,15 +969,15 @@ async function loadProductDetails(result) {
         console.error('[WebSearch] Erreur chargement détails:', error);
         showToast(error.message || t.detail_load_error || 'Erreur lors du chargement', 'error');
         
-        if (loadBtn) {
-            loadBtn.disabled = false;
-            loadBtn.innerHTML = `
+        if (detailsBtn) {
+            detailsBtn.disabled = false;
+            detailsBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="1 4 1 10 7 10"></polyline>
                     <polyline points="23 20 23 14 17 14"></polyline>
                     <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
                 </svg>
-                ${t.detail_load_more || 'Charger plus'}
+                ${t.detail_retry || 'Réessayer'}
             `;
         }
     } finally {
@@ -964,10 +988,42 @@ async function loadProductDetails(result) {
 /**
  * Mettre à jour le contenu du modal après chargement des détails
  * @param {Object} result - Résultat enrichi avec webapi_id
+ * @param {boolean} fromCache - Si true, les données viennent du cache
  */
-async function updateDetailModalContent(result) {
+async function updateDetailModalContent(result, fromCache = false) {
     const t = getTranslations();
     const webapiId = result.webapi_id || null;
+    
+    // Mettre à jour le bouton "Charger" -> "Actualiser" avec indicateur cache
+    const loadBtn = document.getElementById('wsLoadDetails');
+    if (loadBtn) {
+        loadBtn.disabled = false;
+        if (fromCache) {
+            // Données du cache : afficher "Actualiser" avec badge cache
+            loadBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <polyline points="23 20 23 14 17 14"></polyline>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+                ${t.detail_refresh || 'Actualiser'}
+            `;
+            loadBtn.title = t.detail_from_cache || 'Données en cache - Cliquez pour actualiser';
+            loadBtn.classList.add('has-cache-indicator');
+        } else {
+            // Données fraîches : afficher "Actualiser" sans badge
+            loadBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <polyline points="23 20 23 14 17 14"></polyline>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+                ${t.detail_refresh || 'Actualiser'}
+            `;
+            loadBtn.title = t.detail_refresh_title || 'Recharger les détails depuis l\'API';
+            loadBtn.classList.remove('has-cache-indicator');
+        }
+    }
     
     // Fonction utilitaire pour nettoyer les URLs des échappements JSON
     const cleanUrl = (url) => {
@@ -1411,17 +1467,5 @@ async function updateDetailModalContent(result) {
     // Mettre à jour la section des manuels (ou l'ajouter si elle n'existe pas)
     updateInstructionsSection(result, t);
     
-    // Mettre à jour le bouton de chargement
-    const loadBtn = document.getElementById('wsLoadDetails');
-    if (loadBtn) {
-        loadBtn.disabled = true;
-        loadBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            ${t.detail_loaded || 'Détails chargés'}
-        `;
-        loadBtn.classList.add('btn-success');
-        loadBtn.classList.remove('btn-secondary');
-    }
+    // Note: Le bouton est déjà mis à jour en haut de cette fonction
 }

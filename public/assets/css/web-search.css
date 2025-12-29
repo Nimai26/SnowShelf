@@ -1108,6 +1108,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
+    position: relative;
 }
 
 #wsLoadDetails:disabled {
@@ -1123,6 +1124,19 @@
 #wsLoadDetails.btn-success:hover {
     background: var(--button-success);
     border-color: var(--button-success);
+}
+
+/* Indicateur de cache sur le bouton */
+#wsLoadDetails.has-cache-indicator::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--accent-color, #4a9eff);
+    border-radius: 50%;
+    border: 2px solid var(--card-bg);
 }
 
 /* Petit spinner pour le bouton de chargement */

@@ -29,6 +29,7 @@ export const state = {
     autoTranslate: window.userInfo?.autoTrad ?? false,
     useLocalDatabase: true, // Utiliser la BDD locale SnowShelf (si false, refresh=true sera envoyé)
     currentImage: null,
+    cachedDetails: {}, // Cache des détails par clé unique (provider:detailUrl)
 };
 
 // Références DOM (mises à jour à chaque ouverture)
@@ -58,4 +59,5 @@ export function resetState() {
     state.initialQuery = '';
     state.onSelect = null;
     state.currentPrimaryTypeId = null;
+    state.cachedDetails = {}; // Vider le cache des détails
 }
