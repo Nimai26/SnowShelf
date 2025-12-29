@@ -14,6 +14,9 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../core/i18n.php';
 require_once __DIR__ . '/../../core/logger.php';
 
+// Chemin du cache des thumbnails
+define('THUMBNAIL_CACHE_DIR', __DIR__ . '/../../storage/thumbnails');
+
 // Headers CORS et JSON
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
@@ -714,6 +717,15 @@ function handleDelete(PDO $pdo, int $userId): void
     $pdo->beginTransaction();
     
     try {
+        // Récupérer les images pour supprimer leurs thumbnails cache
+        $imgStmt = $pdo->prepare("SELECT url FROM item_img WHERE item_id = :id");
+        $imgStmt->execute([':id' => $itemId]);
+        $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        foreach ($images as $imageUrl) {
+            deleteCachedThumbnails($imageUrl);
+        }
+        
         // Suppression du dossier de l'item (contient tous les médias)
         $storageBase = __DIR__ . '/../../storage/users/' . $userId . '/items/' . $itemId;
         $itemDir = realpath($storageBase);
@@ -832,4 +844,34 @@ function deleteDirectory(string $dir): bool
     }
     
     return $success;
+}
+
+/**
+ * Supprime les thumbnails en cache pour un chemin d'image donné
+ * Utilise le même algorithme de hash que thumbnail.php
+ * 
+ * @param string $imagePath Chemin relatif de l'image (ex: /users/4/items/82/images/img.jpg)
+ */
+function deleteCachedThumbnails(string $imagePath): void
+{
+    if (!is_dir(THUMBNAIL_CACHE_DIR)) {
+        return;
+    }
+    
+    // Nettoyer le chemin comme le fait thumbnail.php
+    $cleanPath = preg_replace('#/+#', '/', $imagePath);
+    
+    // Tailles possibles utilisées par le système
+    $sizes = [150, 200, 400, 800];
+    
+    foreach ($sizes as $size) {
+        $pathHash = md5($cleanPath . '_' . $size);
+        $cacheSubDir = substr($pathHash, 0, 2);
+        $thumbnailPath = THUMBNAIL_CACHE_DIR . '/' . $cacheSubDir . '/' . $pathHash . '.jpg';
+        
+        if (file_exists($thumbnailPath)) {
+            @unlink($thumbnailPath);
+            loger('items_api', 'DEBUG', 'Deleted cached thumbnail', ['path' => $thumbnailPath]);
+        }
+    }
 }

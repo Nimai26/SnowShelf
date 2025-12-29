@@ -34,6 +34,11 @@ if (empty($requestedPath)) {
 $cleanPath = str_replace(['..', "\0"], '', $requestedPath);
 $cleanPath = preg_replace('#/+#', '/', $cleanPath); // Normaliser les slashes
 
+// Retirer les query strings éventuels du path (ex: ?v=123456)
+if (($queryPos = strpos($cleanPath, '?')) !== false) {
+    $cleanPath = substr($cleanPath, 0, $queryPos);
+}
+
 // Construire le chemin source
 // Le path peut être /storage/... ou juste users/...
 if (strpos($cleanPath, '/storage/') === 0) {

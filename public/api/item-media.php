@@ -34,6 +34,9 @@ const UPLOAD_CATEGORIES = [
     'documents' => 'documents'
 ];
 
+// Chemin du cache des thumbnails
+define('THUMBNAIL_CACHE_DIR', __DIR__ . '/../../storage/thumbnails');
+
 // Méthode HTTP
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -700,6 +703,11 @@ function handleUpdateFromTemp(PDO $db, int $userId, bool $isAdmin, array $data):
         unlink($oldAbsolutePath);
     }
     
+    // Supprimer les anciens thumbnails en cache (images)
+    if ($mediaType === 'images') {
+        deleteCachedThumbnail($oldFile['url']);
+    }
+    
     // Déplacer le nouveau
     if (!rename($absoluteTempPath, $destPath)) {
         sendError(500, 'move_error', 'Impossible de déplacer le fichier');
@@ -789,12 +797,17 @@ function handleDeleteOne(PDO $db, int $userId, bool $isAdmin, ?int $fileId, stri
         unlink($absolutePath);
     }
     
-    // Supprimer le thumbnail si présent
+    // Supprimer le thumbnail si présent (vidéos)
     if (!empty($file['thumbnail_url'])) {
         $thumbPath = getAbsolutePath($file['thumbnail_url'], $userId, $file['item_id']);
         if (file_exists($thumbPath)) {
             unlink($thumbPath);
         }
+    }
+    
+    // Supprimer les thumbnails en cache (images)
+    if ($mediaType === 'images') {
+        deleteCachedThumbnail($file['url']);
     }
     
     // Supprimer en base
@@ -841,6 +854,11 @@ function handleDeleteAll(PDO $db, int $userId, bool $isAdmin, ?int $entityId, st
             if (file_exists($thumbPath)) {
                 unlink($thumbPath);
             }
+        }
+        
+        // Supprimer les thumbnails en cache (images)
+        if ($mediaType === 'images') {
+            deleteCachedThumbnail($file['url']);
         }
     }
     
@@ -976,4 +994,33 @@ function sendError(int $httpCode, string $errorCode, string $message): void
         'message' => $message
     ]);
     exit;
+}
+
+/**
+ * Supprime le thumbnail en cache pour un chemin d'image donné
+ * Utilise le même algorithme de hash que thumbnail.php
+ * 
+ * @param string $imagePath Chemin relatif de l'image (ex: /users/4/items/82/images/img.jpg)
+ */
+function deleteCachedThumbnail(string $imagePath): void
+{
+    if (!is_dir(THUMBNAIL_CACHE_DIR)) {
+        return;
+    }
+    
+    // Nettoyer le chemin comme le fait thumbnail.php
+    $cleanPath = preg_replace('#/+#', '/', $imagePath);
+    
+    // Tailles possibles utilisées par le système
+    $sizes = [150, 200, 400, 800];
+    
+    foreach ($sizes as $size) {
+        $pathHash = md5($cleanPath . '_' . $size);
+        $cacheSubDir = substr($pathHash, 0, 2);
+        $thumbnailPath = THUMBNAIL_CACHE_DIR . '/' . $cacheSubDir . '/' . $pathHash . '.jpg';
+        
+        if (file_exists($thumbnailPath)) {
+            @unlink($thumbnailPath);
+        }
+    }
 }
