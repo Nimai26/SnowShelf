@@ -1115,7 +1115,21 @@ export async function downloadImageDirect(url) {
         
         // Extraire le nom de fichier depuis l'URL
         const urlPath = new URL(cleanUrl).pathname;
-        const filename = urlPath.split('/').pop() || 'image.jpg';
+        let filename = urlPath.split('/').pop() || 'image';
+        
+        // Si le filename n'a pas d'extension, en ajouter une basée sur le type MIME
+        if (!filename.includes('.') || filename.split('.').pop().length > 5) {
+            const mimeToExt = {
+                'image/jpeg': 'jpg',
+                'image/png': 'png',
+                'image/gif': 'gif',
+                'image/webp': 'webp',
+                'image/svg+xml': 'svg',
+                'image/bmp': 'bmp'
+            };
+            const ext = mimeToExt[blob.type] || 'jpg';
+            filename = filename + '.' + ext;
+        }
         
         return {
             blob,
@@ -1191,7 +1205,21 @@ async function downloadViaWsrv(url) {
         
         // Extraire le nom de fichier depuis l'URL originale
         const urlPath = new URL(cleanUrl).pathname;
-        const filename = urlPath.split('/').pop() || 'image.jpg';
+        let filename = urlPath.split('/').pop() || 'image';
+        
+        // Si le filename n'a pas d'extension, en ajouter une basée sur le type MIME
+        if (!filename.includes('.') || filename.split('.').pop().length > 5) {
+            const mimeToExt = {
+                'image/jpeg': 'jpg',
+                'image/png': 'png',
+                'image/gif': 'gif',
+                'image/webp': 'webp',
+                'image/svg+xml': 'svg',
+                'image/bmp': 'bmp'
+            };
+            const ext = mimeToExt[blob.type] || 'jpg';
+            filename = filename + '.' + ext;
+        }
         
         console.log('[Collection] Image téléchargée via wsrv.nl:', filename, blob.size, 'bytes');
         

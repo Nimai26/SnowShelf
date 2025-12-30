@@ -165,6 +165,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'img.bricklink.com',
             'images.lego.com',
             'lego.com',
+            // Playmobil
+            'media.playmobil.com', 'playmobil.com',
+            // Klickypedia
+            'klickypedia.com', 'www.klickypedia.com',
             // Deezer
             'e-cdns-images.dzcdn.net', 'cdns-images.dzcdn.net', 'dzcdn.net',
             // Discogs
@@ -477,6 +481,12 @@ $allowedDomains = [
     
     // LEGO - Mega Construx
     'megaconstrux.com', 'www.megaconstrux.com',
+    
+    // Playmobil
+    'media.playmobil.com', 'playmobil.com', 'www.playmobil.com',
+    
+    // Klickypedia (Playmobil database)
+    'klickypedia.com', 'www.klickypedia.com',
     
     // Figurines/Jouets - Coleka
     'www.coleka.com', 'coleka.com', 'static.coleka.com', 'thumbs.coleka.com',

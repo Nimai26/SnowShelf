@@ -1503,6 +1503,26 @@ const MediaListManager = (function() {
             if (!filename) {
                 const ext = blob.type.split('/')[1] || 'jpg';
                 filename = `photo_${Date.now()}.${ext}`;
+            } else {
+                // S'assurer que le filename a une extension valide basée sur le type MIME
+                const hasValidExtension = filename.includes('.') && filename.split('.').pop().length <= 5;
+                if (!hasValidExtension && blob.type) {
+                    const mimeToExt = {
+                        'image/jpeg': 'jpg',
+                        'image/png': 'png',
+                        'image/gif': 'gif',
+                        'image/webp': 'webp',
+                        'image/svg+xml': 'svg',
+                        'image/bmp': 'bmp',
+                        'video/mp4': 'mp4',
+                        'video/webm': 'webm',
+                        'audio/mpeg': 'mp3',
+                        'audio/wav': 'wav',
+                        'application/pdf': 'pdf'
+                    };
+                    const ext = mimeToExt[blob.type] || blob.type.split('/')[1] || 'bin';
+                    filename = filename + '.' + ext;
+                }
             }
 
             // Créer un File depuis le Blob
