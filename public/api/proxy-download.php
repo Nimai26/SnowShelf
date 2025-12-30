@@ -167,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'lego.com',
             // Playmobil
             'media.playmobil.com', 'playmobil.com',
+            'playmobil.a.bigcontent.io', 'bigcontent.io', // Manuels PDF
             // Klickypedia
             'klickypedia.com', 'www.klickypedia.com',
             // Deezer
@@ -484,6 +485,7 @@ $allowedDomains = [
     
     // Playmobil
     'media.playmobil.com', 'playmobil.com', 'www.playmobil.com',
+    'playmobil.a.bigcontent.io', 'bigcontent.io', // Manuels PDF Playmobil
     
     // Klickypedia (Playmobil database)
     'klickypedia.com', 'www.klickypedia.com',

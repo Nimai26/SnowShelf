@@ -746,6 +746,22 @@ function extractInstructions(result) {
         //console.log('[extractInstructions] Trouvé dans result.metadata.instructions');
         return result.metadata.instructions;
     }
+    
+    // Format Playmobil : objet unique avec url et available
+    // Structure: { productId, available, url, format, source }
+    const playmobilInstr = result.instructions || result.data?.instructions;
+    if (playmobilInstr && playmobilInstr.available && playmobilInstr.url) {
+        //console.log('[extractInstructions] Format Playmobil détecté:', playmobilInstr);
+        return [{
+            id: playmobilInstr.productId || 'manual_1',
+            name: `Manuel ${playmobilInstr.format || 'PDF'}`,
+            description: `Instructions ${playmobilInstr.source || 'officielles'}`,
+            url: playmobilInstr.url,
+            pdfUrl: playmobilInstr.url,
+            format: playmobilInstr.format || 'PDF'
+        }];
+    }
+    
     //console.log('[extractInstructions] Aucun manuel trouvé. result.instructions:', result.instructions, 'result.data?.instructions:', result.data?.instructions);
     return [];
 }
