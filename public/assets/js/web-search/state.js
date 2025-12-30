@@ -27,7 +27,7 @@ export const state = {
     selectedImages: new Set(),
     selectedInstructions: new Set(), // Set<url> - URLs des manuels sélectionnés
     autoTranslate: window.userInfo?.autoTrad ?? false,
-    useLocalDatabase: true, // Utiliser la BDD locale SnowShelf (si false, refresh=true sera envoyé)
+    useLocalDatabase: window.userInfo?.useDb ?? true, // Utiliser la BDD locale SnowShelf (si false, refresh=true sera envoyé)
     currentImage: null,
     cachedDetails: {}, // Cache des détails par clé unique (provider:detailUrl)
 };

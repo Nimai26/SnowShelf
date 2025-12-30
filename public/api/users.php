@@ -168,12 +168,17 @@ function handlePost(ApiAuth $auth, UserService $userService, ?array $currentUser
             $auth->sendUnauthorized('Authentification requise');
         }
         
-        // Filtrer uniquement les préférences (theme, lang_pref, auto_trad)
-        $prefs = array_intersect_key($data, array_flip(['theme', 'lang_pref', 'auto_trad']));
+        // Filtrer uniquement les préférences (theme, lang_pref, auto_trad, use_db)
+        $prefs = array_intersect_key($data, array_flip(['theme', 'lang_pref', 'auto_trad', 'use_db']));
         
         // Convertir auto_trad en entier (0 ou 1) pour la BDD
         if (isset($prefs['auto_trad'])) {
             $prefs['auto_trad'] = $prefs['auto_trad'] ? 1 : 0;
+        }
+        
+        // Convertir use_db en entier (0 ou 1) pour la BDD
+        if (isset($prefs['use_db'])) {
+            $prefs['use_db'] = $prefs['use_db'] ? 1 : 0;
         }
         
         // Note: count() au lieu de empty() car ['auto_trad' => 0] serait considéré vide
@@ -195,6 +200,9 @@ function handlePost(ApiAuth $auth, UserService $userService, ?array $currentUser
             }
             if (isset($prefs['auto_trad'])) {
                 $_SESSION['auto_trad'] = $prefs['auto_trad'];
+            }
+            if (isset($prefs['use_db'])) {
+                $_SESSION['use_db'] = $prefs['use_db'];
             }
             
             sendSuccess($result);

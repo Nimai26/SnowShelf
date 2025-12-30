@@ -57,9 +57,26 @@ export function setupEventListeners() {
     });
     
     // Toggle utiliser BDD locale SnowShelf
-    elements.useLocalDbToggle?.addEventListener('change', (e) => {
+    // Toggle utiliser BDD locale (persisté en base)
+    elements.useLocalDbToggle?.addEventListener('change', async (e) => {
         state.useLocalDatabase = e.target.checked;
         console.log('[WebSearch] Use local database:', state.useLocalDatabase);
+        
+        try {
+            const response = await fetch('/api/users.php?action=preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ use_db: state.useLocalDatabase })
+            });
+            
+            if (response.ok) {
+                if (window.userInfo) {
+                    window.userInfo.useDb = state.useLocalDatabase;
+                }
+            }
+        } catch (error) {
+            console.error('[WebSearch] Erreur sauvegarde use_db:', error);
+        }
     });
     
     // Toggle auto-traduction (persisté en base)

@@ -35,16 +35,24 @@ $isPremium = $_SESSION['is_premium'] ?? false;
 
 // Récupérer auto_trad depuis la session ou la BDD si pas encore en session
 $autoTrad = $_SESSION['auto_trad'] ?? null;
-if ($autoTrad === null && isset($_SESSION['user_id'])) {
+$useDb = $_SESSION['use_db'] ?? null;
+if (($autoTrad === null || $useDb === null) && isset($_SESSION['user_id'])) {
     // Charger depuis la BDD si pas en session (ancienne session)
     $db = getDbConnection();
-    $stmt = $db->prepare("SELECT auto_trad FROM users WHERE id = ?");
+    $stmt = $db->prepare("SELECT auto_trad, use_db FROM users WHERE id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $autoTrad = (bool)($result['auto_trad'] ?? false);
-    $_SESSION['auto_trad'] = $autoTrad; // Mettre en cache dans la session
+    if ($autoTrad === null) {
+        $autoTrad = (bool)($result['auto_trad'] ?? false);
+        $_SESSION['auto_trad'] = $autoTrad;
+    }
+    if ($useDb === null) {
+        $useDb = (bool)($result['use_db'] ?? true); // Défaut: true (utiliser la BDD)
+        $_SESSION['use_db'] = $useDb;
+    }
 }
 $autoTrad = (bool)$autoTrad;
+$useDb = (bool)($useDb ?? true); // Fallback si jamais null
 ?>
 <!DOCTYPE html>
 <html lang="<?= getLang() ?>" data-theme="<?= htmlspecialchars($theme) ?>">
@@ -410,7 +418,8 @@ $autoTrad = (bool)$autoTrad;
         window.userInfo = {
             isPremium: <?= json_encode($isPremium) ?>,
             isAdmin: <?= json_encode($isAdmin) ?>,
-            autoTrad: <?= json_encode($autoTrad) ?>
+            autoTrad: <?= json_encode($autoTrad) ?>,
+            useDb: <?= json_encode($useDb) ?>
         };
     </script>
 </head>
