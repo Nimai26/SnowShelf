@@ -467,6 +467,15 @@ function buildInstructionsListHtml(result, t) {
         state.selectedInstructions = new Set();
     }
     
+    // Pré-sélectionner toutes les instructions par défaut (si pas encore sélectionnées)
+    // Cela permet d'importer automatiquement les manuels disponibles
+    if (state.selectedInstructions.size === 0) {
+        instructions.forEach(manual => {
+            const url = manual.pdfUrl || manual.url || '';
+            if (url) state.selectedInstructions.add(url);
+        });
+    }
+    
     const instructionItems = instructions.map((manual, idx) => {
         const manualUrl = manual.pdfUrl || manual.url || '';
         const manualId = manual.id || `manual_${idx}`;
@@ -730,28 +739,29 @@ export function setupDetailModalEvents(result) {
 function extractInstructions(result) {
     // Chercher dans result.instructions (propagé via ...data)
     if (result.instructions?.manuals && Array.isArray(result.instructions.manuals)) {
-        //console.log('[extractInstructions] Trouvé dans result.instructions.manuals');
+        console.log('[extractInstructions] Trouvé dans result.instructions.manuals');
         return result.instructions.manuals;
     }
     // Chercher dans result.data.instructions (structure originale)
     if (result.data?.instructions?.manuals && Array.isArray(result.data.instructions.manuals)) {
-        //console.log('[extractInstructions] Trouvé dans result.data.instructions.manuals');
+        console.log('[extractInstructions] Trouvé dans result.data.instructions.manuals');
         return result.data.instructions.manuals;
     }
     if (result.data?.metadata?.instructions && Array.isArray(result.data.metadata.instructions)) {
-        //console.log('[extractInstructions] Trouvé dans result.data.metadata.instructions');
+        console.log('[extractInstructions] Trouvé dans result.data.metadata.instructions');
         return result.data.metadata.instructions;
     }
     if (result.metadata?.instructions && Array.isArray(result.metadata.instructions)) {
-        //console.log('[extractInstructions] Trouvé dans result.metadata.instructions');
+        console.log('[extractInstructions] Trouvé dans result.metadata.instructions');
         return result.metadata.instructions;
     }
     
     // Format Playmobil : objet unique avec url et available
     // Structure: { productId, available, url, format, source }
     const playmobilInstr = result.instructions || result.data?.instructions;
+    console.log('[extractInstructions] Vérification format Playmobil:', playmobilInstr);
     if (playmobilInstr && playmobilInstr.available && playmobilInstr.url) {
-        //console.log('[extractInstructions] Format Playmobil détecté:', playmobilInstr);
+        console.log('[extractInstructions] Format Playmobil détecté:', playmobilInstr);
         return [{
             id: playmobilInstr.productId || 'manual_1',
             name: `Manuel ${playmobilInstr.format || 'PDF'}`,
@@ -762,7 +772,7 @@ function extractInstructions(result) {
         }];
     }
     
-    //console.log('[extractInstructions] Aucun manuel trouvé. result.instructions:', result.instructions, 'result.data?.instructions:', result.data?.instructions);
+    console.log('[extractInstructions] Aucun manuel trouvé. result.instructions:', result.instructions, 'result.data?.instructions:', result.data?.instructions);
     return [];
 }
 
@@ -856,28 +866,35 @@ function updateInstructionsSelectAllButton(instructions, t) {
  */
 function updateInstructionsSection(result, t) {
     const instructions = extractInstructions(result);
-    //console.log('[updateInstructionsSection] Manuels trouvés:', instructions.length);
+    console.log('[updateInstructionsSection] Manuels trouvés:', instructions.length, instructions);
     
     // Supprimer l'ancienne section si elle existe
     const existingSection = document.getElementById('wsInstructionsSection');
     if (existingSection) {
+        console.log('[updateInstructionsSection] Suppression ancienne section');
         existingSection.remove();
     }
     
     // Si pas de manuels, ne rien afficher
     if (!instructions || instructions.length === 0) {
+        console.log('[updateInstructionsSection] Pas de manuels, sortie');
         return;
     }
     
     // Générer le HTML de la nouvelle section
     const instructionsHtml = buildInstructionsListHtml(result, t);
+    console.log('[updateInstructionsSection] HTML généré:', instructionsHtml ? 'OK' : 'VIDE');
     
     // Insérer après la section des médias
     const mediaSection = document.getElementById('wsMediaSection');
+    console.log('[updateInstructionsSection] mediaSection trouvé:', !!mediaSection);
     if (mediaSection && instructionsHtml) {
         mediaSection.insertAdjacentHTML('afterend', instructionsHtml);
+        console.log('[updateInstructionsSection] Section insérée dans le DOM');
         // Réattacher les événements
         setupInstructionsEvents(result);
+    } else {
+        console.warn('[updateInstructionsSection] Impossible d\'insérer la section:', { mediaSection: !!mediaSection, instructionsHtml: !!instructionsHtml });
     }
 }
 
@@ -953,10 +970,10 @@ async function loadProductDetails(result, forceRefresh = false) {
             throw new Error('Données vides dans la réponse');
         }
         
-        //console.log('[WebSearch] Détails reçus (data):', data);
+        console.log('[WebSearch] Détails reçus (data):', data);
         //console.log('[WebSearch] Provider webapi_id:', webapiId);
         //console.log('[WebSearch] Images reçues:', data?.images);
-        //console.log('[WebSearch] Instructions reçues:', data?.instructions);
+        console.log('[WebSearch] Instructions reçues:', data?.instructions);
         
         const enrichedResult = {
             ...result,
@@ -970,8 +987,8 @@ async function loadProductDetails(result, forceRefresh = false) {
             data: data, // Conserver les données brutes pour les mappings
         };
         
-        //console.log('[WebSearch] enrichedResult.instructions:', enrichedResult.instructions);
-        //console.log('[WebSearch] enrichedResult.data.instructions:', enrichedResult.data?.instructions);
+        console.log('[WebSearch] enrichedResult.instructions:', enrichedResult.instructions);
+        console.log('[WebSearch] enrichedResult.data.instructions:', enrichedResult.data?.instructions);
         
         // Mettre en cache
         state.cachedDetails[cacheKey] = enrichedResult;
@@ -1084,10 +1101,25 @@ async function updateDetailModalContent(result, fromCache = false) {
             return `luluberlu:${baseName}:${luluberluMatch[1]}`;
         }
         
-        // Pattern générique avec suffixes de taille
+        // Pattern générique avec suffixes de taille textuels
         const genericSizeMatch = cleaned.match(/\/([^/]+?)[-_](mini|small|thumb|petite|medium|moyenne|large|grande|big|xl|xxl|original|hd|full)\.(?:jpg|jpeg|png|webp|gif)/i);
         if (genericSizeMatch) {
             return `generic:${genericSizeMatch[1].toLowerCase()}`;
+        }
+        
+        // Pattern générique avec dimensions numériques (ex: image_250x250.webp, image_470x246.webp)
+        // Extrait le nom de base avant les dimensions pour regrouper les variantes
+        const dimensionSuffixMatch = cleaned.match(/\/([^/]+?)[-_](\d{2,4})x(\d{2,4})\.(?:jpg|jpeg|png|webp|gif)/i);
+        if (dimensionSuffixMatch) {
+            return `imgbase:${dimensionSuffixMatch[1].toLowerCase()}`;
+        }
+        
+        // Pattern pour images sans dimensions explicites mais même nom de base
+        // Ex: image.webp vs image_250x250.webp - on extrait le nom sans extension
+        // Ce pattern utilise le même préfixe 'imgbase:' pour grouper avec les images dimensionnées
+        const baseNameMatch = cleaned.match(/\/([^/]+?)\.(?:jpg|jpeg|png|webp|gif)$/i);
+        if (baseNameMatch) {
+            return `imgbase:${baseNameMatch[1].toLowerCase()}`;
         }
         
         // Pour les autres URLs, utiliser l'URL complète nettoyée
@@ -1139,7 +1171,8 @@ async function updateDetailModalContent(result, fromCache = false) {
         }
         
         // === Dimensions dans le nom de fichier ===
-        const dimensionMatch = url.match(/[_-](\d{3,4})x(\d{3,4})\./i);
+        // Ex: image_250x250.webp, image_470x246.webp
+        const dimensionMatch = url.match(/[_-](\d{2,4})x(\d{2,4})\./i);
         if (dimensionMatch) {
             return Math.max(parseInt(dimensionMatch[1], 10), parseInt(dimensionMatch[2], 10));
         }
@@ -1155,6 +1188,20 @@ async function updateDetailModalContent(result, fromCache = false) {
             if (url.toLowerCase().includes(`-${suffix}.`) || url.toLowerCase().includes(`_${suffix}.`)) {
                 return size;
             }
+        }
+        
+        // === Images sans suffixe de taille ===
+        // Si l'URL ne contient pas de suffixe de taille, c'est probablement l'image originale
+        // On lui donne une taille élevée par défaut (mais pas maximale pour ne pas écraser les originaux explicites)
+        const hasNoSizeSuffix = !url.match(/[_-](\d{2,4})x(\d{2,4})\./i) &&
+                                !url.match(/[_-](mini|small|thumb|petite|medium|moyenne|large|grande|big|xl|xxl|original|hd|full)\./i);
+        if (hasNoSizeSuffix) {
+            // Vérifier si c'est sur un sous-domaine thumbs (ex: thumbs.coleka.com) = thumbnail
+            if (url.includes('thumbs.') || url.includes('/thumbs/') || url.includes('/thumbnails/')) {
+                return 150; // Probablement une miniature
+            }
+            // Sinon, c'est probablement une image pleine résolution
+            return 1500;
         }
         
         return 0;

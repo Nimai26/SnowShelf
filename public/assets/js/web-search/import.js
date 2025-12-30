@@ -41,9 +41,31 @@ function filterValidDocumentUrls(urls) {
         try {
             const urlObj = new URL(url);
             const pathname = urlObj.pathname;
+            const hostname = urlObj.hostname.toLowerCase();
             
-            // Vérifier que le pathname se termine par un nom de fichier avec extension
-            // Ex: /path/to/file.pdf est valide, /path/to/product.bi.additional.info.pdf sans nom est invalide
+            // Domaines connus qui servent des documents sans extension dans l'URL
+            // Ces URLs retournent des PDFs même sans extension .pdf
+            const trustedDocDomains = [
+                'bigcontent.io',          // Playmobil instructions
+                'playmobil.a.bigcontent.io',
+                'contentstack.io',        // Mega Construx instructions
+                'assets.contentstack.io',
+                'lego.com',               // LEGO instructions
+                'brickset.com',
+            ];
+            
+            const isTrustedDomain = trustedDocDomains.some(domain => 
+                hostname === domain || hostname.endsWith('.' + domain)
+            );
+            
+            // Si domaine de confiance, accepter l'URL même sans extension
+            if (isTrustedDomain) {
+                // Vérifier juste qu'il y a un pathname significatif
+                const filename = pathname.split('/').pop();
+                return filename && filename.length > 3;
+            }
+            
+            // Pour les autres domaines, vérifier l'extension
             const filename = pathname.split('/').pop();
             
             // Le fichier doit avoir un nom (pas juste une extension ou un chemin)
@@ -227,6 +249,8 @@ export async function handleImport(result) {
                     : []
             };
             
+            console.log('[WebSearch] state.selectedInstructions:', state.selectedInstructions, 'size:', state.selectedInstructions?.size);
+            console.log('[WebSearch] importInstructions résultat:', enrichedResult.importInstructions);
             console.log('[WebSearch] Données importées via mappings BDD:', enrichedResult);
             
         } catch (error) {

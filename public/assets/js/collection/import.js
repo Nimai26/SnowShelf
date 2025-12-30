@@ -162,6 +162,21 @@ function normalizeImageUrlForComparison(url) {
         return `generic:${genericSizeMatch[1].toLowerCase()}`;
     }
     
+    // Pattern générique avec dimensions numériques (ex: image_250x250.webp, image_470x246.webp)
+    // Extrait le nom de base avant les dimensions pour regrouper les variantes
+    const dimensionSuffixMatch = cleaned.match(/\/([^/]+?)[-_](\d{2,4})x(\d{2,4})\.(?:jpg|jpeg|png|webp|gif)/i);
+    if (dimensionSuffixMatch) {
+        return `imgbase:${dimensionSuffixMatch[1].toLowerCase()}`;
+    }
+    
+    // Pattern pour images sans dimensions explicites mais même nom de base
+    // Ex: image.webp vs image_250x250.webp - on extrait le nom sans extension
+    // Ce pattern utilise le même préfixe 'imgbase:' pour grouper avec les images dimensionnées
+    const baseNameMatch = cleaned.match(/\/([^/]+?)\.(?:jpg|jpeg|png|webp|gif)$/i);
+    if (baseNameMatch) {
+        return `imgbase:${baseNameMatch[1].toLowerCase()}`;
+    }
+    
     // Pour les autres URLs, utiliser l'URL complète nettoyée en minuscules
     return cleaned.toLowerCase();
 }
@@ -224,8 +239,8 @@ function getImageSize(url) {
     }
     
     // === Dimensions dans le nom de fichier ===
-    // Patterns: image_1920x1080.jpg, image-800x600.png
-    const dimensionMatch = url.match(/[_-](\d{3,4})x(\d{3,4})\./i);
+    // Patterns: image_1920x1080.jpg, image-800x600.png, image_250x250.webp
+    const dimensionMatch = url.match(/[_-](\d{2,4})x(\d{2,4})\./i);
     if (dimensionMatch) {
         // Retourner la plus grande dimension
         return Math.max(parseInt(dimensionMatch[1], 10), parseInt(dimensionMatch[2], 10));
@@ -243,6 +258,19 @@ function getImageSize(url) {
         if (url.toLowerCase().includes(`-${suffix}.`) || url.toLowerCase().includes(`_${suffix}.`)) {
             return size;
         }
+    }
+    
+    // === Images sans suffixe de taille ===
+    // Si l'URL ne contient pas de suffixe de taille, c'est probablement l'image originale
+    const hasNoSizeSuffix = !url.match(/[_-](\d{2,4})x(\d{2,4})\./i) &&
+                            !url.match(/[_-](mini|small|thumb|petite|medium|moyenne|large|grande|big|xl|xxl|original|hd|full)\./i);
+    if (hasNoSizeSuffix) {
+        // Vérifier si c'est sur un sous-domaine thumbs (ex: thumbs.coleka.com) = thumbnail
+        if (url.includes('thumbs.') || url.includes('/thumbs/') || url.includes('/thumbnails/')) {
+            return 150; // Probablement une miniature
+        }
+        // Sinon, c'est probablement une image pleine résolution
+        return 1500;
     }
     
     return 0;
@@ -1457,7 +1485,9 @@ export function detectImportConflicts(modal, result) {
     const container = modal.querySelector('#detailsFieldsContainer');
     if (container && Object.keys(metadata).length > 0) {
         Object.entries(metadata).forEach(([key, newValue]) => {
+            // Ignorer les valeurs vides (null, undefined, string vide, tableau vide)
             if (newValue === null || newValue === undefined || newValue === '') return;
+            if (Array.isArray(newValue) && newValue.length === 0) return;
             if (['barcode', 'isbn', 'upc'].includes(key)) return; // Déjà vérifié
             
             // Chercher le champ dans le formulaire

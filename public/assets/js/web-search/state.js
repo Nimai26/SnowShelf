@@ -25,7 +25,7 @@ export const state = {
     primaryTypeFields: {},
     fieldMappings: [], // Mappings de champs fixes (chargés une fois depuis item_field_mappings)
     selectedImages: new Set(),
-    selectedInstructions: new Map(), // Map<url, {url, name}>
+    selectedInstructions: new Set(), // Set<url> - URLs des manuels sélectionnés
     autoTranslate: window.userInfo?.autoTrad ?? false,
     useLocalDatabase: true, // Utiliser la BDD locale SnowShelf (si false, refresh=true sera envoyé)
     currentImage: null,
@@ -53,7 +53,7 @@ export function resetState() {
     state.detailModalId = null;
     state.currentImage = null;
     state.selectedImages = new Set();
-    state.selectedInstructions = new Map(); // Map<url, {url, name}>
+    state.selectedInstructions = new Set(); // Set<url> - URLs des manuels sélectionnés
     state.currentDetailResult = null;
     state.isLoadingDetails = false;
     state.initialQuery = '';

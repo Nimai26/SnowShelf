@@ -165,6 +165,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'img.bricklink.com',
             'images.lego.com',
             'lego.com',
+            // Mega Construx / Mattel
+            'megaconstrux.com', 'shop.mattel.com', 'mattel.com',
+            'assets.contentstack.io', 'contentstack.io', // Manuels PDF Mega
+            'cdn.shopify.com', // Images produits Mattel
             // Playmobil
             'media.playmobil.com', 'playmobil.com',
             'playmobil.a.bigcontent.io', 'bigcontent.io', // Manuels PDF
@@ -175,7 +179,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // Discogs
             'i.discogs.com', 'st.discogs.com',
             // Spotify
-            'i.scdn.co', 'mosaic.scdn.co'
+            'i.scdn.co', 'mosaic.scdn.co',
+            // BoardGameGeek
+            'cf.geekdo-images.com', 'geekdo-images.com'
         ];
         
         $isAllowed = false;
@@ -480,8 +486,11 @@ $allowedDomains = [
     // LEGO - Brickset/Bricklink
     'images.brickset.com', 'brickset.com', 'img.bricklink.com', 'bricklink.com',
     
-    // LEGO - Mega Construx
+    // LEGO - Mega Construx / Mattel
     'megaconstrux.com', 'www.megaconstrux.com',
+    'shop.mattel.com', 'mattel.com',
+    'assets.contentstack.io', 'contentstack.io', // Manuels PDF Mega Construx
+    'cdn.shopify.com', 'shopify.com', // Images produits Mattel
     
     // Playmobil
     'media.playmobil.com', 'playmobil.com', 'www.playmobil.com',
@@ -492,6 +501,9 @@ $allowedDomains = [
     
     // Figurines/Jouets - Coleka
     'www.coleka.com', 'coleka.com', 'static.coleka.com', 'thumbs.coleka.com',
+    
+    // Jeux de société - BoardGameGeek
+    'cf.geekdo-images.com', 'geekdo-images.com', 'boardgamegeek.com',
     
     // Figurines/Jouets - Lulu-Berlu
     'www.lulu-berlu.com', 'lulu-berlu.com',
