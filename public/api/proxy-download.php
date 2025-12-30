@@ -503,6 +503,9 @@ $allowedDomains = [
     'www.coleka.com', 'coleka.com', 'static.coleka.com', 'thumbs.coleka.com',
     
     // Jeux de société - BoardGameGeek
+    
+    // Toys API (proxy interne)
+    'api.snowshelf.fr',
     'cf.geekdo-images.com', 'geekdo-images.com', 'boardgamegeek.com',
     
     // Figurines/Jouets - Lulu-Berlu
