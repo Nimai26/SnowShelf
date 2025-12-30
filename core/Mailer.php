@@ -208,7 +208,7 @@ class Mailer
     private function getBaseUrl(): string
     {
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'snowshelf.snowmanprod.fr';
+        $host = $_SERVER['HTTP_HOST'] ?? 'snowshelf.fr';
         return $protocol . '://' . $host;
     }
 

@@ -5,7 +5,7 @@
 
 | Élément | Valeur |
 |---------|--------|
-| **URL** | https://snowshelf.snowmanprod.fr |
+| **URL** | https://snowshelf.fr |
 | **Chemin serveur** | /NAS/Data/Websites/SnowShelf |
 | **Container Docker** | swag |
 | **PHP Docker** | `docker exec swag php -r "CODE"` |
