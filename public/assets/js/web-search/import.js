@@ -40,24 +40,8 @@ function filterValidDocumentUrls(urls) {
         
         try {
             const urlObj = new URL(url);
-            let pathname = urlObj.pathname;
-            let hostname = urlObj.hostname.toLowerCase();
-            
-            // Gérer les URLs proxy (api.snowshelf.fr/bgg_scrape/proxy?url=...)
-            // Extraire l'URL réelle du paramètre 'url' pour validation
-            if (pathname.includes('/proxy') && urlObj.searchParams.has('url')) {
-                const innerUrl = urlObj.searchParams.get('url');
-                try {
-                    const innerUrlObj = new URL(innerUrl);
-                    // Utiliser l'URL interne pour la validation
-                    pathname = innerUrlObj.pathname;
-                    hostname = innerUrlObj.hostname.toLowerCase();
-                    console.log('[filterValidDocumentUrls] URL proxy détectée, URL interne:', innerUrl);
-                } catch (e) {
-                    // Si l'URL interne n'est pas valide, continuer avec l'URL proxy
-                    console.warn('[filterValidDocumentUrls] URL interne invalide:', innerUrl);
-                }
-            }
+            const pathname = urlObj.pathname;
+            const hostname = urlObj.hostname.toLowerCase();
             
             // Domaines connus qui servent des documents sans extension dans l'URL
             // Ces URLs retournent des PDFs même sans extension .pdf
@@ -68,7 +52,6 @@ function filterValidDocumentUrls(urls) {
                 'assets.contentstack.io',
                 'lego.com',               // LEGO instructions
                 'brickset.com',
-                'boardgamegeek.com',      // BoardGameGeek files/manuals
             ];
             
             const isTrustedDomain = trustedDocDomains.some(domain => 
@@ -79,11 +62,6 @@ function filterValidDocumentUrls(urls) {
             if (isTrustedDomain) {
                 // Vérifier juste qu'il y a un pathname significatif
                 const filename = pathname.split('/').pop();
-                // Pour BGG, les URLs de fichiers contiennent /filepage/
-                if (hostname.includes('boardgamegeek') && pathname.includes('/filepage/')) {
-                    console.log('[filterValidDocumentUrls] BGG filepage accepté:', pathname);
-                    return true;
-                }
                 return filename && filename.length > 3;
             }
             
