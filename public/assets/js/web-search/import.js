@@ -221,6 +221,9 @@ export async function handleImport(result) {
             }
             console.log('[WebSearch] Métadonnées BDD filtrées:', filteredBddMetadata);
             
+            // Vérifier si code_barre est coché
+            const isBarcodeChecked = state.selectedFields.has('code_barre');
+            
             enrichedResult = {
                 raw: actualResult,
                 primaryTypeId: primaryTypeId,
@@ -230,6 +233,7 @@ export async function handleImport(result) {
                     name: isNameChecked ? (mappedData.fieldsToImport.name || selectedFields.name) : null,
                     description: isDescChecked ? (mappedData.fieldsToImport.description || selectedFields.description) : null,
                     value: isPriceChecked ? (mappedData.fieldsToImport.value || selectedFields.value) : null,
+                    code_barre: isBarcodeChecked ? (mappedData.fieldsToImport.code_barre || selectedFields.code_barre) : null,
                     image_url: userSelectedImages[0] || selectedFields.image_url,
                     images: userSelectedImages.length > 0 ? userSelectedImages : selectedFields.images,
                     // Métadonnées fusionnées : UI + BDD (filtrées par checkboxes)
@@ -407,7 +411,8 @@ export function processImportField(item, actualResult, selectedFields, selectedM
                 } else if (field === 'value') {
                     selectedFields.value = value;
                 } else if (field === 'code_barre') {
-                    selectedMetadata.code_barre = value;
+                    // code_barre va dans selectedFields, pas selectedMetadata
+                    selectedFields.code_barre = value;
                 }
             }
         }
