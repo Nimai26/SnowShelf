@@ -222,7 +222,7 @@ export async function handleImport(result) {
             console.log('[WebSearch] Métadonnées BDD filtrées:', filteredBddMetadata);
             
             // Vérifier si code_barre est coché
-            const isBarcodeChecked = state.selectedFields.has('code_barre');
+            const isBarcodeChecked = document.querySelector('#wsImportFields .import-field-item[data-field="code_barre"] input[type="checkbox"]')?.checked;
             
             enrichedResult = {
                 raw: actualResult,
