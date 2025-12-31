@@ -1860,7 +1860,8 @@ export async function applyWebSearchImport(modal, result, applyImportedMetadata,
     
     // Remplir le barcode
     const barcodeField = modal.querySelector('#itemBarcode');
-    const barcode = fieldsToImport.metadata?.barcode || 
+    const barcode = fieldsToImport.code_barre ||
+                   fieldsToImport.metadata?.barcode || 
                    fieldsToImport.metadata?.isbn ||
                    fieldsToImport.metadata?.upc;
     if (barcode && barcodeField) {
