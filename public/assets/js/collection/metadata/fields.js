@@ -205,8 +205,14 @@ export async function loadMetadataFields(modal, typeId, itemId) {
         }
         modal._metadataValues = values;
         
+        // Contexte d'import pour les grilles de stickers
+        const renderContext = {
+            importedSpecialStickers: modal._lastImportedSpecialStickers || null,
+            importedChecklist: modal._lastImportedChecklist || null
+        };
+        
         // Générer le HTML des champs
-        const fieldsHtml = renderMetadataFields(fields, values);
+        const fieldsHtml = renderMetadataFields(fields, values, renderContext);
         container.innerHTML = fieldsHtml;
         
         // Initialiser les dropdowns custom pour les select/multiselect
@@ -250,9 +256,10 @@ export async function loadMetadataFields(modal, typeId, itemId) {
  * Génère le HTML des champs de métadonnées
  * @param {Array} fields - Définitions des champs
  * @param {Object} values - Valeurs actuelles
+ * @param {Object} context - Contexte optionnel (importedSpecialStickers, etc.)
  * @returns {string} HTML des champs
  */
-export function renderMetadataFields(fields, values) {
+export function renderMetadataFields(fields, values, context = {}) {
     const t = getTranslations();
     let html = '<div class="metadata-fields-grid">';
     
@@ -265,9 +272,19 @@ export function renderMetadataFields(fields, values) {
         if (field.field_key === 'sticker_grid') {
             let cells = [];
             const rawChecklist = values['checklist'] || values['sticker_checklist'] || '';
-            if (rawChecklist) {
+            
+            // Nouveau format API: checklist est un objet avec items[]
+            if (rawChecklist && typeof rawChecklist === 'object') {
+                if (Array.isArray(rawChecklist.items) && rawChecklist.items.length > 0) {
+                    cells = rawChecklist.items.map(item => String(item));
+                } else if (rawChecklist.raw) {
+                    cells = parseChecklistString(rawChecklist.raw);
+                }
+            } else if (rawChecklist && typeof rawChecklist === 'string') {
                 cells = parseChecklistString(rawChecklist);
             }
+            
+            // Fallback sur total_stickers
             if ((!cells || cells.length === 0) && (values['total_stickers'] || values['sticker_count'])) {
                 const total = parseInt(values['total_stickers'] || values['sticker_count'], 10);
                 if (!isNaN(total) && total > 0) {
@@ -281,6 +298,53 @@ export function renderMetadataFields(fields, values) {
             html += `<div class="form-group metadata-field" data-field-key="${field.field_key}" data-field-id="${field.id}">`;
             html += `<label for="${fieldId}">${escapeHtml(field.label)} ${required}</label>`;
             html += buildStickerGridHtml(field.id, field.field_key, value, cells);
+            html += '</div>';
+            continue;
+        }
+        
+        // Special rendering for special_stickers - grilles interactives par type
+        if (field.field_key === 'special_stickers') {
+            const rawValue = values['special_stickers'] || '';
+            
+            // Déterminer si rawValue contient des définitions API ou des données possédées
+            let specialData = [];  // Définitions des types/items
+            let ownedData = {};    // Items possédés par type
+            
+            // Si c'est un tableau d'objets avec .items → nouveau format API (définitions)
+            if (Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0]?.items) {
+                specialData = rawValue;
+                ownedData = {};
+            }
+            // Si c'est un objet avec des clés de type contenant des tableaux → données possédées
+            else if (typeof rawValue === 'object' && !Array.isArray(rawValue) && rawValue !== null) {
+                // Vérifier si c'est des définitions (ancien format API) ou des données possédées
+                const firstValue = Object.values(rawValue)[0];
+                if (firstValue && typeof firstValue === 'object' && firstValue.items) {
+                    // Ancien format API (définitions)
+                    specialData = rawValue;
+                    ownedData = {};
+                } else {
+                    // Données possédées {type: [items]}
+                    ownedData = rawValue;
+                }
+            }
+            // Si c'est une string JSON → données possédées
+            else if (typeof rawValue === 'string' && rawValue.trim()) {
+                try {
+                    ownedData = JSON.parse(rawValue);
+                } catch (e) {
+                    console.warn('[Collection] Failed to parse special_stickers JSON:', e);
+                }
+            }
+            
+            // Si pas de définitions API, récupérer depuis le contexte d'import
+            if ((!specialData || (Array.isArray(specialData) && specialData.length === 0)) && context?.importedSpecialStickers) {
+                specialData = context.importedSpecialStickers;
+            }
+            
+            html += `<div class="form-group metadata-field" data-field-key="${field.field_key}" data-field-id="${field.id}">`;
+            html += `<label for="${fieldId}">${escapeHtml(field.label)} ${required}</label>`;
+            html += buildSpecialStickersGridsHtml(field.id, field.field_key, specialData, ownedData);
             html += '</div>';
             continue;
         }
@@ -470,6 +534,121 @@ export function buildStickerGridHtml(fieldId, fieldKey, value, cells) {
     });
 
     html += `</select></div>`;
+    return html;
+}
+
+/**
+ * Build HTML for special stickers grids (multiple grids, one per type)
+ * Nouveau format API: special_stickers = [{type, type_original, total, range, items}]
+ * Ancien format: special_stickers = {type: {raw, total, items}}
+ * 
+ * @param {number} fieldId - DB id of the field
+ * @param {string} fieldKey - field_key string
+ * @param {Array|Object} specialData - Special stickers data from API
+ * @param {Object|string} ownedData - Currently owned special stickers {type: [items]} or JSON string
+ * @returns {string} HTML string
+ */
+export function buildSpecialStickersGridsHtml(fieldId, fieldKey, specialData, ownedData) {
+    // Parser les données possédées
+    let ownedByType = {};
+    try {
+        if (typeof ownedData === 'string' && ownedData.trim()) {
+            ownedByType = JSON.parse(ownedData);
+        } else if (typeof ownedData === 'object' && ownedData !== null) {
+            ownedByType = ownedData;
+        }
+    } catch (e) {
+        console.warn('[Collection] buildSpecialStickersGridsHtml parse owned error:', e);
+    }
+    
+    // Normaliser les données spéciales en tableau
+    let specialTypes = [];
+    
+    // Nouveau format API: tableau d'objets
+    if (Array.isArray(specialData)) {
+        specialTypes = specialData.filter(s => s && s.type && Array.isArray(s.items) && s.items.length > 0);
+    }
+    // Ancien format: objet {type: {items, total, raw}}
+    else if (typeof specialData === 'object' && specialData !== null) {
+        for (const [type, data] of Object.entries(specialData)) {
+            if (data && typeof data === 'object') {
+                const items = Array.isArray(data.items) ? data.items : 
+                              (data.raw ? parseChecklistString(data.raw) : []);
+                if (items.length > 0) {
+                    specialTypes.push({
+                        type: type,
+                        type_original: type.charAt(0).toUpperCase() + type.slice(1),
+                        total: data.total || items.length,
+                        items: items
+                    });
+                }
+            }
+        }
+    }
+    
+    // Si aucune donnée spéciale, afficher un message
+    if (specialTypes.length === 0) {
+        return `<div class="special-stickers-empty">
+            <span class="text-muted">Aucune image spéciale définie</span>
+            <input type="hidden" name="metadata[${escapeHtml(fieldKey)}]" value="" data-special-stickers-data>
+        </div>`;
+    }
+    
+    let html = `<div class="special-stickers-container" data-field-id="${fieldId}" data-field-key="${escapeHtml(fieldKey)}">`;
+    
+    // Calculer les totaux globaux
+    let totalSpecials = 0;
+    let totalOwned = 0;
+    
+    specialTypes.forEach(special => {
+        const typeKey = special.type;
+        const cells = special.items.map(i => String(i));
+        const ownedSet = new Set((ownedByType[typeKey] || []).map(i => String(i)));
+        
+        totalSpecials += cells.length;
+        totalOwned += cells.filter(c => ownedSet.has(c)).length;
+    });
+    
+    const totalMissing = totalSpecials - totalOwned;
+    
+    // Header global
+    html += `<div class="special-stickers-header">
+        <span class="special-count-missing" data-special-count-missing>${totalMissing}</span> manquante(s) / ${totalSpecials} total
+    </div>`;
+    
+    // Une grille par type
+    specialTypes.forEach((special, idx) => {
+        const typeKey = special.type;
+        const typeLabel = special.type_original || typeKey.charAt(0).toUpperCase() + typeKey.slice(1);
+        const cells = special.items.map(i => String(i));
+        const ownedSet = new Set((ownedByType[typeKey] || []).map(i => String(i)));
+        const ownedCount = cells.filter(c => ownedSet.has(c)).length;
+        const missingCount = cells.length - ownedCount;
+        
+        html += `<div class="special-sticker-type" data-type="${escapeHtml(typeKey)}">`;
+        html += `<div class="special-type-header">
+            <span class="special-type-label">${escapeHtml(typeLabel)}</span>
+            <span class="special-type-count">
+                <span class="special-type-missing" data-type-missing="${escapeHtml(typeKey)}">${missingCount}</span>/${cells.length}
+            </span>
+        </div>`;
+        
+        html += `<div class="sticker-grid special-sticker-grid" data-type="${escapeHtml(typeKey)}" data-total="${cells.length}">`;
+        
+        cells.forEach(cellKey => {
+            const cls = ownedSet.has(cellKey) ? 'sticker-cell owned' : 'sticker-cell missing';
+            html += `<button type="button" class="${cls}" data-cell-key="${escapeHtml(cellKey)}" data-type="${escapeHtml(typeKey)}" title="${escapeHtml(typeLabel)}: ${escapeHtml(cellKey)}">${escapeHtml(cellKey)}</button>`;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    // Hidden input pour stocker les données JSON
+    const jsonValue = JSON.stringify(ownedByType);
+    const base64Value = btoa(unescape(encodeURIComponent(jsonValue)));
+    html += `<input type="hidden" name="metadata[${escapeHtml(fieldKey)}]" value="${base64Value}" data-special-stickers-data data-encoding="base64">`;
+    
+    html += `</div>`;
     return html;
 }
 
@@ -929,6 +1108,97 @@ export function initStickerGridEvents(container) {
             updateMissingCount();
         });
     });
+    
+    // Initialiser les grilles de stickers spéciaux
+    initSpecialStickersGridEvents(container);
+}
+
+/**
+ * Initialize event handlers for special stickers grids UI
+ * @param {HTMLElement} container - Container element
+ */
+export function initSpecialStickersGridEvents(container) {
+    container.querySelectorAll('.special-stickers-container').forEach(mainContainer => {
+        const hiddenInput = mainContainer.querySelector('[data-special-stickers-data]');
+        if (!hiddenInput) return;
+        
+        // Parser les données actuelles
+        let ownedByType = {};
+        try {
+            const encoding = hiddenInput.dataset.encoding;
+            let rawValue = hiddenInput.value;
+            if (encoding === 'base64' && rawValue) {
+                rawValue = decodeURIComponent(escape(atob(rawValue)));
+            }
+            if (rawValue) {
+                ownedByType = JSON.parse(rawValue);
+            }
+        } catch (e) {
+            console.warn('[Collection] initSpecialStickersGridEvents parse error:', e);
+        }
+        
+        const updateGlobalCount = () => {
+            let totalMissing = 0;
+            mainContainer.querySelectorAll('.special-sticker-type').forEach(typeSection => {
+                const typeKey = typeSection.dataset.type;
+                const grid = typeSection.querySelector('.special-sticker-grid');
+                if (!grid) return;
+                
+                const total = parseInt(grid.dataset.total, 10) || grid.querySelectorAll('.sticker-cell').length;
+                const ownedCount = (ownedByType[typeKey] || []).length;
+                const missingCount = total - ownedCount;
+                totalMissing += missingCount;
+                
+                // Mettre à jour le compteur par type
+                const typeCounter = typeSection.querySelector('[data-type-missing]');
+                if (typeCounter) {
+                    typeCounter.textContent = missingCount;
+                }
+            });
+            
+            // Mettre à jour le compteur global
+            const globalCounter = mainContainer.querySelector('[data-special-count-missing]');
+            if (globalCounter) {
+                globalCounter.textContent = totalMissing;
+            }
+        };
+        
+        const saveData = () => {
+            const jsonValue = JSON.stringify(ownedByType);
+            const base64Value = btoa(unescape(encodeURIComponent(jsonValue)));
+            hiddenInput.value = base64Value;
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+        
+        // Événements sur chaque cellule
+        mainContainer.querySelectorAll('.special-sticker-grid .sticker-cell').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.cellKey;
+                const typeKey = btn.dataset.type;
+                if (!typeKey) return;
+                
+                // Initialiser le tableau du type si nécessaire
+                if (!ownedByType[typeKey]) {
+                    ownedByType[typeKey] = [];
+                }
+                
+                const isNowOwned = !btn.classList.contains('owned');
+                btn.classList.toggle('owned', isNowOwned);
+                btn.classList.toggle('missing', !isNowOwned);
+                
+                if (isNowOwned) {
+                    if (!ownedByType[typeKey].includes(key)) {
+                        ownedByType[typeKey].push(key);
+                    }
+                } else {
+                    ownedByType[typeKey] = ownedByType[typeKey].filter(k => k !== key);
+                }
+                
+                updateGlobalCount();
+                saveData();
+            });
+        });
+    });
 }
 
 /**
@@ -1241,23 +1511,45 @@ export function applyImportedMetadata(modal, metadata) {
         }
         
         // Traitement spécial pour special_stickers
-        if (key === 'special_stickers' && typeof value === 'object' && !Array.isArray(value)) {
-            const lines = [];
-            for (const [type, data] of Object.entries(value)) {
-                if (data && typeof data === 'object') {
-                    const raw = data.raw || (Array.isArray(data.items) ? data.items.join(', ') : '');
-                    const total = data.total || (Array.isArray(data.items) ? data.items.length : 0);
-                    if (raw || total) {
-                        const typeName = type.charAt(0).toUpperCase() + type.slice(1);
-                        lines.push(`${typeName}: ${raw}${total ? ` (${total})` : ''}`);
-                    }
-                } else if (data) {
-                    const typeName = type.charAt(0).toUpperCase() + type.slice(1);
-                    lines.push(`${typeName}: ${data}`);
+        // Nouveau format API: tableau d'objets [{type, type_original, total, range, items[]}]
+        if (key === 'special_stickers') {
+            if (Array.isArray(value)) {
+                // Nouveau format: tableau d'objets
+                // On stocke directement pour la grille spéciale
+                modal._lastImportedSpecialStickers = value;
+                
+                // Chercher le conteneur special_stickers et reconstruire la grille
+                const specialContainer = container.querySelector('.special-stickers-container');
+                if (specialContainer) {
+                    const newHtml = buildSpecialStickersGridsHtml('special_stickers', 'special_stickers', value, {});
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newHtml;
+                    const newContainer = tempDiv.firstElementChild;
+                    specialContainer.parentNode.replaceChild(newContainer, specialContainer);
+                    initSpecialStickersGridEvents(newContainer.parentElement);
+                    appliedCount++;
+                    console.log(`[Collection] special_stickers importés avec ${value.length} types`);
                 }
+                return;
+            } else if (typeof value === 'object' && !Array.isArray(value)) {
+                // Ancien format: objet avec clés de type
+                const lines = [];
+                for (const [type, data] of Object.entries(value)) {
+                    if (data && typeof data === 'object') {
+                        const raw = data.raw || (Array.isArray(data.items) ? data.items.join(', ') : '');
+                        const total = data.total || (Array.isArray(data.items) ? data.items.length : 0);
+                        if (raw || total) {
+                            const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+                            lines.push(`${typeName}: ${raw}${total ? ` (${total})` : ''}`);
+                        }
+                    } else if (data) {
+                        const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+                        lines.push(`${typeName}: ${data}`);
+                    }
+                }
+                processedValue = lines.join('\n');
+                if (!processedValue) return;
             }
-            processedValue = lines.join('\n');
-            if (!processedValue) return;
         }
         
         let field = container.querySelector(`[data-field-key="${key}"]`);
@@ -1510,6 +1802,24 @@ export function collectMetadataValues(container) {
                 }
             } else {
                 values[fieldId] = imageListInput.value;
+            }
+            return;
+        }
+        
+        // Check for special_stickers field (base64 encoded)
+        const specialStickersInput = field.querySelector('input[data-special-stickers-data]');
+        if (specialStickersInput) {
+            const encoding = specialStickersInput.dataset.encoding;
+            if (encoding === 'base64' && specialStickersInput.value) {
+                try {
+                    // Décoder base64 → JSON string
+                    values[fieldId] = decodeURIComponent(escape(atob(specialStickersInput.value)));
+                } catch (e) {
+                    console.warn('[Collection] Failed to decode special_stickers base64:', e);
+                    values[fieldId] = specialStickersInput.value;
+                }
+            } else {
+                values[fieldId] = specialStickersInput.value;
             }
             return;
         }

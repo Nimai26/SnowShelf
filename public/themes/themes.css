@@ -2355,6 +2355,127 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ========================================
+   Stickers Spéciaux (grilles par type)
+   ======================================== */
+.special-stickers-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+.special-stickers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+.special-stickers-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.special-stickers-title .mdi {
+  color: rgba(var(--accent-color), 1);
+}
+.special-count-missing {
+  font-weight: bold;
+  color: var(--warning-color);
+  font-size: 1.1rem;
+}
+.special-sticker-type {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--input-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+.special-sticker-type:last-child {
+  margin-bottom: 0;
+}
+.special-type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.special-type-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.special-type-label .type-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: rgba(var(--accent-color), 0.15);
+  color: rgba(var(--accent-color), 1);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.special-type-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.special-type-info .type-range {
+  color: var(--text-muted);
+}
+.special-type-info .type-missing {
+  font-weight: 600;
+  color: var(--warning-color);
+}
+.special-sticker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0.5rem;
+}
+.special-sticker-grid .sticker-cell {
+  min-width: 36px;
+  height: 36px;
+  font-size: 0.85rem;
+}
+/* Couleurs distinctives par type de sticker spécial */
+.special-sticker-type[data-type="metallic"] .sticker-cell.owned,
+.special-sticker-type[data-type="metallique"] .sticker-cell.owned {
+  background: linear-gradient(180deg, rgba(192, 192, 192, 0.3), rgba(169, 169, 169, 0.15));
+  border-color: rgba(192, 192, 192, 0.7);
+}
+.special-sticker-type[data-type="holographic"] .sticker-cell.owned,
+.special-sticker-type[data-type="holographique"] .sticker-cell.owned {
+  background: linear-gradient(135deg, rgba(255,0,128,0.15), rgba(0,191,255,0.15), rgba(50,205,50,0.15));
+  border-color: rgba(255, 0, 128, 0.5);
+}
+.special-sticker-type[data-type="golden"] .sticker-cell.owned,
+.special-sticker-type[data-type="dore"] .sticker-cell.owned,
+.special-sticker-type[data-type="gold"] .sticker-cell.owned {
+  background: linear-gradient(180deg, rgba(255, 215, 0, 0.25), rgba(218, 165, 32, 0.1));
+  border-color: rgba(255, 215, 0, 0.6);
+}
+.special-sticker-type[data-type="glitter"] .sticker-cell.owned,
+.special-sticker-type[data-type="paillete"] .sticker-cell.owned {
+  background: linear-gradient(180deg, rgba(255, 182, 193, 0.2), rgba(255, 105, 180, 0.1));
+  border-color: rgba(255, 182, 193, 0.6);
+}
+.special-sticker-type[data-type="shiny"] .sticker-cell.owned,
+.special-sticker-type[data-type="brillant"] .sticker-cell.owned {
+  background: linear-gradient(180deg, rgba(135, 206, 250, 0.25), rgba(70, 130, 180, 0.1));
+  border-color: rgba(135, 206, 250, 0.6);
+}
+
+/* ========================================
    Tracklist (liste de pistes audio)
    ======================================== */
 .metadata-tracklist-wrapper {

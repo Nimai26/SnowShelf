@@ -632,8 +632,17 @@ function buildImportFieldItem(key, label, value, hasValue, category = 'general')
 function formatFieldValue(key, value) {
     if (value === null || value === undefined) return null;
     
+    // Checklist : nouveau format API avec total, range, items, totalWithSpecials
     if (key === 'checklist' && typeof value === 'object') {
-        if (value.raw) {
+        if (value.range) {
+            // Nouveau format avec totalWithSpecials
+            const total = value.total || 0;
+            const totalWithSpecials = value.totalWithSpecials || total;
+            if (totalWithSpecials > total) {
+                return `${value.range} (${total} + ${totalWithSpecials - total} spéciales)`;
+            }
+            return `${value.range} (${total} images)`;
+        } else if (value.raw) {
             return value.raw;
         } else if (Array.isArray(value.items)) {
             return `${value.items.length} images`;
@@ -641,18 +650,36 @@ function formatFieldValue(key, value) {
         return null;
     }
     
-    if (key === 'special_stickers' && typeof value === 'object') {
+    // Special stickers : nouveau format API = tableau d'objets [{type, type_original, total, items}]
+    if (key === 'special_stickers') {
         const parts = [];
-        for (const [type, data] of Object.entries(value)) {
-            if (data && typeof data === 'object') {
-                const count = data.total || (Array.isArray(data.items) ? data.items.length : 0);
-                if (count > 0) {
-                    parts.push(`${type}: ${count}`);
+        
+        // Nouveau format : tableau d'objets
+        if (Array.isArray(value)) {
+            for (const special of value) {
+                if (special && typeof special === 'object') {
+                    const label = special.type_original || special.type || 'Spéciales';
+                    const count = special.total || (Array.isArray(special.items) ? special.items.length : 0);
+                    if (count > 0) {
+                        parts.push(`${label}: ${count}`);
+                    }
                 }
-            } else if (data) {
-                parts.push(`${type}: ${data}`);
             }
         }
+        // Ancien format : objet {type: {items, total, raw}}
+        else if (typeof value === 'object') {
+            for (const [type, data] of Object.entries(value)) {
+                if (data && typeof data === 'object') {
+                    const count = data.total || (Array.isArray(data.items) ? data.items.length : 0);
+                    if (count > 0) {
+                        parts.push(`${type}: ${count}`);
+                    }
+                } else if (data) {
+                    parts.push(`${type}: ${data}`);
+                }
+            }
+        }
+        
         return parts.length > 0 ? parts.join(', ') : null;
     }
     
