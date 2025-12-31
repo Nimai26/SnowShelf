@@ -1513,22 +1513,31 @@ export function applyImportedMetadata(modal, metadata) {
         // Traitement spécial pour special_stickers
         // Nouveau format API: tableau d'objets [{type, type_original, total, range, items[]}]
         if (key === 'special_stickers') {
-            if (Array.isArray(value)) {
+            if (Array.isArray(value) && value.length > 0) {
                 // Nouveau format: tableau d'objets
                 // On stocke directement pour la grille spéciale
                 modal._lastImportedSpecialStickers = value;
                 
-                // Chercher le conteneur special_stickers et reconstruire la grille
-                const specialContainer = container.querySelector('.special-stickers-container');
-                if (specialContainer) {
-                    const newHtml = buildSpecialStickersGridsHtml('special_stickers', 'special_stickers', value, {});
+                // Chercher le conteneur special_stickers (existant ou vide)
+                let specialContainer = container.querySelector('.special-stickers-container');
+                let emptyContainer = container.querySelector('.special-stickers-empty');
+                const targetContainer = specialContainer || emptyContainer;
+                
+                if (targetContainer) {
+                    // Récupérer le field_id depuis le parent .metadata-field
+                    const fieldWrapper = targetContainer.closest('.metadata-field');
+                    const fieldId = fieldWrapper?.dataset.fieldId || 'special_stickers';
+                    
+                    const newHtml = buildSpecialStickersGridsHtml(fieldId, 'special_stickers', value, {});
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = newHtml;
                     const newContainer = tempDiv.firstElementChild;
-                    specialContainer.parentNode.replaceChild(newContainer, specialContainer);
+                    targetContainer.parentNode.replaceChild(newContainer, targetContainer);
                     initSpecialStickersGridEvents(newContainer.parentElement);
                     appliedCount++;
                     console.log(`[Collection] special_stickers importés avec ${value.length} types`);
+                } else {
+                    console.warn('[Collection] Conteneur special_stickers non trouvé');
                 }
                 return;
             } else if (typeof value === 'object' && !Array.isArray(value)) {
