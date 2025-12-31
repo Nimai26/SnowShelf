@@ -2586,6 +2586,73 @@ img.categories-option-icon {
     margin: 0.125rem 0.25rem 0.125rem 0;
 }
 
+/* Tag pour images manquantes */
+.metadata-tag.missing-tag {
+    background: rgba(var(--warning-color, 255, 152, 0), 0.15);
+    color: var(--warning-color, #ff9800);
+    border: 1px solid rgba(var(--warning-color, 255, 152, 0), 0.3);
+}
+
+/* Résumé des stickers */
+.sticker-summary {
+    font-weight: 600;
+    color: var(--warning-color, #ff9800);
+    margin-bottom: 0.5rem;
+}
+.sticker-missing-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+.sticker-complete {
+    color: var(--success-color, #4caf50);
+    font-weight: 600;
+}
+
+/* Affichage des images spéciales en consultation */
+.special-stickers-view {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.special-sticker-view-type {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--input-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+.special-type-name {
+    font-weight: 600;
+    color: var(--text);
+}
+.special-type-range {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+.special-type-count {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-left: auto;
+}
+.special-type-missing {
+    color: var(--warning-color, #ff9800);
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+.special-type-complete {
+    color: var(--success-color, #4caf50);
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+.special-type-owned {
+    color: rgb(var(--accent-color));
+    font-size: 0.9rem;
+}
+
 /* Tracklist en mode consultation */
 .tracklist-view {
     list-style: none;

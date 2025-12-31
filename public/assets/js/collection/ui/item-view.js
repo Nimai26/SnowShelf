@@ -130,6 +130,78 @@ function formatImageListForView(items, fieldKey = '') {
 }
 
 /**
+ * Formate les images spéciales pour l'affichage en mode consultation
+ * @param {Array|Object|string} value - Données des images spéciales
+ * @returns {string} HTML des images spéciales
+ */
+function formatSpecialStickersForView(value) {
+    // Parser si c'est une string JSON
+    let specialData = value;
+    if (typeof value === 'string') {
+        try {
+            specialData = JSON.parse(value);
+        } catch (e) {
+            return escapeHtml(value);
+        }
+    }
+    
+    // Si c'est un objet avec des clés de type (données possédées: {metallic: ["A", "B"]})
+    // et pas un tableau de définitions, afficher directement
+    if (specialData && typeof specialData === 'object' && !Array.isArray(specialData)) {
+        // Vérifier si c'est des données possédées ou des définitions
+        const firstValue = Object.values(specialData)[0];
+        if (Array.isArray(firstValue)) {
+            // C'est des données possédées {type: [items]}
+            const parts = [];
+            for (const [type, items] of Object.entries(specialData)) {
+                if (Array.isArray(items) && items.length > 0) {
+                    const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+                    parts.push(`<div class="special-sticker-view-type">
+                        <span class="special-type-name">${escapeHtml(typeName)}</span>: 
+                        <span class="special-type-owned">${items.length} possédée(s)</span>
+                    </div>`);
+                }
+            }
+            return parts.length > 0 ? `<div class="special-stickers-view">${parts.join('')}</div>` : '<span class="text-muted">-</span>';
+        }
+    }
+    
+    // Si c'est un tableau (nouveau format API ou définitions)
+    if (!Array.isArray(specialData)) {
+        return '<span class="text-muted">-</span>';
+    }
+    
+    // Format: [{type, type_original, total, range, items}]
+    let html = '<div class="special-stickers-view">';
+    
+    for (const special of specialData) {
+        if (!special || typeof special !== 'object') continue;
+        
+        const typeName = special.type_original || special.type || 'Spéciales';
+        const total = special.total || (Array.isArray(special.items) ? special.items.length : 0);
+        const range = special.range || '';
+        
+        // Si on a des items possédés, calculer les manquantes
+        let ownedCount = 0;
+        let missingCount = total;
+        if (Array.isArray(special.owned)) {
+            ownedCount = special.owned.length;
+            missingCount = total - ownedCount;
+        }
+        
+        html += `<div class="special-sticker-view-type">
+            <span class="special-type-name">${escapeHtml(typeName)}</span>
+            ${range ? `<span class="special-type-range">(${escapeHtml(range)})</span>` : ''}
+            <span class="special-type-count">${total} image(s)</span>
+            ${missingCount > 0 ? `<span class="special-type-missing">${missingCount} manquante(s)</span>` : '<span class="special-type-complete">✅ Complet</span>'}
+        </div>`;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+/**
  * Récupère l'extension d'un fichier depuis son URL
  * @param {string} url - URL du fichier
  * @returns {string} Extension en minuscules
@@ -600,8 +672,14 @@ export function buildMetadataViewHtml(metadata, t) {
 
     let fieldsHtml = '';
     
+    // Récupérer le total de stickers pour calculer les manquants
+    const totalStickers = metadata['total_stickers']?.value ? parseInt(metadata['total_stickers'].value, 10) : 0;
+    
     for (const [key, data] of Object.entries(metadata)) {
         if (data.value === null || data.value === '' || data.value === undefined) continue;
+        
+        // Ignorer checklist (données brutes, pas utile à afficher)
+        if (key === 'checklist') continue;
         
         const icon = data.icon || '';
         const label = data.label || key;
@@ -611,6 +689,41 @@ export function buildMetadataViewHtml(metadata, t) {
         if (data.type === 'select') {
             // Les valeurs select sont déjà des strings lisibles
             displayValue = escapeHtml(data.value);
+        } else if (key === 'sticker_grid' && data.type === 'multiselect') {
+            // Grille de stickers : afficher les MANQUANTES au lieu des possédées
+            const owned = Array.isArray(data.value) ? data.value : [];
+            const ownedSet = new Set(owned.map(v => String(v)));
+            
+            if (totalStickers > 0) {
+                // Calculer les manquantes
+                const missing = [];
+                for (let i = 1; i <= totalStickers; i++) {
+                    if (!ownedSet.has(String(i))) {
+                        missing.push(i);
+                    }
+                }
+                
+                const missingCount = missing.length;
+                const ownedCount = owned.length;
+                
+                if (missingCount === 0) {
+                    displayValue = `<span class="sticker-complete">✅ Collection complète ! (${ownedCount}/${totalStickers})</span>`;
+                } else {
+                    // Afficher un résumé + les manquantes (limité si trop nombreuses)
+                    const maxDisplay = 50;
+                    const missingDisplay = missing.slice(0, maxDisplay);
+                    const missingTags = missingDisplay.map(v => `<span class="metadata-tag missing-tag">${escapeHtml(String(v))}</span>`).join('');
+                    const moreText = missing.length > maxDisplay ? `<span class="text-muted">... et ${missing.length - maxDisplay} autres</span>` : '';
+                    displayValue = `<div class="sticker-summary">${missingCount} manquante(s) sur ${totalStickers}</div>
+                                   <div class="sticker-missing-list">${missingTags}${moreText}</div>`;
+                }
+            } else {
+                // Pas de total, afficher les possédées comme avant
+                displayValue = owned.map(v => `<span class="metadata-tag">${escapeHtml(String(v))}</span>`).join('');
+            }
+        } else if (key === 'special_stickers') {
+            // Images spéciales : parser et afficher par type avec manquantes
+            displayValue = formatSpecialStickersForView(data.value);
         } else if (data.type === 'multiselect' && Array.isArray(data.value)) {
             displayValue = data.value.map(v => `<span class="metadata-tag">${escapeHtml(v)}</span>`).join('');
         } else if (data.type === 'url' && data.value) {
