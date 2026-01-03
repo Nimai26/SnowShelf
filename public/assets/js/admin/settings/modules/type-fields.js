@@ -1,14 +1,15 @@
 /**
  * SnowShelf - Admin Type Fields Module
- * Gestion des champs par type
+ * Gestion des champs par type avec mappings API intégrés
  */
 
 import { API_ENDPOINTS } from '/assets/js/admin/core/config.js';
 import { showToast, showLoading, escapeHtml, renderIcon } from '/assets/js/admin/core/utils.js';
-import { setDeleteTarget, setTypeFieldsData, primaryTypesData } from '/assets/js/admin/core/state.js';
+import { setDeleteTarget, setTypeFieldsData, primaryTypesData, transformTypesData, setTransformTypesData } from '/assets/js/admin/core/state.js';
 import { initModalCustomDropdown, initFilterDropdown } from '/assets/js/admin/ui/dropdown.js';
 
 const TYPE_FIELDS_API = API_ENDPOINTS.TYPE_FIELDS;
+const FIELD_MAPPINGS_API = API_ENDPOINTS.FIELD_MAPPINGS;
 
 // Éléments DOM
 let elements = {};
@@ -20,6 +21,10 @@ let localTypeFieldsData = [];
 // Types de champs disponibles (chargés depuis l'API)
 let fieldTypesData = [];
 
+// Mappings du champ en cours d'édition
+let currentFieldMappings = [];
+let mappingsToDelete = [];
+
 /**
  * Charge les champs par type
  */
@@ -27,8 +32,11 @@ export async function loadTypeFields() {
     if (!elements.typeFieldsTableBody) return;
 
     try {
-        // Charger aussi les types de champs disponibles
-        await loadFieldTypes();
+        // Charger les types de champs disponibles et les transforms en parallèle
+        await Promise.all([
+            loadFieldTypes(),
+            loadTransformTypes()
+        ]);
         
         const response = await fetch(TYPE_FIELDS_API, {
             credentials: 'same-origin'
@@ -52,12 +60,38 @@ export async function loadTypeFields() {
 }
 
 /**
+ * Charge les types de transformation depuis l'API
+ */
+async function loadTransformTypes() {
+    // Ne charger que si pas déjà chargés
+    if (transformTypesData && transformTypesData.length > 0) return;
+    
+    try {
+        const response = await fetch(`${FIELD_MAPPINGS_API}?transforms=1`, {
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            setTransformTypesData(result.data);
+        }
+    } catch (error) {
+        console.error('Load transform types error:', error);
+    }
+}
+
+/**
  * Peuple le dropdown de filtre avec les types primaires
  */
 function populateTypeFieldsFilterDropdown() {
-    const menu = document.querySelector('#typeFieldsFilterDropdown .custom-dropdown-menu');
+    const dropdown = document.getElementById('typeFieldsFilterDropdown');
+    const menu = dropdown?.querySelector('.custom-dropdown-menu');
     const select = document.getElementById('typeFieldsFilter');
+    const trigger = dropdown?.querySelector('.custom-dropdown-trigger');
     if (!menu || !select) return;
+    
+    // Sauvegarder la valeur actuelle du filtre AVANT de reconstruire
+    const currentFilterValue = select.value;
     
     // Récupérer les types uniques présents dans les champs
     const usedTypeIds = new Set();
@@ -76,9 +110,24 @@ function populateTypeFieldsFilterDropdown() {
         select.innerHTML += `<option value="${type.id}">${escapeHtml(type.name_fr || type.name || type.inter_name)}</option>`;
     });
     
+    // Restaurer la valeur du select natif
+    select.value = currentFilterValue;
+    
+    // Trouver les infos du type sélectionné pour le trigger
+    let selectedTypeName = 'Tous les types';
+    let selectedIcon = '📋';
+    if (currentFilterValue) {
+        const selectedType = usedTypes.find(t => t.id == currentFilterValue);
+        if (selectedType) {
+            selectedTypeName = selectedType.name_fr || selectedType.name || selectedType.inter_name;
+            selectedIcon = selectedType.icon || '📋';
+        }
+    }
+    
     // Construire le HTML des options avec renderIcon pour gérer émojis et MDI
+    // Appliquer la classe 'selected' à l'option correspondant au filtre actuel
     let html = `
-        <div class="custom-dropdown-option selected" data-value="" data-icon="📋">
+        <div class="custom-dropdown-option${currentFilterValue === '' ? ' selected' : ''}" data-value="" data-icon="📋">
             <span class="custom-dropdown-option-icon">📋</span>
             <span class="custom-dropdown-option-text">Tous les types</span>
         </div>
@@ -87,8 +136,9 @@ function populateTypeFieldsFilterDropdown() {
     usedTypes.forEach(type => {
         const icon = type.icon || '📋';
         const iconHtml = renderIconForDropdown(icon);
+        const isSelected = type.id == currentFilterValue;
         html += `
-            <div class="custom-dropdown-option" data-value="${type.id}" data-icon="${escapeHtml(icon)}">
+            <div class="custom-dropdown-option${isSelected ? ' selected' : ''}" data-value="${type.id}" data-icon="${escapeHtml(icon)}">
                 <span class="custom-dropdown-option-icon">${iconHtml}</span>
                 <span class="custom-dropdown-option-text">${escapeHtml(type.name_fr || type.name || type.inter_name)}</span>
             </div>
@@ -96,6 +146,18 @@ function populateTypeFieldsFilterDropdown() {
     });
     
     menu.innerHTML = html;
+    
+    // Mettre à jour le trigger avec l'option sélectionnée
+    if (trigger) {
+        const triggerIcon = trigger.querySelector('.custom-dropdown-icon');
+        const triggerText = trigger.querySelector('.custom-dropdown-text');
+        if (triggerText) {
+            triggerText.textContent = selectedTypeName;
+        }
+        if (triggerIcon) {
+            triggerIcon.outerHTML = `<span class="custom-dropdown-icon">${renderIconForDropdown(selectedIcon)}</span>`;
+        }
+    }
 }
 
 /**
@@ -331,9 +393,15 @@ export function openAddTypeFieldModal() {
     const optionsGroup = document.getElementById('typeFieldOptionsGroup');
     if (optionsGroup) optionsGroup.style.display = 'none';
     
+    // Reset des mappings
+    currentFieldMappings = [];
+    mappingsToDelete = [];
+    renderMappingsList();
+    
     populateTypeFieldDropdown();
     populateFieldTypeDropdown('text');
     initFieldTypeOptionsToggle();
+    initMappingsEvents();
     elements.typeFieldModal.classList.add('active');
 }
 
@@ -346,13 +414,17 @@ export async function openEditTypeFieldModal(id) {
     showLoading(true);
 
     try {
-        const response = await fetch(`${TYPE_FIELDS_API}?id=${id}`, {
-            credentials: 'same-origin'
-        });
-        const result = await response.json();
+        // Charger le champ et ses mappings en parallèle
+        const [fieldResponse, mappingsResponse] = await Promise.all([
+            fetch(`${TYPE_FIELDS_API}?id=${id}`, { credentials: 'same-origin' }),
+            fetch(`${FIELD_MAPPINGS_API}?field_id=${id}`, { credentials: 'same-origin' })
+        ]);
+        
+        const fieldResult = await fieldResponse.json();
+        const mappingsResult = await mappingsResponse.json();
 
-        if (result.success) {
-            const field = result.data;
+        if (fieldResult.success) {
+            const field = fieldResult.data;
             const langData = field.lang || {};
             
             document.getElementById('typeFieldId').value = field.id;
@@ -379,13 +451,34 @@ export async function openEditTypeFieldModal(id) {
                     : '';
             }
             
+            // Charger les mappings du champ
+            currentFieldMappings = [];
+            mappingsToDelete = [];
+            if (mappingsResult.success && mappingsResult.data?.mappings) {
+                currentFieldMappings = mappingsResult.data.mappings.map(m => ({
+                    id: m.id,
+                    api_keys: Array.isArray(m.api_keys) ? m.api_keys.join(', ') : (m.api_keys || ''),
+                    transform_type: m.transform_type || 'direct',
+                    transform_config: m.transform_config,
+                    priority: m.priority || 0,
+                    is_active: m.is_active == 1
+                }));
+                
+                // Charger les types de transformation si pas déjà fait
+                if (mappingsResult.data.transforms) {
+                    setTransformTypesData(mappingsResult.data.transforms);
+                }
+            }
+            renderMappingsList();
+            
             populateTypeFieldDropdown(field.primary_type_id);
             populateFieldTypeDropdown(field.field_type || 'text');
             initFieldTypeOptionsToggle();
+            initMappingsEvents();
             
             elements.typeFieldModal.classList.add('active');
         } else {
-            showToast(result.message || 'Erreur lors du chargement', 'error');
+            showToast(fieldResult.message || 'Erreur lors du chargement', 'error');
         }
     } catch (error) {
         console.error('Load type field error:', error);
@@ -527,6 +620,9 @@ export async function handleTypeFieldSubmit(e) {
         }
     }
     
+    // Collecter les mappings depuis l'UI
+    const mappingsData = collectMappingsFromUI();
+    
     const data = {
         primary_type_id: parseInt(document.getElementById('typeFieldTypeId').value),
         field_key: document.getElementById('typeFieldKey').value,
@@ -534,7 +630,9 @@ export async function handleTypeFieldSubmit(e) {
         is_required: document.getElementById('typeFieldRequired').checked,
         sort_order: parseInt(document.getElementById('typeFieldSortOrder').value) || 0,
         lang: langData,
-        field_options: fieldOptions
+        field_options: fieldOptions,
+        mappings: mappingsData,
+        mappings_to_delete: mappingsToDelete
     };
     
     if (!isNew) {
@@ -559,7 +657,8 @@ export async function handleTypeFieldSubmit(e) {
         const result = await response.json();
 
         if (result.success) {
-            showToast(isNew ? 'Champ créé' : 'Champ mis à jour', 'success');
+            const mappingsMsg = result.data?.mappings_saved ? ` (${result.data.mappings_saved} mapping(s))` : '';
+            showToast(isNew ? `Champ créé${mappingsMsg}` : `Champ mis à jour${mappingsMsg}`, 'success');
             closeTypeFieldModal();
             loadTypeFields();
         } else {
@@ -569,6 +668,426 @@ export async function handleTypeFieldSubmit(e) {
         console.error('Save type field error:', error);
         showToast('Erreur de connexion', 'error');
     }
+}
+
+/**
+ * Icônes pour les types de transformation
+ */
+const TRANSFORM_ICONS = {
+    'direct': '➡️',
+    'first': '1️⃣',
+    'first_value': '1️⃣',
+    'array': '📋',
+    'join': '🔗',
+    'array_join': '🔗',
+    'template': '📝',
+    'date': '📅',
+    'find_by_key': '🔍',
+    'status_mapping': '🏷️',
+    'year_extract': '📆',
+    'boolean_fr': '✅',
+    'pegi_normalize': '🎮',
+    'duration_format': '⏱️',
+    'image_list_extract': '🖼️',
+    'none': '⚙️',
+    'default': '⚙️'
+};
+
+/**
+ * Rend la liste des mappings dans le modal
+ */
+function renderMappingsList() {
+    const container = document.getElementById('typeFieldMappingsList');
+    if (!container) return;
+    
+    if (currentFieldMappings.length === 0) {
+        container.innerHTML = `
+            <div class="mappings-empty">
+                <span class="text-muted">Aucun mapping API configuré</span>
+            </div>
+        `;
+        return;
+    }
+    
+    // Récupérer les types de transformation disponibles
+    let transforms = [];
+    if (transformTypesData && transformTypesData.length > 0) {
+        // Construire depuis les données de l'API
+        // L'API retourne: { type_key, lang: { fr: { name: ... }, en: { name: ... } }, config_schema, ... }
+        transforms = transformTypesData.map(t => {
+            const key = t.type_key || t.name;
+            return {
+                value: key,
+                label: t.lang?.fr?.name || t.lang?.en?.name || key,
+                icon: TRANSFORM_ICONS[key] || TRANSFORM_ICONS['default'],
+                hasConfig: !!t.config_schema,
+                configSchema: t.config_schema
+            };
+        });
+    } else {
+        // Fallback sur les valeurs par défaut avec hasConfig
+        transforms = [
+            { value: 'direct', label: 'Direct', icon: '➡️', hasConfig: false },
+            { value: 'first', label: 'Premier élément', icon: '1️⃣', hasConfig: false },
+            { value: 'array', label: 'Tableau', icon: '📋', hasConfig: false },
+            { value: 'join', label: 'Joindre', icon: '🔗', hasConfig: false },
+            { value: 'array_join', label: 'Array Join', icon: '🔗', hasConfig: true, configSchema: '{"separator": ", "}' },
+            { value: 'template', label: 'Template', icon: '📝', hasConfig: true, configSchema: '{"template": "..."}' },
+            { value: 'date', label: 'Date', icon: '📅', hasConfig: true, configSchema: '{"format": "Y-m-d"}' },
+            { value: 'find_by_key', label: 'Find by Key', icon: '🔍', hasConfig: true, configSchema: '{"match_key": "...", "match_value": "...", "return_key": "..."}' },
+            { value: 'none', label: 'Aucune transformation', icon: '⚙️', hasConfig: false }
+        ];
+    }
+    
+    container.innerHTML = currentFieldMappings.map((mapping, index) => {
+        const currentTransform = transforms.find(t => t.value === mapping.transform_type) || transforms[0];
+        
+        // Générer les options du menu dropdown
+        const dropdownOptions = transforms.map(t => `
+            <div class="custom-dropdown-item ${t.value === mapping.transform_type ? 'selected' : ''}" 
+                 data-value="${escapeHtml(t.value)}">
+                <span class="dropdown-icon">${t.icon || '⚙️'}</span>
+                <span>${escapeHtml(t.label)}</span>
+            </div>
+        `).join('');
+        
+        return `
+        <div class="mapping-item" data-index="${index}">
+            <div class="mapping-row mapping-row-main">
+                <div class="mapping-field mapping-field-keys">
+                    <label>Clés API <span class="text-muted">(séparées par virgule)</span></label>
+                    <input type="text" class="mapping-api-keys" value="${escapeHtml(mapping.api_keys || '')}" 
+                           placeholder="ex: title, name, data.attributes.name">
+                </div>
+                <div class="mapping-field mapping-field-actions">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn-icon btn-delete btn-remove-mapping" title="Supprimer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="mapping-row mapping-row-options">
+                <div class="mapping-field mapping-field-transform">
+                    <label>Transform</label>
+                    <div class="custom-dropdown mapping-transform-dropdown" data-index="${index}">
+                        <input type="hidden" class="mapping-transform-type" value="${escapeHtml(mapping.transform_type || 'direct')}">
+                        <button type="button" class="custom-dropdown-trigger">
+                            <span class="dropdown-icon">${currentTransform.icon || '⚙️'}</span>
+                            <span class="dropdown-text">${escapeHtml(currentTransform.label)}</span>
+                            <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="custom-dropdown-menu">
+                            ${dropdownOptions}
+                        </div>
+                    </div>
+                </div>
+                <div class="mapping-field mapping-field-priority">
+                    <label>Priorité</label>
+                    <input type="number" class="mapping-priority" value="${mapping.priority || 0}" min="0">
+                </div>
+                <div class="mapping-field mapping-field-active">
+                    <label>Actif</label>
+                    <input type="checkbox" class="mapping-is-active" ${mapping.is_active !== false ? 'checked' : ''}>
+                </div>
+            </div>
+            ${(() => {
+                const transformDef = transforms.find(t => t.value === mapping.transform_type);
+                if (transformDef?.hasConfig) {
+                    // Générer un exemple basé sur le schema de config
+                    let exampleHint = '';
+                    if (transformDef.configSchema) {
+                        try {
+                            const schema = typeof transformDef.configSchema === 'string' 
+                                ? JSON.parse(transformDef.configSchema) 
+                                : transformDef.configSchema;
+                            const example = {};
+                            if (schema.properties) {
+                                for (const [key, val] of Object.entries(schema.properties)) {
+                                    example[key] = val.default || (val.type === 'string' ? '...' : val.type);
+                                }
+                            } else {
+                                // Format simplifié comme find_by_key
+                                for (const [key, val] of Object.entries(schema)) {
+                                    example[key] = val === 'string' ? '...' : val;
+                                }
+                            }
+                            exampleHint = JSON.stringify(example);
+                        } catch(e) { exampleHint = '{}'; }
+                    }
+                    
+                    // Formater la config existante
+                    let configValue = '';
+                    if (mapping.transform_config) {
+                        if (typeof mapping.transform_config === 'object') {
+                            configValue = JSON.stringify(mapping.transform_config, null, 2);
+                        } else if (typeof mapping.transform_config === 'string') {
+                            // Essayer de parser et reformater
+                            try {
+                                configValue = JSON.stringify(JSON.parse(mapping.transform_config), null, 2);
+                            } catch(e) {
+                                configValue = mapping.transform_config;
+                            }
+                        }
+                    }
+                    
+                    return `
+                        <div class="mapping-row mapping-config-row">
+                            <div class="mapping-field mapping-field-config">
+                                <label>Configuration de transformation</label>
+                                <textarea class="mapping-transform-config" rows="5" 
+                                          placeholder='{}'>${escapeHtml(configValue)}</textarea>
+                                <small class="form-hint">Ex: ${escapeHtml(exampleHint)}</small>
+                            </div>
+                        </div>
+                    `;
+                }
+                return '';
+            })()}
+            ${mapping.id ? `<input type="hidden" class="mapping-id" value="${mapping.id}">` : ''}
+        </div>
+    `}).join('');
+    
+    // Attacher les événements aux items
+    attachMappingItemEvents();
+}
+
+/**
+ * Attache les événements aux éléments de mapping
+ */
+function attachMappingItemEvents() {
+    const container = document.getElementById('typeFieldMappingsList');
+    if (!container) return;
+    
+    // Boutons de suppression
+    container.querySelectorAll('.btn-remove-mapping').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const item = e.target.closest('.mapping-item');
+            const index = parseInt(item.dataset.index);
+            removeMappingItem(index);
+        });
+    });
+    
+    // Initialiser les custom dropdowns de transformation
+    container.querySelectorAll('.mapping-transform-dropdown').forEach(dropdown => {
+        const trigger = dropdown.querySelector('.custom-dropdown-trigger');
+        const menu = dropdown.querySelector('.custom-dropdown-menu');
+        const hiddenInput = dropdown.querySelector('.mapping-transform-type');
+        const index = parseInt(dropdown.dataset.index);
+        
+        // Ouvrir/fermer le dropdown
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Fermer les autres dropdowns
+            container.querySelectorAll('.mapping-transform-dropdown.open').forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('open');
+                    d.querySelector('.custom-dropdown-menu').style.cssText = '';
+                }
+            });
+            
+            const isOpen = dropdown.classList.contains('open');
+            
+            if (!isOpen) {
+                // Positionner le menu en fixed pour éviter les problèmes d'overflow
+                const rect = trigger.getBoundingClientRect();
+                const menuHeight = 180; // max-height du menu
+                const viewportHeight = window.innerHeight;
+                const spaceBelow = viewportHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                
+                menu.style.position = 'fixed';
+                menu.style.left = rect.left + 'px';
+                menu.style.width = rect.width + 'px';
+                menu.style.display = 'block';
+                menu.style.maxHeight = '180px';
+                
+                // Ouvrir vers le haut si pas assez de place en bas
+                if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+                    menu.style.bottom = (viewportHeight - rect.top + 2) + 'px';
+                    menu.style.top = 'auto';
+                    dropdown.classList.add('dropdown-up');
+                } else {
+                    menu.style.top = (rect.bottom + 2) + 'px';
+                    menu.style.bottom = 'auto';
+                    dropdown.classList.remove('dropdown-up');
+                }
+                
+                dropdown.classList.add('open');
+            } else {
+                menu.style.cssText = '';
+                dropdown.classList.remove('open');
+                dropdown.classList.remove('dropdown-up');
+            }
+        });
+        
+        // Sélectionner une option
+        menu.querySelectorAll('.custom-dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const value = item.dataset.value;
+                const icon = item.querySelector('.dropdown-icon')?.textContent || '⚙️';
+                const label = item.querySelector('span:last-child')?.textContent || value;
+                
+                // Mettre à jour le trigger
+                trigger.querySelector('.dropdown-icon').textContent = icon;
+                trigger.querySelector('.dropdown-text').textContent = label;
+                
+                // Mettre à jour la valeur cachée
+                hiddenInput.value = value;
+                
+                // Mettre à jour les classes selected
+                menu.querySelectorAll('.custom-dropdown-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                
+                // Mettre à jour le mapping en mémoire
+                if (currentFieldMappings[index]) {
+                    currentFieldMappings[index].transform_type = value;
+                }
+                
+                // Fermer le dropdown
+                dropdown.classList.remove('open');
+                dropdown.classList.remove('dropdown-up');
+                menu.style.cssText = '';
+                
+                // Re-rendre pour afficher/masquer le champ config si nécessaire
+                // Vérifier si le nouveau type a une config
+                const newTransform = transformTypesData?.find(t => t.type_key === value);
+                const hasConfig = newTransform?.config_schema;
+                const mappingItem = dropdown.closest('.mapping-item');
+                const configRow = mappingItem.querySelector('.mapping-config-row');
+                
+                if (hasConfig && !configRow) {
+                    // Ajouter le champ config - re-render complet
+                    renderMappingsList();
+                } else if (!hasConfig && configRow) {
+                    // Supprimer le champ config
+                    configRow.remove();
+                }
+            });
+        });
+    });
+    
+    // Fermer les dropdowns au clic ailleurs
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.mapping-transform-dropdown')) {
+            container.querySelectorAll('.mapping-transform-dropdown.open').forEach(d => {
+                d.classList.remove('open');
+                d.classList.remove('dropdown-up');
+                d.querySelector('.custom-dropdown-menu').style.cssText = '';
+            });
+        }
+    });
+}
+
+/**
+ * Initialise les événements pour la section mappings
+ */
+function initMappingsEvents() {
+    const addBtn = document.getElementById('addTypeFieldMappingBtn');
+    if (addBtn) {
+        // Retirer les anciens listeners
+        const newBtn = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newBtn, addBtn);
+        
+        newBtn.addEventListener('click', () => {
+            addMappingItem();
+        });
+    }
+}
+
+/**
+ * Ajoute un nouveau mapping à la liste
+ */
+function addMappingItem() {
+    currentFieldMappings.push({
+        id: null,
+        api_keys: '',
+        transform_type: 'direct',
+        transform_config: null,
+        priority: currentFieldMappings.length,
+        is_active: true
+    });
+    renderMappingsList();
+    
+    // Focus sur le nouveau champ
+    setTimeout(() => {
+        const container = document.getElementById('typeFieldMappingsList');
+        const lastItem = container.querySelector('.mapping-item:last-child .mapping-api-keys');
+        if (lastItem) lastItem.focus();
+    }, 50);
+}
+
+/**
+ * Supprime un mapping de la liste
+ * @param {number} index - Index du mapping à supprimer
+ */
+function removeMappingItem(index) {
+    const mapping = currentFieldMappings[index];
+    
+    // Si le mapping a un ID (existe en BDD), l'ajouter à la liste de suppression
+    if (mapping && mapping.id) {
+        mappingsToDelete.push(mapping.id);
+    }
+    
+    currentFieldMappings.splice(index, 1);
+    renderMappingsList();
+}
+
+/**
+ * Collecte les données des mappings depuis l'UI
+ * @returns {Array} Liste des mappings
+ */
+function collectMappingsFromUI() {
+    const container = document.getElementById('typeFieldMappingsList');
+    if (!container) return [];
+    
+    const mappings = [];
+    container.querySelectorAll('.mapping-item').forEach((item, index) => {
+        const idField = item.querySelector('.mapping-id');
+        const apiKeysField = item.querySelector('.mapping-api-keys');
+        const transformTypeField = item.querySelector('.mapping-transform-type');
+        const transformConfigField = item.querySelector('.mapping-transform-config');
+        const priorityField = item.querySelector('.mapping-priority');
+        const isActiveField = item.querySelector('.mapping-is-active');
+        
+        const apiKeysValue = apiKeysField?.value?.trim() || '';
+        
+        // Ne pas inclure les mappings sans clés API
+        if (!apiKeysValue) return;
+        
+        // Parser les clés API (séparées par virgules)
+        const apiKeys = apiKeysValue.split(',').map(k => k.trim()).filter(k => k);
+        
+        // Parser la config JSON si présente
+        let transformConfig = null;
+        if (transformConfigField?.value?.trim()) {
+            try {
+                transformConfig = JSON.parse(transformConfigField.value);
+            } catch (e) {
+                transformConfig = transformConfigField.value;
+            }
+        }
+        
+        mappings.push({
+            id: idField?.value ? parseInt(idField.value) : null,
+            api_keys: apiKeys,
+            transform_type: transformTypeField?.value || 'direct',
+            transform_config: transformConfig,
+            priority: parseInt(priorityField?.value) || index,
+            is_active: isActiveField?.checked ?? true
+        });
+    });
+    
+    return mappings;
 }
 
 /**

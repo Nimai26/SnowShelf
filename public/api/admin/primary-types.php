@@ -40,7 +40,13 @@ try {
             handleGet($pdo);
             break;
         case 'POST':
-            handlePost($pdo);
+            // Vérifier si c'est une action de duplication
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!empty($input['action']) && $input['action'] === 'duplicate') {
+                handleDuplicate($pdo, $input);
+            } else {
+                handlePost($pdo);
+            }
             break;
         case 'PUT':
             handlePut($pdo);
@@ -471,4 +477,187 @@ function handlePatch($pdo) {
         'success' => true,
         'message' => 'Type updated'
     ]);
+}
+
+/**
+ * Duplique un type primaire avec ses champs et mappings API
+ * @param PDO $pdo Connexion PDO
+ * @param array $input Données d'entrée (source_id, name_json)
+ */
+function handleDuplicate($pdo, $input) {
+    $sourceId = isset($input['source_id']) ? (int)$input['source_id'] : 0;
+    
+    if (!$sourceId) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'source_id required']);
+        return;
+    }
+    
+    // Récupérer le type source
+    $stmt = $pdo->prepare("SELECT * FROM primary_type WHERE id = ?");
+    $stmt->execute([$sourceId]);
+    $sourceType = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$sourceType) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Source type not found']);
+        return;
+    }
+    
+    // Valider le nouveau nom
+    if (!empty($input['name_json']) && is_array($input['name_json'])) {
+        $nameData = $input['name_json'];
+        $nameFr = trim($nameData['fr'] ?? '');
+        $nameEn = trim($nameData['en'] ?? '');
+    } else {
+        // Générer un nom par défaut (copie de X)
+        $sourceNames = json_decode($sourceType['name'], true) ?: [];
+        $nameFr = 'Copie de ' . ($sourceNames['fr'] ?? $sourceType['name']);
+        $nameEn = 'Copy of ' . ($sourceNames['en'] ?? $sourceType['name']);
+    }
+    
+    if (empty($nameFr) || empty($nameEn)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Les noms fr et en sont requis']);
+        return;
+    }
+    
+    // Nom interne optionnel
+    $interName = isset($input['inter_name']) ? trim($input['inter_name']) : '';
+    if (!empty($interName) && !preg_match('/^[a-z][a-z0-9_]{0,49}$/', $interName)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'inter_name doit être en minuscules, sans espaces, uniquement lettres, chiffres et _, max 50 caractères']);
+        return;
+    }
+    
+    // Construire le JSON pour le nom
+    $nameJson = json_encode(['fr' => $nameFr, 'en' => $nameEn], JSON_UNESCAPED_UNICODE);
+    
+    // Récupérer le prochain sort_order
+    $stmt = $pdo->query("SELECT COALESCE(MAX(sort_order), 0) + 1 as next_order FROM primary_type");
+    $nextOrder = $stmt->fetchColumn();
+    
+    $pdo->beginTransaction();
+    
+    try {
+        // 1. Créer le nouveau type
+        $stmt = $pdo->prepare("
+            INSERT INTO primary_type (name, inter_name, icon, color, webapi_type, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $nameJson,
+            $interName,
+            $sourceType['icon'],
+            $sourceType['color'],
+            $sourceType['webapi_type'],
+            $nextOrder
+        ]);
+        $newTypeId = (int)$pdo->lastInsertId();
+        
+        // 2. Copier les fournisseurs par défaut
+        $stmt = $pdo->prepare("
+            INSERT INTO primary_type_default_providers (primary_type_id, webapi_id, sort_order)
+            SELECT ?, webapi_id, sort_order
+            FROM primary_type_default_providers
+            WHERE primary_type_id = ?
+        ");
+        $stmt->execute([$newTypeId, $sourceId]);
+        $copiedProviders = $stmt->rowCount();
+        
+        // 3. Copier les champs de métadonnées (primary_type_fields)
+        // On garde un mapping des anciens IDs vers les nouveaux pour les key_to_field
+        $oldToNewFieldIds = [];
+        
+        $stmt = $pdo->prepare("SELECT * FROM primary_type_fields WHERE primary_type_id = ? ORDER BY sort_order");
+        $stmt->execute([$sourceId]);
+        $sourceFields = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $insertFieldStmt = $pdo->prepare("
+            INSERT INTO primary_type_fields (primary_type_id, field_key, field_type, field_options, is_required, sort_order, icon, lang)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        foreach ($sourceFields as $field) {
+            $insertFieldStmt->execute([
+                $newTypeId,
+                $field['field_key'],
+                $field['field_type'],
+                $field['field_options'],
+                $field['is_required'],
+                $field['sort_order'],
+                $field['icon'],
+                $field['lang']
+            ]);
+            $oldToNewFieldIds[$field['id']] = (int)$pdo->lastInsertId();
+        }
+        $copiedFields = count($oldToNewFieldIds);
+        
+        // 4. Copier les mappings API (primary_type_key_to_field)
+        $copiedMappings = 0;
+        if (!empty($oldToNewFieldIds)) {
+            $insertMappingStmt = $pdo->prepare("
+                INSERT INTO primary_type_key_to_field (field_id, api_keys, transform_type, transform_config, priority, is_active)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            
+            foreach ($oldToNewFieldIds as $oldFieldId => $newFieldId) {
+                $stmt = $pdo->prepare("SELECT * FROM primary_type_key_to_field WHERE field_id = ?");
+                $stmt->execute([$oldFieldId]);
+                $mappings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                foreach ($mappings as $mapping) {
+                    $insertMappingStmt->execute([
+                        $newFieldId,
+                        $mapping['api_keys'],
+                        $mapping['transform_type'],
+                        $mapping['transform_config'],
+                        $mapping['priority'],
+                        $mapping['is_active']
+                    ]);
+                    $copiedMappings++;
+                }
+            }
+        }
+        
+        $pdo->commit();
+        
+        loger('admin_primary_types', 'INFO', 'Type dupliqué', [
+            'source_id' => $sourceId,
+            'new_id' => $newTypeId,
+            'name_fr' => $nameFr,
+            'copied_providers' => $copiedProviders,
+            'copied_fields' => $copiedFields,
+            'copied_mappings' => $copiedMappings
+        ]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Type dupliqué avec succès',
+            'data' => [
+                'id' => $newTypeId,
+                'name' => $nameJson,
+                'name_fr' => $nameFr,
+                'name_en' => $nameEn,
+                'inter_name' => $interName,
+                'icon' => $sourceType['icon'],
+                'color' => $sourceType['color'],
+                'webapi_type' => $sourceType['webapi_type'],
+                'sort_order' => (int)$nextOrder,
+                'copied' => [
+                    'providers' => $copiedProviders,
+                    'fields' => $copiedFields,
+                    'mappings' => $copiedMappings
+                ]
+            ]
+        ]);
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        loger('admin_primary_types', 'ERROR', 'Erreur duplication type', [
+            'source_id' => $sourceId,
+            'error' => $e->getMessage()
+        ]);
+        throw $e;
+    }
 }

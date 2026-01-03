@@ -150,7 +150,20 @@ export function updateProvidersList() {
     
     state.activeProviders = getDefaultProvidersForWebapiType(state.selectedType, canUsePremium);
     
-    elements.providersList.innerHTML = filteredProviders
+    // Trier les fournisseurs : sélectionnés par défaut en premier (alphabétique), puis les autres (alphabétique)
+    const sortedProviders = [...filteredProviders].sort((a, b) => {
+        const aActive = state.activeProviders.has(a.id);
+        const bActive = state.activeProviders.has(b.id);
+        
+        // D'abord par état actif (actifs en premier)
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+        
+        // Puis par nom alphabétique
+        return (a.display_name || '').localeCompare(b.display_name || '', 'fr', { sensitivity: 'base' });
+    });
+    
+    elements.providersList.innerHTML = sortedProviders
         .map(p => buildProviderItem(p))
         .join('');
 }

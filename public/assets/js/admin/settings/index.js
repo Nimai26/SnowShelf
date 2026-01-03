@@ -20,6 +20,7 @@ import { initLimits, loadLimits, openAddLimitModal, openEditLimitModal as editLi
 import { initGrades, loadGrades, openAddGradeModal, openEditGradeModal as editGrade, prepareDeleteGrade } from './modules/grades.js';
 import { initStatuses, loadStatuses, openAddStatusModal, openEditStatusModal as editStatus, prepareDeleteStatus } from './modules/statuses.js';
 import { initUploadConfig, loadUploadConfigs, openAddUploadConfigModal, openEditUploadConfigModal as editUploadConfig, prepareDeleteUploadConfig } from './modules/upload-config.js';
+import { initProxyWhitelist, loadProxyWhitelist, saveProxyCategory, saveAllProxyWhitelist, exportProxyWhitelist } from './modules/proxy-whitelist.js';
 import { initPrimaryTypes, loadPrimaryTypes } from './modules/primary-types.js';
 import { initTypeFields, loadTypeFields, openAddTypeFieldModal, openEditTypeFieldModal as editTypeField, prepareDeleteTypeField } from './modules/type-fields.js';
 import { initFieldMappings, loadFieldMappings, openAddFieldMappingModal, openEditFieldMappingModal as editFieldMapping, prepareDeleteFieldMapping } from './modules/field-mappings.js';
@@ -375,6 +376,7 @@ async function loadAllData() {
             loadGrades(),
             loadStatuses(),
             loadUploadConfigs(),
+            loadProxyWhitelist(),
             loadPrimaryTypes()
         ]);
         
@@ -416,6 +418,7 @@ export function init(modalManager) {
     initGrades(elements, openDeleteConfirmModal);
     initStatuses(elements, openDeleteConfirmModal);
     initUploadConfig(elements, openDeleteConfirmModal);
+    initProxyWhitelist(elements);
     initPrimaryTypes(elements, ModalManager);
     initTypeFields(elements, openDeleteConfirmModal);
     initFieldMappings(elements, openDeleteConfirmModal);
@@ -462,6 +465,11 @@ window.SettingsPanel = {
     editUploadConfig: editUploadConfig,
     deleteUploadConfig: (id, category) => prepareDeleteUploadConfig(id, category),
     
+    // Proxy Whitelist
+    saveProxyCategory: saveProxyCategory,
+    saveAllProxyWhitelist: saveAllProxyWhitelist,
+    exportProxyWhitelist: exportProxyWhitelist,
+    
     // Type Fields
     editTypeField: editTypeField,
     deleteTypeField: (id, name) => prepareDeleteTypeField(id, name),
@@ -485,6 +493,7 @@ export default {
     loadGrades,
     loadStatuses,
     loadUploadConfigs,
+    loadProxyWhitelist,
     loadPrimaryTypes,
     loadTypeFields,
     loadFieldMappings

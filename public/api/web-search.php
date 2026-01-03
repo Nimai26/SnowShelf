@@ -603,20 +603,11 @@ function handleGetDetails(PDO $pdo, int $userId, bool $isPremium, bool $isAdmin,
     
     $locale = convertLangToLocale($userLang);
     
-    // Mapping des sous-providers vers le provider parent en BDD
-    // toys_api utilise des noms spécifiques (deezer, discogs, etc.) mais la BDD utilise des noms génériques (music)
-    $providerMapping = [
-        'deezer' => 'music',
-        'discogs' => 'music',
-        'musicbrainz' => 'music',
-        'itunes' => 'music',
-        'spotify' => 'music',
-    ];
-    $dbProvider = $providerMapping[$provider] ?? $provider;
-    
     // Vérifier si le provider nécessite un accès premium
-    $providerStmt = $pdo->prepare("SELECT id, name, api_key, client_id, USER_API, PREMIUM_ONLY, READ_CODE FROM Admin_webApi WHERE name = ? LIMIT 1");
-    $providerStmt->execute([$dbProvider]);
+    // On cherche d'abord par name, puis par alias (pour les sous-providers comme deezer, discogs → music)
+    // FIND_IN_SET cherche dans une liste séparée par des virgules
+    $providerStmt = $pdo->prepare("SELECT id, name, alias, api_key, client_id, USER_API, PREMIUM_ONLY, READ_CODE FROM Admin_webApi WHERE name = ? OR FIND_IN_SET(?, alias) > 0 LIMIT 1");
+    $providerStmt->execute([$provider, $provider]);
     $providerInfo = $providerStmt->fetch(PDO::FETCH_ASSOC);
     
     if ($providerInfo && $providerInfo['PREMIUM_ONLY'] && !$isPremium && !$isAdmin) {

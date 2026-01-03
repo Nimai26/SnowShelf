@@ -40,11 +40,11 @@ $username = $_SESSION['username'] ?? 'Utilisateur';
 $isAdmin = $_SESSION['is_admin'] ?? true;
 $isPremium = $_SESSION['is_premium'] ?? false;
 
-// Section active (users par défaut)
-$section = $_GET['section'] ?? 'users';
+// Section active (settings par défaut)
+$section = $_GET['section'] ?? 'settings';
 $validSections = ['users', 'settings', 'logs', 'stats', 'databases'];
 if (!in_array($section, $validSections)) {
-    $section = 'users';
+    $section = 'settings';
 }
 ?>
 <!-- DEBUG: theme='<?= $theme ?>' session_theme='<?= $_SESSION['theme'] ?? 'null' ?>' -->
@@ -126,6 +126,18 @@ if (!in_array($section, $validSections)) {
             <!-- Menu Admin -->
             <div class="nav-section-title"><?= __('admin.title') ?></div>
             <ul class="nav-menu">
+                <!-- 1. Paramètres système -->
+                <li class="nav-item <?= $section === 'settings' ? 'active' : '' ?>">
+                    <a href="?section=settings" class="nav-link" title="<?= __('admin.system_settings') ?>">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        <span class="nav-text"><?= __('admin.system_settings') ?></span>
+                    </a>
+                </li>
+                
+                <!-- 2. Utilisateurs -->
                 <li class="nav-item <?= $section === 'users' ? 'active' : '' ?>">
                     <a href="?section=users" class="nav-link" title="<?= __('admin.users') ?>">
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -138,6 +150,19 @@ if (!in_array($section, $validSections)) {
                     </a>
                 </li>
                 
+                <!-- 3. Base de données -->
+                <li class="nav-item <?= $section === 'databases' ? 'active' : '' ?>">
+                    <a href="?section=databases" class="nav-link" title="<?= __('admin.databases') ?>">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                        </svg>
+                        <span class="nav-text"><?= __('admin.databases') ?></span>
+                    </a>
+                </li>
+                
+                <!-- 4. Statistiques -->
                 <li class="nav-item <?= $section === 'stats' ? 'active' : '' ?>">
                     <a href="?section=stats" class="nav-link" title="<?= __('admin.statistics') ?>">
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -149,6 +174,7 @@ if (!in_array($section, $validSections)) {
                     </a>
                 </li>
                 
+                <!-- 5. Journaux -->
                 <li class="nav-item <?= $section === 'logs' ? 'active' : '' ?>">
                     <a href="?section=logs" class="nav-link" title="<?= __('admin.logs') ?>">
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -159,27 +185,6 @@ if (!in_array($section, $validSections)) {
                             <polyline points="10 9 9 9 8 9"></polyline>
                         </svg>
                         <span class="nav-text"><?= __('admin.logs') ?></span>
-                    </a>
-                </li>
-                
-                <li class="nav-item <?= $section === 'settings' ? 'active' : '' ?>">
-                    <a href="?section=settings" class="nav-link" title="<?= __('admin.system_settings') ?>">
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                        </svg>
-                        <span class="nav-text"><?= __('admin.system_settings') ?></span>
-                    </a>
-                </li>
-                
-                <li class="nav-item <?= $section === 'databases' ? 'active' : '' ?>">
-                    <a href="?section=databases" class="nav-link" title="<?= __('admin.databases') ?>">
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-                        </svg>
-                        <span class="nav-text"><?= __('admin.databases') ?></span>
                     </a>
                 </li>
             </ul>
@@ -525,6 +530,13 @@ if (!in_array($section, $validSections)) {
                         </svg>
                         <?= __('admin.tab_upload_config') ?>
                     </button>
+                    <button class="settings-tab" data-tab="proxy-whitelist">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <path d="M9 12l2 2 4-4"></path>
+                        </svg>
+                        <?= __('admin.tab_proxy_whitelist') ?>
+                    </button>
                     <button class="settings-tab" data-tab="primary-types">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 6h16M4 12h16M4 18h7"></path>
@@ -785,6 +797,7 @@ if (!in_array($section, $validSections)) {
                                     <th>#</th>
                                     <th><?= __('admin.api_name') ?></th>
                                     <th><?= __('admin.api_type') ?></th>
+                                    <th><?= __('admin.api_alias') ?? 'Alias' ?></th>
                                     <th><?= __('admin.api_limits') ?></th>
                                     <th><?= __('admin.api_features') ?></th>
                                     <th><?= __('admin.api_status') ?></th>
@@ -929,6 +942,109 @@ if (!in_array($section, $validSections)) {
                                 <!-- Chargé via JS -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+                
+                <!-- Tab: Whitelist Proxy -->
+                <div class="settings-panel" id="panel-proxy-whitelist">
+                    <div class="panel-header">
+                        <h3><?= __('admin.proxy_whitelist_title') ?></h3>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary btn-sm" id="exportProxyWhitelistBtn" title="Exporter">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Exporter
+                            </button>
+                            <button class="btn btn-primary" id="saveAllProxyWhitelistBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                <?= __('common.save_all') ?? 'Tout sauvegarder' ?>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p class="panel-description"><?= __('admin.proxy_whitelist_desc') ?></p>
+                    
+                    <div class="proxy-whitelist-categories">
+                        <!-- Images -->
+                        <div class="whitelist-category-card">
+                            <div class="category-header">
+                                <div class="category-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                    <span><?= __('admin.proxy_category_images') ?></span>
+                                </div>
+                                <span class="domain-count" id="proxyCount_images">0 domaine(s)</span>
+                            </div>
+                            <textarea id="proxyDomains_images" class="proxy-domains-textarea" 
+                                placeholder="<?= __('admin.proxy_domains_placeholder') ?>" 
+                                spellcheck="false"></textarea>
+                            <div class="category-footer">
+                                <small class="text-muted">Format: domaine.com # description (optionnel). Préfixer avec # pour désactiver.</small>
+                                <button class="btn btn-sm btn-secondary" onclick="SettingsPanel.saveProxyCategory('images')">
+                                    <?= __('common.save') ?>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Audio -->
+                        <div class="whitelist-category-card">
+                            <div class="category-header">
+                                <div class="category-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 18V5l12-2v13"></path>
+                                        <circle cx="6" cy="18" r="3"></circle>
+                                        <circle cx="18" cy="16" r="3"></circle>
+                                    </svg>
+                                    <span><?= __('admin.proxy_category_audio') ?></span>
+                                </div>
+                                <span class="domain-count" id="proxyCount_audio">0 domaine(s)</span>
+                            </div>
+                            <textarea id="proxyDomains_audio" class="proxy-domains-textarea" 
+                                placeholder="<?= __('admin.proxy_domains_placeholder') ?>" 
+                                spellcheck="false"></textarea>
+                            <div class="category-footer">
+                                <small class="text-muted">Format: domaine.com # description (optionnel). Préfixer avec # pour désactiver.</small>
+                                <button class="btn btn-sm btn-secondary" onclick="SettingsPanel.saveProxyCategory('audio')">
+                                    <?= __('common.save') ?>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Documents -->
+                        <div class="whitelist-category-card">
+                            <div class="category-header">
+                                <div class="category-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                    <span><?= __('admin.proxy_category_documents') ?></span>
+                                </div>
+                                <span class="domain-count" id="proxyCount_documents">0 domaine(s)</span>
+                            </div>
+                            <textarea id="proxyDomains_documents" class="proxy-domains-textarea" 
+                                placeholder="<?= __('admin.proxy_domains_placeholder') ?>" 
+                                spellcheck="false"></textarea>
+                            <div class="category-footer">
+                                <small class="text-muted">Format: domaine.com # description (optionnel). Préfixer avec # pour désactiver.</small>
+                                <button class="btn btn-sm btn-secondary" onclick="SettingsPanel.saveProxyCategory('documents')">
+                                    <?= __('common.save') ?>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1384,6 +1500,12 @@ if (!in_array($section, $validSections)) {
                         </div>
                     </div>
                     
+                    <div class="form-group">
+                        <label for="apiAlias"><?= __('admin.api_alias') ?? 'Alias (sous-providers)' ?></label>
+                        <input type="text" id="apiAlias" name="alias" placeholder="deezer,discogs,spotify">
+                        <small class="form-hint"><?= __('admin.api_alias_hint') ?? 'Liste des sous-providers séparés par des virgules (ex: deezer,discogs,spotify pour music)' ?></small>
+                    </div>
+                    
                     <div class="form-row-2">
                         <div class="form-group">
                             <label for="apiType"><?= __('admin.api_type_field') ?></label>
@@ -1812,6 +1934,33 @@ if (!in_array($section, $validSections)) {
                             <input type="checkbox" id="typeFieldRequired" name="is_required">
                             <span><?= __('admin.required') ?? 'Champ obligatoire' ?></span>
                         </label>
+                    </div>
+                    
+                    <!-- Section Mappings API -->
+                    <div class="form-section" id="typeFieldMappingsSection">
+                        <div class="section-header">
+                            <h4>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                </svg>
+                                Mappings API
+                            </h4>
+                            <button type="button" class="btn btn-sm btn-outline" id="addTypeFieldMappingBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Ajouter
+                            </button>
+                        </div>
+                        <p class="section-hint">Définissez les chemins API pour extraire les données depuis les fournisseurs externes.</p>
+                        <div class="mappings-list" id="typeFieldMappingsList">
+                            <!-- Mappings chargés dynamiquement -->
+                            <div class="empty-mappings-message">
+                                <span>Aucun mapping défini</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

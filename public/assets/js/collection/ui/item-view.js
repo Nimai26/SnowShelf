@@ -145,13 +145,48 @@ function formatSpecialStickersForView(value) {
         }
     }
     
-    // Si c'est un objet avec des clés de type (données possédées: {metallic: ["A", "B"]})
-    // et pas un tableau de définitions, afficher directement
-    if (specialData && typeof specialData === 'object' && !Array.isArray(specialData)) {
-        // Vérifier si c'est des données possédées ou des définitions
+    if (!specialData || typeof specialData !== 'object') {
+        return '<span class="text-muted">-</span>';
+    }
+    
+    // Nouveau format de stockage: {types: [...], owned: {...}}
+    if (specialData.types && Array.isArray(specialData.types)) {
+        const owned = specialData.owned || {};
+        
+        if (specialData.types.length === 0) {
+            return '<span class="text-muted">-</span>';
+        }
+        
+        let html = '<div class="special-stickers-view">';
+        
+        for (const typeInfo of specialData.types) {
+            const typeName = typeInfo.type_original || typeInfo.type || 'Spéciales';
+            const typeKey = typeInfo.type || '';
+            const total = typeInfo.total || 0;
+            const range = typeInfo.range || '';
+            
+            // Calculer combien sont possédées
+            const ownedItems = owned[typeKey] || [];
+            const ownedCount = ownedItems.length;
+            const missingCount = total - ownedCount;
+            
+            html += `<div class="special-sticker-view-type">
+                <span class="special-type-name">${escapeHtml(typeName)}</span>
+                ${range ? `<span class="special-type-range">(${escapeHtml(range)})</span>` : ''}
+                <span class="special-type-count">${total} image(s)</span>
+                ${missingCount > 0 ? `<span class="special-type-missing">${missingCount} manquante(s)</span>` : '<span class="special-type-complete">✅ Complet</span>'}
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    // Ancien format: objet direct avec clés de type {metallic: ["A", "B"]}
+    if (!Array.isArray(specialData)) {
         const firstValue = Object.values(specialData)[0];
         if (Array.isArray(firstValue)) {
-            // C'est des données possédées {type: [items]}
+            // C'est des données possédées {type: [items]} - ancien format
             const parts = [];
             for (const [type, items] of Object.entries(specialData)) {
                 if (Array.isArray(items) && items.length > 0) {
@@ -164,14 +199,10 @@ function formatSpecialStickersForView(value) {
             }
             return parts.length > 0 ? `<div class="special-stickers-view">${parts.join('')}</div>` : '<span class="text-muted">-</span>';
         }
-    }
-    
-    // Si c'est un tableau (nouveau format API ou définitions)
-    if (!Array.isArray(specialData)) {
         return '<span class="text-muted">-</span>';
     }
     
-    // Format: [{type, type_original, total, range, items}]
+    // Format tableau (données API directes): [{type, type_original, total, range, items}]
     let html = '<div class="special-stickers-view">';
     
     for (const special of specialData) {
@@ -725,7 +756,14 @@ export function buildMetadataViewHtml(metadata, t) {
             // Images spéciales : parser et afficher par type avec manquantes
             displayValue = formatSpecialStickersForView(data.value);
         } else if (data.type === 'multiselect' && Array.isArray(data.value)) {
-            displayValue = data.value.map(v => `<span class="metadata-tag">${escapeHtml(v)}</span>`).join('');
+            // Gérer les valeurs qui peuvent être des objets {id, name, ...} ou des strings
+            displayValue = data.value.map(v => {
+                // Si c'est un objet, extraire le nom ou la valeur textuelle
+                const text = typeof v === 'object' && v !== null 
+                    ? (v.name || v.label || v.title || v.value || JSON.stringify(v))
+                    : String(v);
+                return `<span class="metadata-tag">${escapeHtml(text)}</span>`;
+            }).join('');
         } else if (data.type === 'url' && data.value) {
             displayValue = `<a href="${escapeHtml(data.value)}" target="_blank" rel="noopener">${escapeHtml(data.value)}</a>`;
         } else if (data.type === 'rating' && data.value) {

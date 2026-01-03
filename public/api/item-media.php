@@ -197,10 +197,12 @@ function handleUpload(PDO $db, int $userId, bool $isAdmin, ?int $entityId, strin
     // Conserver le nom original pour le champ title (lisible)
     $originalTitle = $fileName;
     
-    // Générer un nom de fichier avec timestamp pour éviter le cache navigateur
+    // Générer un nom de fichier unique avec timestamp + identifiant unique
+    // pour éviter les collisions lors d'uploads multiples dans la même seconde
     $pathInfo = pathinfo($fileName);
     $safeName = SecureUpload::sanitizeFilename($pathInfo['filename'] ?? 'file', false);
-    $fileNameWithTimestamp = $safeName . '_' . time();
+    $uniqueId = substr(uniqid(), -6); // 6 derniers caractères de uniqid
+    $fileNameWithTimestamp = $safeName . '_' . time() . '_' . $uniqueId;
     
     // Si pas d'entityId (mode création), stocker en temporaire
     if (!$entityId) {
@@ -302,7 +304,9 @@ function handleAddFromTemp(PDO $db, int $userId, bool $isAdmin, ?int $entityId, 
     $absoluteTempPath = realpath(__DIR__ . '/../../' . ltrim($tempPath, '/'));
     
     if (!$absoluteTempPath || !file_exists($absoluteTempPath)) {
-        sendError(404, 'not_found', 'Fichier temporaire non trouvé');
+        // Code 400 au lieu de 404 pour éviter les erreurs confuses dans la console navigateur
+        // (le fichier peut avoir été déjà finalisé ou supprimé, ce n'est pas une vraie erreur 404)
+        sendError(400, 'file_not_found', 'Fichier temporaire non trouvé');
     }
     
     if (!$entityId) {
@@ -328,7 +332,8 @@ function handleAddFromTemp(PDO $db, int $userId, bool $isAdmin, ?int $entityId, 
     // Éviter les doublons
     if (file_exists($destPath)) {
         $info = pathinfo($filename);
-        $filename = $info['filename'] . '_' . time() . '.' . $info['extension'];
+        $uniqueId = substr(uniqid(), -6);
+        $filename = $info['filename'] . '_' . time() . '_' . $uniqueId . '.' . $info['extension'];
         $destPath = $destDir . '/' . $filename;
     }
     
@@ -410,11 +415,12 @@ function handleAddFromProxy(PDO $db, int $userId, bool $isAdmin, ?int $entityId,
     $fileSize = filesize($proxyFile);
     error_log("[item-media] Fichier proxy trouvé: {$proxyFile} ({$fileSize} bytes)");
     
-    // Générer un nom de fichier avec timestamp pour le cache navigateur
+    // Générer un nom de fichier unique avec timestamp + identifiant
     $pathInfo = pathinfo($filename);
     $safeName = SecureUpload::sanitizeFilename($pathInfo['filename'] ?? 'file', false);
     $extension = strtolower($pathInfo['extension'] ?? 'bin');
-    $diskFilename = $safeName . '_' . time() . '.' . $extension;
+    $uniqueId = substr(uniqid(), -6);
+    $diskFilename = $safeName . '_' . time() . '_' . $uniqueId . '.' . $extension;
     
     if (!$entityId) {
         // Mode création : déplacer vers temp standard
@@ -531,7 +537,8 @@ function handleFinalizeTemp(PDO $db, int $userId, bool $isAdmin, ?int $entityId,
     $absoluteTempPath = realpath(__DIR__ . '/../../' . ltrim($tempPath, '/'));
     
     if (!$absoluteTempPath || !file_exists($absoluteTempPath)) {
-        sendError(404, 'not_found', 'Fichier temporaire non trouvé');
+        // Code 400 au lieu de 404 - le fichier peut avoir été déjà finalisé ou supprimé
+        sendError(400, 'file_not_found', 'Fichier temporaire non trouvé');
     }
     
     // Déplacer vers le dossier final
@@ -541,7 +548,8 @@ function handleFinalizeTemp(PDO $db, int $userId, bool $isAdmin, ?int $entityId,
     // Éviter les doublons
     if (file_exists($destPath)) {
         $info = pathinfo($filename);
-        $filename = $info['filename'] . '_' . time() . '.' . $info['extension'];
+        $uniqueId = substr(uniqid(), -6);
+        $filename = $info['filename'] . '_' . time() . '_' . $uniqueId . '.' . $info['extension'];
         $destPath = $destDir . '/' . $filename;
     }
     

@@ -251,11 +251,18 @@ export function formatMetadataValue(key, value) {
     if (value === null || value === undefined) return '-';
     
     if (Array.isArray(value)) {
-        return value.join(', ');
+        // Gérer les tableaux d'objets (ex: plateformes {id, name})
+        return value.map(v => {
+            if (typeof v === 'object' && v !== null) {
+                return v.name || v.label || v.title || v.value || String(v);
+            }
+            return String(v);
+        }).join(', ');
     }
     
     if (typeof value === 'object') {
-        return '-';
+        // Essayer d'extraire un nom lisible de l'objet
+        return value.name || value.label || value.title || value.value || '-';
     }
     
     switch (key) {

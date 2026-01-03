@@ -26,6 +26,22 @@ const metadataMappingsCache = new Map();
 // ============================================================================
 
 /**
+ * Formate un tableau pour l'affichage, gérant les objets {id, name} etc.
+ * @param {Array} arr - Tableau à formater
+ * @param {string} separator - Séparateur (défaut: ', ')
+ * @returns {string} Chaîne formatée
+ */
+function formatArrayForDisplay(arr, separator = ', ') {
+    if (!Array.isArray(arr)) return String(arr ?? '');
+    return arr.map(v => {
+        if (typeof v === 'object' && v !== null) {
+            return v.name || v.label || v.title || v.value || String(v);
+        }
+        return String(v);
+    }).join(separator);
+}
+
+/**
  * Parse une valeur monétaire et extrait le nombre
  * Gère les formats: "199,99 €", "€199.99", "$19.99", "199.99", "19,99€", etc.
  * @param {string|number} value - Valeur à parser
@@ -1507,7 +1523,7 @@ export function detectImportConflicts(modal, result) {
                         key: key,
                         label: label,
                         currentValue: currentValue,
-                        newValue: Array.isArray(newValue) ? newValue.join(', ') : String(newValue),
+                        newValue: Array.isArray(newValue) ? formatArrayForDisplay(newValue) : String(newValue),
                         isEmpty: !currentValue,
                         canAppend: isTextarea  // Seuls les textarea peuvent être concaténés
                     });
@@ -1790,7 +1806,7 @@ export function detectFieldsToReplace(modal, result) {
                         key: key,
                         label: label,
                         oldValue: truncate(input.value, 30),
-                        newValue: truncate(Array.isArray(newValue) ? newValue.join(', ') : String(newValue), 30)
+                        newValue: truncate(Array.isArray(newValue) ? formatArrayForDisplay(newValue) : String(newValue), 30)
                     });
                 }
             }

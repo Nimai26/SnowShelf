@@ -31,6 +31,56 @@ require_once __DIR__ . '/../../core/logger.php';
 // Dossier pour les fichiers temporaires
 define('PROXY_TEMP_DIR', __DIR__ . '/../../storage/temp/proxy/');
 
+/**
+ * Récupère les domaines whitelist depuis la BDD
+ * @param PDO $pdo Connexion BDD
+ * @param array|null $categories Catégories à filtrer (null = toutes)
+ * @return array Liste des domaines autorisés
+ */
+function getWhitelistedDomains($pdo, $categories = null) {
+    static $cache = [];
+    
+    // Clé de cache basée sur les catégories
+    $cacheKey = $categories ? implode(',', $categories) : 'all';
+    
+    if (isset($cache[$cacheKey])) {
+        return $cache[$cacheKey];
+    }
+    
+    try {
+        if ($categories) {
+            $placeholders = implode(',', array_fill(0, count($categories), '?'));
+            $stmt = $pdo->prepare("SELECT domain FROM proxy_whitelist WHERE is_active = 1 AND category IN ($placeholders)");
+            $stmt->execute($categories);
+        } else {
+            $stmt = $pdo->query("SELECT domain FROM proxy_whitelist WHERE is_active = 1");
+        }
+        
+        $domains = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $cache[$cacheKey] = $domains;
+        return $domains;
+    } catch (Exception $e) {
+        loger('proxy-download', 'ERROR', 'Erreur chargement whitelist BDD', ['error' => $e->getMessage()]);
+        return [];
+    }
+}
+
+/**
+ * Vérifie si un domaine est dans la whitelist
+ * @param string $host Le domaine à vérifier
+ * @param array $allowedDomains Liste des domaines autorisés
+ * @return bool
+ */
+function isDomainAllowed($host, $allowedDomains) {
+    $host = strtolower($host);
+    foreach ($allowedDomains as $domain) {
+        if ($host === $domain || str_ends_with($host, '.' . $domain)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Seuil pour passer en mode streaming (50 Mo)
 define('STREAMING_THRESHOLD', 50 * 1024 * 1024);
 
@@ -144,55 +194,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             exit;
         }
         
-        // Vérifier que le domaine est dans la whitelist
+        // Vérifier que le domaine est dans la whitelist (images + documents)
         $host = parse_url($url, PHP_URL_HOST);
-        $allowedDomains = [
-            'comicvine.gamespot.com', 'www.gamespot.com',
-            'archive.org', 'ia800', 'ia600',
-            'coverartarchive.org',
-            'covers.openlibrary.org', 'openlibrary.org',
-            'musicbrainz.org',
-            'images-na.ssl-images-amazon.com', 'images-eu.ssl-images-amazon.com',
-            'm.media-amazon.com',
-            'image.tmdb.org', 'themoviedb.org',
-            'thetvdb.com', 'artworks.thetvdb.com',
-            'media.rawg.io',
-            'cdn.myanimelist.net',
-            'uploads.mangadex.org',
-            'static.wikia.nocookie.net',
-            'cdn.rebrickable.com',
-            'images.brickset.com',
-            'img.bricklink.com',
-            'images.lego.com',
-            'lego.com',
-            // Mega Construx / Mattel
-            'megaconstrux.com', 'shop.mattel.com', 'mattel.com',
-            'assets.contentstack.io', 'contentstack.io', // Manuels PDF Mega
-            'cdn.shopify.com', // Images produits Mattel
-            // Playmobil
-            'media.playmobil.com', 'playmobil.com',
-            'playmobil.a.bigcontent.io', 'bigcontent.io', // Manuels PDF
-            // Klickypedia
-            'klickypedia.com', 'www.klickypedia.com',
-            // Deezer
-            'e-cdns-images.dzcdn.net', 'cdns-images.dzcdn.net', 'dzcdn.net',
-            // Discogs
-            'i.discogs.com', 'st.discogs.com',
-            // Spotify
-            'i.scdn.co', 'mosaic.scdn.co',
-            // BoardGameGeek
-            'cf.geekdo-images.com', 'geekdo-images.com'
-        ];
+        $allowedDomains = getWhitelistedDomains($pdo, ['images', 'documents']);
         
-        $isAllowed = false;
-        foreach ($allowedDomains as $domain) {
-            if (str_contains($host, $domain)) {
-                $isAllowed = true;
-                break;
-            }
-        }
-        
-        if (!$isAllowed) {
+        if (!isDomainAllowed($host, $allowedDomains)) {
             http_response_code(403);
             header('Content-Type: image/svg+xml');
             echo '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="10" y="50" fill="#666">Forbidden</text></svg>';
@@ -264,30 +270,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         
         // Vérifier que le domaine est dans la whitelist audio
         $host = parse_url($url, PHP_URL_HOST);
-        $allowedAudioDomains = [
-            // Deezer previews - plusieurs formats de CDN
-            'cdns-preview-0.dzcdn.net', 'cdns-preview-1.dzcdn.net', 'cdns-preview-2.dzcdn.net',
-            'cdns-preview-3.dzcdn.net', 'cdns-preview-4.dzcdn.net', 'cdns-preview-5.dzcdn.net',
-            'cdns-preview-6.dzcdn.net', 'cdns-preview-7.dzcdn.net', 'cdns-preview-8.dzcdn.net',
-            'cdns-preview-9.dzcdn.net', 'cdns-preview-a.dzcdn.net', 'cdns-preview-b.dzcdn.net',
-            'cdns-preview-c.dzcdn.net', 'cdns-preview-d.dzcdn.net', 'cdns-preview-e.dzcdn.net',
-            'cdns-preview-f.dzcdn.net',
-            // Deezer CDN alternatifs (cdnt = CDN Token-based)
-            'cdnt-preview.dzcdn.net', 'cdnt-preview-0.dzcdn.net', 'cdnt-preview-1.dzcdn.net',
-            'cdnt-preview-2.dzcdn.net', 'cdnt-preview-3.dzcdn.net', 'cdnt-preview-4.dzcdn.net',
-            // Wildcards génériques Deezer
-            'dzcdn.net',
-        ];
+        $allowedAudioDomains = getWhitelistedDomains($pdo, ['audio']);
         
-        $isAllowed = false;
-        foreach ($allowedAudioDomains as $domain) {
-            if (str_contains($host, $domain)) {
-                $isAllowed = true;
-                break;
-            }
-        }
-        
-        if (!$isAllowed) {
+        if (!isDomainAllowed($host, $allowedAudioDomains)) {
             http_response_code(403);
             header('Content-Type: application/json');
             echo json_encode(['error' => 'Domain not allowed']);
@@ -428,138 +413,13 @@ if (!in_array($parsedUrl['scheme'] ?? '', ['http', 'https'])) {
 }
 
 // ============================================================================
-// LISTE BLANCHE DES DOMAINES
+// VÉRIFICATION WHITELIST (depuis BDD)
 // ============================================================================
 
-$allowedDomains = [
-    // Albums/Stickers - Paninimania
-    'paninimania.com', 'www.paninimania.com',
-    
-    // Livres - Google Books
-    'books.google.com', 'books.googleusercontent.com',
-    
-    // Livres - OpenLibrary
-    'covers.openlibrary.org', 'openlibrary.org',
-    
-    // Livres - Amazon (couvertures)
-    'images-na.ssl-images-amazon.com', 'images-eu.ssl-images-amazon.com', 'm.media-amazon.com',
-    
-    // Livres - ComicVine
-    'comicvine.gamespot.com', 'www.gamespot.com',
-    
-    // Livres/Manga - MangaDex
-    'uploads.mangadex.org', 'mangadex.org',
-    
-    // Livres/BD - Bédéthèque
-    'www.bedetheque.com', 'bedetheque.com',
-    
-    // Anime/Manga - Jikan (MyAnimeList)
-    'cdn.myanimelist.net', 'myanimelist.net',
-    
-    // Jeux vidéo - RAWG
-    'media.rawg.io',
-    
-    // Jeux vidéo - IGDB
-    'images.igdb.com',
-    
-    // Jeux vidéo / Consoles - ConsoleVariations
-    'consolevariations.com', 'cdn.consolevariations.com',
-    
-    // Jeux vidéo - JeuxVideo.com
-    'www.jeuxvideo.com', 'jeuxvideo.com', 'image.jeuxvideo.com',
-    
-    // Films/Séries - TMDB
-    'image.tmdb.org',
-    
-    // Films/Séries - TheTVDB
-    'artworks.thetvdb.com', 'thetvdb.com',
-    
-    // Films/Séries - IMDB
-    'www.imdb.com', 'imdb.com', 'ia.media-imdb.com',
-    
-    // LEGO Official
-    'www.lego.com', 'lego.com', 'sh-s7-live-s.legocdn.com', 'assets.lego.com',
-    
-    // LEGO - Rebrickable
-    'cdn.rebrickable.com', 'rebrickable.com', 'www.rebrickable.com',
-    
-    // LEGO - Brickset/Bricklink
-    'images.brickset.com', 'brickset.com', 'img.bricklink.com', 'bricklink.com',
-    
-    // LEGO - Mega Construx / Mattel
-    'megaconstrux.com', 'www.megaconstrux.com',
-    'shop.mattel.com', 'mattel.com',
-    'assets.contentstack.io', 'contentstack.io', // Manuels PDF Mega Construx
-    'cdn.shopify.com', 'shopify.com', // Images produits Mattel
-    
-    // Playmobil
-    'media.playmobil.com', 'playmobil.com', 'www.playmobil.com',
-    'playmobil.a.bigcontent.io', 'bigcontent.io', // Manuels PDF Playmobil
-    
-    // Klickypedia (Playmobil database)
-    'klickypedia.com', 'www.klickypedia.com',
-    
-    // Figurines/Jouets - Coleka
-    'www.coleka.com', 'coleka.com', 'static.coleka.com', 'thumbs.coleka.com',
-    
-    // Jeux de société - BoardGameGeek
-    
-    // Toys API (proxy interne)
-    'api.snowshelf.fr',
-    'cf.geekdo-images.com', 'geekdo-images.com', 'boardgamegeek.com',
-    
-    // Figurines/Jouets - Lulu-Berlu
-    'www.lulu-berlu.com', 'lulu-berlu.com',
-    
-    // Figurines/Jouets - Transformerland
-    'www.transformerland.com', 'transformerland.com',
-    
-    // Musique - MusicBrainz/CoverArtArchive
-    'coverartarchive.org', 'archive.org', 'musicbrainz.org',
-    
-    // CDN génériques / CloudFront
-    'cloudfront.net', 'd1w7fb2mkkr3kw.cloudfront.net',
-    
-    // YouTube (thumbnails)
-    'i.ytimg.com', 'img.youtube.com',
-    
-    // Générique / Wikimedia
-    'upload.wikimedia.org', 'commons.wikimedia.org',
-    
-    // Steam
-    'steamcdn-a.akamaihd.net', 'cdn.akamai.steamstatic.com',
-    
-    // Vimeo
-    'i.vimeocdn.com', 'vimeocdn.com',
-    
-    // Deezer (images et previews audio)
-    'e-cdns-images.dzcdn.net', 'cdns-images.dzcdn.net', 'dzcdn.net',
-    'cdns-preview-0.dzcdn.net', 'cdns-preview-1.dzcdn.net', 'cdns-preview-2.dzcdn.net',
-    'cdns-preview-3.dzcdn.net', 'cdns-preview-4.dzcdn.net', 'cdns-preview-5.dzcdn.net',
-    'cdns-preview-6.dzcdn.net', 'cdns-preview-7.dzcdn.net', 'cdns-preview-8.dzcdn.net',
-    'cdns-preview-9.dzcdn.net', 'cdns-preview-a.dzcdn.net', 'cdns-preview-b.dzcdn.net',
-    'cdns-preview-c.dzcdn.net', 'cdns-preview-d.dzcdn.net', 'cdns-preview-e.dzcdn.net',
-    'cdns-preview-f.dzcdn.net',
-    
-    // Discogs (images musique)
-    'i.discogs.com', 'st.discogs.com', 'discogs.com',
-    
-    // Spotify (images)
-    'i.scdn.co', 'mosaic.scdn.co', 'scdn.co',
-];
-
-// Vérifier le domaine
 $host = strtolower($parsedUrl['host'] ?? '');
-$isAllowed = false;
+$allowedDomains = getWhitelistedDomains($db); // Tous les domaines
 
-foreach ($allowedDomains as $domain) {
-    if ($host === $domain || str_ends_with($host, '.' . $domain)) {
-        $isAllowed = true;
-        break;
-    }
-}
-
-if (!$isAllowed) {
+if (!isDomainAllowed($host, $allowedDomains)) {
     loger('proxy-download', 'WARNING', 'Domaine non autorisé', ['url' => $url, 'host' => $host]);
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Domaine non autorisé: ' . $host]);

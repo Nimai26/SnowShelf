@@ -180,14 +180,15 @@ function getMappings(PDO $pdo, ?int $typeId = null, ?int $fieldId = null, string
     }
     
     $transforms = $pdo->query("
-        SELECT id, type_key as name, lang 
+        SELECT id, type_key, lang, config_schema 
         FROM field_transform_types 
         ORDER BY sort_order
     ")->fetchAll(PDO::FETCH_ASSOC);
     
     foreach ($transforms as &$transform) {
         $langData = $transform['lang'] ? json_decode($transform['lang'], true) : [];
-        $transform['description'] = $langData['fr']['description'] ?? $transform['name'];
+        $transform['lang'] = $langData;
+        $transform['config_schema'] = $transform['config_schema'] ? json_decode($transform['config_schema'], true) : null;
     }
     
     echo json_encode([

@@ -49,8 +49,8 @@ if (!$currentUser || !$auth->isAdmin()) {
 $allowedTables = [
     'Admin_webApi' => [
         'primaryKey' => 'id',
-        'fields' => ['id', 'name', 'Name_UF', 'api_key', 'client_id', 'Type', 'max_results_premium', 'max_results_free', 'Notes', 'Defaut_active', 'USER_API', 'READ_CODE', 'has_details', 'CLIENT_ID_ON', 'PREMIUM_ONLY', 'created_at', 'updated_at'],
-        'editableFields' => ['name', 'Name_UF', 'api_key', 'client_id', 'Type', 'max_results_premium', 'max_results_free', 'Notes', 'Defaut_active', 'USER_API', 'READ_CODE', 'has_details', 'CLIENT_ID_ON', 'PREMIUM_ONLY'],
+        'fields' => ['id', 'name', 'Name_UF', 'alias', 'api_key', 'client_id', 'Type', 'max_results_premium', 'max_results_free', 'Notes', 'Defaut_active', 'USER_API', 'READ_CODE', 'has_details', 'CLIENT_ID_ON', 'PREMIUM_ONLY', 'created_at', 'updated_at'],
+        'editableFields' => ['name', 'Name_UF', 'alias', 'api_key', 'client_id', 'Type', 'max_results_premium', 'max_results_free', 'Notes', 'Defaut_active', 'USER_API', 'READ_CODE', 'has_details', 'CLIENT_ID_ON', 'PREMIUM_ONLY'],
         'requiredFields' => ['name', 'Name_UF'],
         'booleanFields' => ['Defaut_active', 'USER_API', 'READ_CODE', 'has_details', 'CLIENT_ID_ON', 'PREMIUM_ONLY'],
         'intFields' => ['max_results_premium', 'max_results_free'],
@@ -83,6 +83,16 @@ $allowedTables = [
         'intFields' => ['max_size_mb'],
         'jsonFields' => ['extensions'],
         'uniqueFields' => ['category']
+    ],
+    'proxy_whitelist' => [
+        'primaryKey' => 'id',
+        'fields' => ['id', 'domain', 'category', 'description', 'is_active', 'created_at'],
+        'editableFields' => ['domain', 'category', 'description', 'is_active'],
+        'requiredFields' => ['domain'],
+        'booleanFields' => ['is_active'],
+        'intFields' => [],
+        'jsonFields' => [],
+        'uniqueFields' => ['domain']  // Empêche les doublons de domaines
     ]
 ];
 

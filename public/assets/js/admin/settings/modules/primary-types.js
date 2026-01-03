@@ -176,6 +176,13 @@ function renderPrimaryTypes() {
                 </div>
                 
                 <div class="primary-type-footer">
+                    <button class="btn btn-secondary btn-sm duplicate-type-btn" data-type-id="${type.id}" title="Dupliquer ce type">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Dupliquer
+                    </button>
                     <button class="btn btn-primary btn-sm save-type-btn" data-type-id="${type.id}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -245,6 +252,14 @@ function bindPrimaryTypesEvents() {
         btn.addEventListener('click', (e) => {
             const typeId = parseInt(e.target.dataset.typeId || e.target.closest('.save-type-btn').dataset.typeId);
             savePrimaryType(typeId);
+        });
+    });
+    
+    // Boutons de duplication
+    document.querySelectorAll('.duplicate-type-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const typeId = parseInt(e.target.dataset.typeId || e.target.closest('.duplicate-type-btn').dataset.typeId);
+            openDuplicateTypeModal(typeId);
         });
     });
 }
@@ -542,6 +557,134 @@ async function createPrimaryType(modalId) {
         }
     } catch (error) {
         console.error('Create primary type error:', error);
+        showToast('Erreur de connexion', 'error');
+    }
+}
+
+/**
+ * Ouvre le modal de duplication d'un type primaire
+ * @param {number} sourceTypeId - ID du type à dupliquer
+ */
+function openDuplicateTypeModal(sourceTypeId) {
+    if (!ModalManager) {
+        showToast('ModalManager non disponible', 'error');
+        return;
+    }
+    
+    // Trouver le type source
+    const sourceType = primaryTypesData.primary_types.find(t => t.id === sourceTypeId);
+    if (!sourceType) {
+        showToast('Type source introuvable', 'error');
+        return;
+    }
+    
+    // Préparer les noms par défaut (Copie de X)
+    const defaultNameFr = `Copie de ${sourceType.name_fr || sourceType.name || ''}`;
+    const defaultNameEn = `Copy of ${sourceType.name_en || sourceType.name || ''}`;
+    const defaultNameJson = `{\n  "fr": "${escapeHtml(defaultNameFr)}",\n  "en": "${escapeHtml(defaultNameEn)}"\n}`;
+    
+    const content = `
+        <form id="duplicateTypeForm" class="form-grid">
+            <div class="duplicate-info-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <div>
+                    <strong>Duplication de : ${escapeHtml(sourceType.name_fr || sourceType.name || '')}</strong>
+                    <p>Cette action copiera : les paramètres du type, les champs de détails et les mappings API.</p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="duplicateTypeNameJson">Nouveau nom (JSON) <span class="required">*</span></label>
+                <textarea id="duplicateTypeNameJson" class="form-control code-input" rows="4" required>${defaultNameJson}</textarea>
+                <small class="form-hint">Format : <code>{"fr": "Nom FR", "en": "Name EN"}</code></small>
+            </div>
+            
+            <div class="form-group">
+                <label for="duplicateTypeInterName">Nom interne (code)</label>
+                <input type="text" id="duplicateTypeInterName" class="form-control" 
+                       placeholder="${sourceType.inter_name ? sourceType.inter_name + '_copy' : 'nouveau_type'}" maxlength="50"
+                       pattern="^[a-z][a-z0-9_]*$">
+                <small class="form-hint">Minuscules, chiffres et _ uniquement. Laissez vide pour aucun.</small>
+            </div>
+        </form>
+    `;
+    
+    ModalManager.open({
+        title: 'Dupliquer un type',
+        content: content,
+        size: 'modal-md',
+        buttons: [
+            { text: 'Annuler', action: 'close', class: 'btn-secondary' },
+            { text: 'Dupliquer', action: 'duplicate', class: 'btn-primary' }
+        ],
+        onAction: async (action, modalId) => {
+            if (action === 'duplicate') {
+                await duplicatePrimaryType(sourceTypeId, modalId);
+            }
+        }
+    });
+}
+
+/**
+ * Duplique un type primaire
+ * @param {number} sourceTypeId - ID du type source
+ * @param {string} modalId - ID du modal
+ */
+async function duplicatePrimaryType(sourceTypeId, modalId) {
+    const nameJsonStr = document.getElementById('duplicateTypeNameJson')?.value.trim();
+    const interName = document.getElementById('duplicateTypeInterName')?.value.trim() || '';
+    
+    // Parser et valider le JSON
+    let nameJson;
+    try {
+        nameJson = JSON.parse(nameJsonStr);
+    } catch (e) {
+        showToast('Format JSON invalide', 'error');
+        return;
+    }
+    
+    // Validation
+    if (!nameJson.fr || !nameJson.en) {
+        showToast('Les noms français (fr) et anglais (en) sont obligatoires', 'error');
+        return;
+    }
+    
+    // Validation inter_name
+    if (interName && !/^[a-z][a-z0-9_]{0,49}$/.test(interName)) {
+        showToast('Nom interne invalide : minuscules, chiffres et _ uniquement', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(PRIMARY_TYPES_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'duplicate',
+                source_id: sourceTypeId,
+                name_json: nameJson,
+                inter_name: interName
+            }),
+            credentials: 'same-origin'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const copied = result.data.copied || {};
+            showToast(`Type dupliqué ! (${copied.fields || 0} champs, ${copied.mappings || 0} mappings copiés)`, 'success');
+            ModalManager.close(modalId);
+            // Recharger les données
+            await loadPrimaryTypes();
+        } else {
+            showToast(result.error || 'Erreur lors de la duplication', 'error');
+        }
+    } catch (error) {
+        console.error('Duplicate primary type error:', error);
         showToast('Erreur de connexion', 'error');
     }
 }

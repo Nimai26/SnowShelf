@@ -644,7 +644,18 @@ export function buildSpecialStickersGridsHtml(fieldId, fieldKey, specialData, ow
     });
     
     // Hidden input pour stocker les données JSON
-    const jsonValue = JSON.stringify(ownedByType);
+    // Structure: {types: [{type, type_original, total, range}], owned: {type: [items]}}
+    const typesInfo = specialTypes.map(s => ({
+        type: s.type,
+        type_original: s.type_original || s.type,
+        total: s.total || s.items?.length || 0,
+        range: s.range || ''
+    }));
+    const storageData = {
+        types: typesInfo,
+        owned: ownedByType
+    };
+    const jsonValue = JSON.stringify(storageData);
     const base64Value = btoa(unescape(encodeURIComponent(jsonValue)));
     html += `<input type="hidden" name="metadata[${escapeHtml(fieldKey)}]" value="${base64Value}" data-special-stickers-data data-encoding="base64">`;
     
@@ -1122,8 +1133,8 @@ export function initSpecialStickersGridEvents(container) {
         const hiddenInput = mainContainer.querySelector('[data-special-stickers-data]');
         if (!hiddenInput) return;
         
-        // Parser les données actuelles
-        let ownedByType = {};
+        // Parser les données actuelles - nouveau format {types: [...], owned: {...}}
+        let storageData = { types: [], owned: {} };
         try {
             const encoding = hiddenInput.dataset.encoding;
             let rawValue = hiddenInput.value;
@@ -1131,11 +1142,21 @@ export function initSpecialStickersGridEvents(container) {
                 rawValue = decodeURIComponent(escape(atob(rawValue)));
             }
             if (rawValue) {
-                ownedByType = JSON.parse(rawValue);
+                const parsed = JSON.parse(rawValue);
+                // Compatibilité ancien format (juste {type: [items]})
+                if (parsed.types && parsed.owned) {
+                    storageData = parsed;
+                } else {
+                    // Ancien format: convertir
+                    storageData = { types: [], owned: parsed };
+                }
             }
         } catch (e) {
             console.warn('[Collection] initSpecialStickersGridEvents parse error:', e);
         }
+        
+        // Référence rapide vers owned pour le code existant
+        const ownedByType = storageData.owned;
         
         const updateGlobalCount = () => {
             let totalMissing = 0;
@@ -1164,7 +1185,8 @@ export function initSpecialStickersGridEvents(container) {
         };
         
         const saveData = () => {
-            const jsonValue = JSON.stringify(ownedByType);
+            // Sauvegarder avec le nouveau format {types, owned}
+            const jsonValue = JSON.stringify(storageData);
             const base64Value = btoa(unescape(encodeURIComponent(jsonValue)));
             hiddenInput.value = base64Value;
             hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));

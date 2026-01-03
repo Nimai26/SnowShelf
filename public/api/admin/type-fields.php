@@ -393,10 +393,19 @@ function createField(PDO $pdo, ?array $input = null): void
     
     $newId = $pdo->lastInsertId();
     
+    // Gérer les mappings si fournis
+    $mappingsSaved = 0;
+    if (!empty($input['mappings']) && is_array($input['mappings'])) {
+        $mappingsSaved = saveMappingsForField($pdo, $newId, $input['mappings']);
+    }
+    
     echo json_encode([
         'success' => true,
         'message' => 'Champ créé',
-        'id' => $newId
+        'data' => [
+            'id' => $newId,
+            'mappings_saved' => $mappingsSaved
+        ]
     ]);
 }
 
@@ -468,10 +477,103 @@ function updateField(PDO $pdo, array $input): void
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     
+    // Gérer les mappings si fournis
+    $mappingsSaved = 0;
+    if (isset($input['mappings'])) {
+        // Supprimer les mappings marqués pour suppression
+        if (!empty($input['mappings_to_delete']) && is_array($input['mappings_to_delete'])) {
+            $placeholders = implode(',', array_fill(0, count($input['mappings_to_delete']), '?'));
+            $stmt = $pdo->prepare("DELETE FROM primary_type_key_to_field WHERE id IN ($placeholders)");
+            $stmt->execute($input['mappings_to_delete']);
+        }
+        
+        // Sauvegarder/mettre à jour les mappings
+        if (is_array($input['mappings'])) {
+            $mappingsSaved = saveMappingsForField($pdo, $id, $input['mappings']);
+        }
+    }
+    
     echo json_encode([
         'success' => true,
-        'message' => 'Champ mis à jour'
+        'message' => 'Champ mis à jour',
+        'data' => [
+            'id' => $id,
+            'mappings_saved' => $mappingsSaved
+        ]
     ]);
+}
+
+/**
+ * Sauvegarde les mappings pour un champ
+ * @param PDO $pdo - Connexion BDD
+ * @param int $fieldId - ID du champ
+ * @param array $mappings - Liste des mappings à sauvegarder
+ * @return int - Nombre de mappings sauvegardés
+ */
+function saveMappingsForField(PDO $pdo, int $fieldId, array $mappings): int
+{
+    $count = 0;
+    
+    foreach ($mappings as $mapping) {
+        $apiKeys = $mapping['api_keys'] ?? [];
+        if (is_string($apiKeys)) {
+            $apiKeys = array_map('trim', explode(',', $apiKeys));
+        }
+        $apiKeys = array_filter($apiKeys);
+        
+        if (empty($apiKeys)) continue;
+        
+        $transformConfig = $mapping['transform_config'] ?? null;
+        if (is_string($transformConfig) && $transformConfig) {
+            $decoded = json_decode($transformConfig, true);
+            $transformConfig = $decoded !== null ? $decoded : $transformConfig;
+        }
+        
+        $data = [
+            'field_id' => $fieldId,
+            'api_keys' => json_encode(array_values($apiKeys)),
+            'transform_type' => $mapping['transform_type'] ?? 'direct',
+            'transform_config' => $transformConfig ? json_encode($transformConfig) : null,
+            'priority' => $mapping['priority'] ?? 0,
+            'is_active' => isset($mapping['is_active']) ? ($mapping['is_active'] ? 1 : 0) : 1
+        ];
+        
+        if (!empty($mapping['id'])) {
+            // Mise à jour d'un mapping existant
+            $stmt = $pdo->prepare("
+                UPDATE primary_type_key_to_field 
+                SET api_keys = ?, transform_type = ?, transform_config = ?, priority = ?, is_active = ?
+                WHERE id = ? AND field_id = ?
+            ");
+            $stmt->execute([
+                $data['api_keys'],
+                $data['transform_type'],
+                $data['transform_config'],
+                $data['priority'],
+                $data['is_active'],
+                $mapping['id'],
+                $fieldId
+            ]);
+        } else {
+            // Création d'un nouveau mapping
+            $stmt = $pdo->prepare("
+                INSERT INTO primary_type_key_to_field 
+                (field_id, api_keys, transform_type, transform_config, priority, is_active)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $data['field_id'],
+                $data['api_keys'],
+                $data['transform_type'],
+                $data['transform_config'],
+                $data['priority'],
+                $data['is_active']
+            ]);
+        }
+        $count++;
+    }
+    
+    return $count;
 }
 
 /**

@@ -40,7 +40,7 @@ function renderApis(apis) {
     if (apis.length === 0) {
         elements.apisTableBody.innerHTML = `
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     <div class="empty-state">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"></path>
@@ -64,6 +64,12 @@ function renderApis(apis) {
                 </div>
             </td>
             <td><span class="badge badge-type">${api.Type || '-'}</span></td>
+            <td>
+                ${api.alias 
+                    ? `<span class="alias-badge" title="${escapeHtml(api.alias)}">${escapeHtml(api.alias.split(',').slice(0, 2).join(', '))}${api.alias.split(',').length > 2 ? '...' : ''}</span>`
+                    : '<span class="text-muted">-</span>'
+                }
+            </td>
             <td>
                 <span class="limit-badge premium">P: ${api.max_results_premium}</span>
                 <span class="limit-badge free">F: ${api.max_results_free}</span>
@@ -132,6 +138,7 @@ export async function openEditApiModal(id) {
             document.getElementById('apiId').value = api.id;
             document.getElementById('apiName').value = api.name || '';
             document.getElementById('apiNameUF').value = api.Name_UF || '';
+            document.getElementById('apiAlias').value = api.alias || '';
             document.getElementById('apiType').value = api.Type || '';
             updateApiTypeDropdown(api.Type || '');
             document.getElementById('apiClientId').value = api.client_id || '';
@@ -178,6 +185,7 @@ export async function handleApiSubmit(e) {
     const data = {
         name: document.getElementById('apiName').value,
         Name_UF: document.getElementById('apiNameUF').value,
+        alias: document.getElementById('apiAlias').value || null,
         Type: document.getElementById('apiType').value,
         client_id: document.getElementById('apiClientId').value,
         api_key: document.getElementById('apiKey').value,

@@ -936,8 +936,17 @@ async function loadProductDetails(result, forceRefresh = false) {
     const t = getTranslations();
     const detailsBtn = document.getElementById('wsLoadDetails');
     
-    const provider = result.source;
     const detailUrl = result.detailUrl;
+    
+    // Extraire le provider du detailUrl si possible (ex: /tcg_lorcana/card?id=1 -> tcg_lorcana)
+    // Cela permet d'avoir le vrai nom toys_api même si result.source diffère
+    let provider = result.source;
+    if (detailUrl && detailUrl.startsWith('/')) {
+        const urlParts = detailUrl.split('/');
+        if (urlParts.length > 1 && urlParts[1]) {
+            provider = urlParts[1];
+        }
+    }
     
     if (!provider || !detailUrl) {
         showToast(t.detail_load_error || 'Impossible de charger les détails', 'error');
@@ -1212,9 +1221,23 @@ async function updateDetailModalContent(result, fromCache = false) {
             'xl': 800, 'xxl': 1000, 'hd': 1080, 'full': 1200, 'original': 2000
         };
         for (const [suffix, size] of Object.entries(textSizes)) {
+            // Chercher dans le nom de fichier (ex: image-small.jpg, image_small.jpg)
             if (url.toLowerCase().includes(`-${suffix}.`) || url.toLowerCase().includes(`_${suffix}.`)) {
                 return size;
             }
+            // Chercher dans le chemin du dossier (ex: /cards_small/, /images_small/)
+            if (url.toLowerCase().includes(`/${suffix}/`) || url.toLowerCase().includes(`_${suffix}/`)) {
+                return size;
+            }
+        }
+        
+        // === Pattern spécifique pour dossiers de taille (YGOPRODeck, Scryfall, etc.) ===
+        // Ex: /cards_small/, /cards_cropped/, /images/small/, /images/large/
+        if (url.includes('/small/') || url.includes('_small/') || url.includes('/crop/') || url.includes('_cropped/')) {
+            return 100;
+        }
+        if (url.includes('/large/') || url.includes('_large/') || url.includes('/normal/') || url.includes('_normal/')) {
+            return 600;
         }
         
         // === Images sans suffixe de taille ===

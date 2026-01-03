@@ -285,6 +285,22 @@ const MediaListManager = (function() {
         }
 
         /**
+         * Ajoute un fichier pending en évitant les doublons
+         * @param {Object} pendingFile - { tempId, tempPath, filename, type, ... }
+         * @returns {boolean} true si ajouté, false si doublon
+         */
+        addPendingFile(pendingFile) {
+            // Vérifier si ce fichier existe déjà (même tempPath)
+            const exists = this.pendingFiles.some(f => f.tempPath === pendingFile.tempPath);
+            if (exists) {
+                console.warn(`[MediaList] Doublon ignoré: ${pendingFile.filename} (${pendingFile.tempPath})`);
+                return false;
+            }
+            this.pendingFiles.push(pendingFile);
+            return true;
+        }
+
+        /**
          * Génère le HTML de la liste
          */
         render() {
@@ -593,12 +609,13 @@ const MediaListManager = (function() {
             } else {
                 // Mode création : garder en pending
                 const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                this.pendingFiles.push({
+                const pendingFile = {
                     tempId,
                     tempPath,
                     filename,
                     type: this.type
-                });
+                };
+                if (!this.addPendingFile(pendingFile)) return; // Doublon
                 
                 this.addFileToList({
                     tempId,
@@ -652,7 +669,7 @@ const MediaListManager = (function() {
                             thumbnailPath: result.data.thumbnailPath,
                             type: this.type
                         };
-                        this.pendingFiles.push(pendingFile);
+                        if (!this.addPendingFile(pendingFile)) return; // Doublon
                         this.addFileToList({
                             tempId: pendingFile.tempId,
                             filename: pendingFile.filename,
@@ -1443,9 +1460,15 @@ const MediaListManager = (function() {
         async finalizePendingFiles() {
             if (!this.entityId || this.pendingFiles.length === 0) return;
 
+            console.log(`[MediaList] Finalisation de ${this.pendingFiles.length} fichier(s) ${this.type} pour entity ${this.entityId}`);
+            
             const results = [];
-            for (const pending of this.pendingFiles) {
+            const toFinalize = [...this.pendingFiles]; // Copie pour éviter les problèmes de mutation
+            
+            for (const pending of toFinalize) {
                 try {
+                    console.log(`[MediaList] Finalisation: ${pending.filename} (${pending.tempPath})`);
+                    
                     const response = await fetch(this.apiEndpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1464,13 +1487,17 @@ const MediaListManager = (function() {
                     const result = await response.json();
                     if (result.success) {
                         results.push(result.data);
+                    } else {
+                        // Fichier non trouvé - peut-être déjà finalisé ou supprimé
+                        console.warn(`[MediaList] Fichier non finalisé: ${pending.filename} - ${result.message || result.error}`);
                     }
                 } catch (error) {
-                    console.error('Finalize error:', error);
+                    console.error('[MediaList] Erreur finalisation:', error);
                 }
             }
 
             this.pendingFiles = [];
+            console.log(`[MediaList] Finalisation terminée: ${results.length}/${toFinalize.length} fichier(s) réussi(s)`);
             return results;
         }
 
@@ -1582,7 +1609,7 @@ const MediaListManager = (function() {
                             filename: result.data.filename,
                             type: this.type
                         };
-                        this.pendingFiles.push(pendingFile);
+                        if (!this.addPendingFile(pendingFile)) return; // Doublon
                         this.addFileToList({
                             tempId: pendingFile.tempId,
                             filename: pendingFile.filename,

@@ -10,7 +10,7 @@ import DatabasesPanel from './databases/index.js';
 // Déterminer la section active depuis l'URL
 function getCurrentSection() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('section') || 'users';
+    return params.get('section') || 'settings';
 }
 
 /**
