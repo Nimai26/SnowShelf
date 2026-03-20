@@ -338,15 +338,21 @@ export function TakoSearchModal({
       // 2c. Videos — limit to 5, skip YouTube/Vimeo links (not downloadable via proxy)
       if (fullResult.videos?.length) {
         const directVideos = fullResult.videos
-          .filter(v => !v.url.includes('youtube.com') && !v.url.includes('youtu.be') && !v.url.includes('vimeo.com'))
+          .filter(v => {
+            const u = v.proxyUrl || v.url;
+            return !u.includes('youtube.com') && !u.includes('youtu.be') && !u.includes('vimeo.com');
+          })
           .slice(0, 5);
         for (let i = 0; i < directVideos.length; i++) {
-          const tempUrl = await proxyDl(directVideos[i].url, `vid_${i}`);
+          const tempUrl = await proxyDl(directVideos[i].proxyUrl || directVideos[i].url, `vid_${i}`);
           if (tempUrl) downloadedMedia.videos.push({ url: tempUrl, title: directVideos[i].title });
         }
         // Keep YouTube links as-is (they'll be stored as external URLs)
         const youtubeVideos = fullResult.videos
-          .filter(v => v.url.includes('youtube.com') || v.url.includes('youtu.be') || v.url.includes('vimeo.com'))
+          .filter(v => {
+            const u = v.proxyUrl || v.url;
+            return u.includes('youtube.com') || u.includes('youtu.be') || u.includes('vimeo.com');
+          })
           .slice(0, 5);
         for (const yt of youtubeVideos) {
           downloadedMedia.videos.push({ url: yt.url, title: yt.title });

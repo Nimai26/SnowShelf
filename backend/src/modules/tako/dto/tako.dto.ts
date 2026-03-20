@@ -133,6 +133,8 @@ export class TakoBarcodeLookupDto {
 export interface TakoMediaRef {
   /** URL du fichier média */
   url: string;
+  /** URL proxied par Tako (évite le rate-limit CDN) */
+  proxyUrl?: string;
   /** Titre / description */
   title?: string;
   /** Type MIME si connu */

@@ -1588,8 +1588,8 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
       for (const v of videoSources) {
         if (typeof v === 'string') {
           videos.push({ url: v, mimeType: v.endsWith('.mp4') ? 'video/mp4' : undefined });
-        } else if (v?.url) {
-          videos.push({ url: v.url, title: v.name || v.title || v.type });
+        } else if (v?.proxyUrl || v?.url) {
+          videos.push({ url: v.proxyUrl || v.url, title: v.name || v.title || v.type });
         } else if (v?.key) {
           // TMDB provides {key, site, type} → construct YouTube URL
           const site = (v.site || '').toLowerCase();

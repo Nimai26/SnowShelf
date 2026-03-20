@@ -31,6 +31,7 @@ export interface TakoDomainInfo {
 /** Référence média normalisée renvoyée par Tako */
 export interface TakoMediaRef {
   url: string;
+  proxyUrl?: string;
   title?: string;
   mimeType?: string;
 }
