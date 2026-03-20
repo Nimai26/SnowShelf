@@ -1,0 +1,224 @@
+# ════════════════════════════════════════════════════════════
+# SnowShelf v2 - Docker Compose Configuration
+# ════════════════════════════════════════════════════════════
+# 
+# Les secrets sont dans .env (non versionné).
+# Copier .env.example → .env avant le premier lancement.
+#
+# Services inclus:
+# - MariaDB      : Base de données principale
+# - phpMyAdmin   : Interface web MariaDB
+# - Redis        : Cache & sessions
+# - Backend      : NestJS API
+# - Frontend     : React PWA
+# - MailHog      : Tests emails
+#
+# Tako_Api est déployé séparément (URL configurée via l'UI admin)
+#
+# Usage:
+#   docker-compose up -d              # Démarrer tous les services
+#   docker-compose logs -f backend    # Voir les logs backend
+#   docker-compose down               # Arrêter tous les services
+#   docker-compose down -v            # Arrêter + supprimer volumes
+#
+# ════════════════════════════════════════════════════════════
+
+services:
+
+  # ──────────────────────────────────────────────────
+  # MARIADB - Base de données principale
+  # ──────────────────────────────────────────────────
+  snowshelf_mariadb:
+    image: mariadb:10.11
+    container_name: snowshelf_mariadb
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: ${TZ:-Europe/Paris}
+    volumes:
+      - snowshelf_mariadb_data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3308:3306"
+    networks:
+      - snowshelf_backend_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────
+  # REDIS - Cache & Sessions
+  # ──────────────────────────────────────────────────
+  snowshelf_redis:
+    image: redis:7-alpine
+    container_name: snowshelf_redis
+    restart: unless-stopped
+    env_file: .env
+    command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - snowshelf_redis_data:/data
+    ports:
+      - "127.0.0.1:6380:6379"
+    networks:
+      - snowshelf_backend_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────
+  # PHPMYADMIN - Interface web pour MariaDB
+  # ──────────────────────────────────────────────────
+  snowshelf_phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: snowshelf_phpmyadmin
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PMA_HOST: snowshelf_mariadb
+      PMA_PORT: 3306
+      PMA_USER: ${DB_USERNAME}
+      PMA_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      UPLOAD_LIMIT: 100M
+      MEMORY_LIMIT: 512M
+      MAX_EXECUTION_TIME: 600
+    ports:
+      - "127.0.0.1:8081:80"
+    networks:
+      - snowshelf_backend_net
+    depends_on:
+      snowshelf_mariadb:
+        condition: service_healthy
+
+  # ──────────────────────────────────────────────────
+  # BACKEND - NestJS API
+  # ──────────────────────────────────────────────────
+  snowshelf_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: snowshelf_backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      # MariaDB
+      DB_HOST: snowshelf_mariadb
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Redis
+      REDIS_HOST: snowshelf_redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-4h}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+      # Tako_Api
+      TAKO_API_URL: ${TAKO_API_URL}
+      TAKO_API_TIMEOUT: ${TAKO_API_TIMEOUT:-30000}
+      # Push Notifications (VAPID)
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@snowshelf.fr}
+      # Email (MailHog en dev)
+      SMTP_HOST: snowshelf_mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM: "noreply@snowshelf.fr"
+      SMTP_SECURE: "false"
+      # Admin par défaut
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      # URLs
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-}
+      API_URL: ${API_URL:-http://localhost:3000}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./storage:/app/storage
+    ports:
+      - "4000:3000"
+    networks:
+      - snowshelf_frontend_net
+      - snowshelf_backend_net
+    depends_on:
+      snowshelf_mariadb:
+        condition: service_healthy
+      snowshelf_redis:
+        condition: service_healthy
+    command: npm run start:dev
+
+  # ──────────────────────────────────────────────────
+  # FRONTEND - React PWA
+  # ──────────────────────────────────────────────────
+  snowshelf_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: snowshelf_frontend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+      VITE_APP_NAME: SnowShelf
+      VITE_APP_VERSION: 2.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    networks:
+      - snowshelf_frontend_net
+    depends_on:
+      - snowshelf_backend
+    command: npm run dev -- --host
+
+  # ──────────────────────────────────────────────────
+  # MAILHOG - Tests emails (dev only)
+  # ──────────────────────────────────────────────────
+  snowshelf_mailhog:
+    image: mailhog/mailhog:latest
+    container_name: snowshelf_mailhog
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    networks:
+      - snowshelf_backend_net
+
+# ════════════════════════════════════════════════════════════
+# VOLUMES
+# ════════════════════════════════════════════════════════════
+volumes:
+  snowshelf_mariadb_data:
+    name: snowshelf_mariadb_data
+    driver: local
+  snowshelf_redis_data:
+    name: snowshelf_redis_data
+    driver: local
+
+# ════════════════════════════════════════════════════════════
+# NETWORKS - Isolation frontend / backend
+# ════════════════════════════════════════════════════════════
+networks:
+  snowshelf_frontend_net:
+    name: snowshelf_frontend_net
+    driver: bridge
+  snowshelf_backend_net:
+    name: snowshelf_backend_net
+    driver: bridge

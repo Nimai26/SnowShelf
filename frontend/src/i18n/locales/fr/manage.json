@@ -1,0 +1,162 @@
+{
+  "statuses": {
+    "title": "Statuts",
+    "subtitle": "Gérez les statuts de vos items",
+    "create": "Nouveau statut",
+    "empty": "Aucun statut personnalisé",
+    "emptyDesc": "Les statuts système sont toujours disponibles",
+    "system": "Système",
+    "custom": "Personnalisé",
+    "form": {
+      "name": "Nom",
+      "namePlaceholder": "Ex: En réparation",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez ce statut...",
+      "color": "Couleur",
+      "icon": "Icône",
+      "ordre": "Ordre d'affichage"
+    },
+    "deleteConfirm": "Supprimer ce statut ? Les items associés perdront ce statut.",
+    "createSuccess": "Statut créé",
+    "updateSuccess": "Statut mis à jour",
+    "deleteSuccess": "Statut supprimé",
+    "errors": {
+      "loadFailed": "Erreur chargement statuts",
+      "saveFailed": "Erreur sauvegarde statut",
+      "deleteFailed": "Erreur suppression statut",
+      "systemEdit": "Les statuts système ne peuvent pas être modifiés"
+    }
+  },
+  "grades": {
+    "title": "Grades / États",
+    "subtitle": "Gérez les grades de condition de vos items",
+    "create": "Nouveau grade",
+    "empty": "Aucun grade personnalisé",
+    "emptyDesc": "Les grades système sont toujours disponibles",
+    "system": "Système",
+    "custom": "Personnalisé",
+    "form": {
+      "name": "Nom",
+      "namePlaceholder": "Ex: Collector",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez ce grade...",
+      "categories": "Catégories associées"
+    },
+    "deleteConfirm": "Supprimer ce grade ? Les items associés perdront ce grade.",
+    "createSuccess": "Grade créé",
+    "updateSuccess": "Grade mis à jour",
+    "deleteSuccess": "Grade supprimé",
+    "errors": {
+      "loadFailed": "Erreur chargement grades",
+      "saveFailed": "Erreur sauvegarde grade",
+      "deleteFailed": "Erreur suppression grade"
+    }
+  },
+  "storageLocations": {
+    "title": "Emplacements de stockage",
+    "subtitle": "Gérez les lieux de rangement de vos items",
+    "create": "Nouvel emplacement",
+    "empty": "Aucun emplacement",
+    "emptyDesc": "Créez des emplacements pour organiser le rangement de vos items",
+    "itemsCount": "{{count}} item(s)",
+    "form": {
+      "name": "Nom",
+      "namePlaceholder": "Ex: Étagère salon",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez cet emplacement..."
+    },
+    "deleteConfirm": "Supprimer cet emplacement ? Les items associés perdront cette référence.",
+    "createSuccess": "Emplacement créé",
+    "updateSuccess": "Emplacement mis à jour",
+    "deleteSuccess": "Emplacement supprimé",
+    "errors": {
+      "loadFailed": "Erreur chargement emplacements",
+      "saveFailed": "Erreur sauvegarde emplacement",
+      "deleteFailed": "Erreur suppression emplacement"
+    }
+  },
+  "media": {
+    "title": "Médias",
+    "images": "Images",
+    "videos": "Vidéos",
+    "audio": "Audio",
+    "documents": "Documents",
+    "upload": "Ajouter des fichiers",
+    "uploading": "Upload en cours...",
+    "noMedia": "Aucun média",
+    "noMediaDesc": "Ajoutez des fichiers pour enrichir votre item",
+    "deleteConfirm": "Supprimer ce fichier ?",
+    "reorder": "Réordonner",
+    "title_label": "Titre",
+    "dragDrop": "Glissez-déposez ou cliquez pour ajouter",
+    "maxSize": "Taille max: {{size}} MB",
+    "allowedTypes": "Types: {{types}}",
+    "uploadSuccess": "{{count}} fichier(s) uploadé(s)",
+    "deleteSuccess": "Fichier supprimé",
+    "saveFirst": "Sauvegardez l'item pour ajouter des médias",
+    "saveFirstDesc": "L'onglet médias sera disponible après la création de l'item.",
+    "errors": {
+      "uploadFailed": "Erreur lors de l'upload",
+      "deleteFailed": "Erreur lors de la suppression",
+      "fileTooLarge": "Fichier trop volumineux",
+      "invalidType": "Type de fichier non autorisé"
+    },
+    "editor": {
+      "title": "Éditeur d'image",
+      "transform": "Transformer",
+      "crop": "Recadrer",
+      "filters": "Filtres",
+      "brightness": "Luminosité",
+      "contrast": "Contraste",
+      "saturation": "Saturation",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "cancel": "Annuler",
+      "reset": "Réinitialiser",
+      "editImage": "Éditer l'image",
+      "editSuccess": "Image modifiée"
+    },
+    "camera": {
+      "capture": "Prendre une photo",
+      "permissionDenied": "Accès à la caméra refusé",
+      "notAvailable": "Caméra non disponible",
+      "fallbackHint": "Vous pouvez utiliser la sélection de fichier à la place",
+      "chooseFile": "Choisir un fichier",
+      "device": "Caméra"
+    }
+  },
+  "tabs": {
+    "general": "Général",
+    "details": "Détails",
+    "media": "Médias"
+  },
+  "tako": {
+    "searchWeb": "Recherche web",
+    "title": "Recherche web",
+    "description": "Recherchez des informations via Tako API (32 providers, 11 domaines)",
+    "searchPlaceholder": "Rechercher un titre, ISBN, nom...",
+    "searching": "Recherche en cours...",
+    "noResults": "Aucun résultat trouvé",
+    "searchError": "Erreur lors de la recherche",
+    "errorLoadingDomains": "Impossible de charger les domaines",
+    "resultsCount": "résultat(s)",
+    "filterProviders": "Filtrer par provider",
+    "clearProviders": "Tous",
+    "initialHint": "Sélectionnez un domaine et entrez votre recherche",
+    "viewSource": "Voir la source",
+    "import": "Importer",
+    "importSuccess": "Données importées depuis Tako",
+    "importSuccessWithImage": "Données et image importées depuis Tako",
+    "importSuccessWithMedia": "Données importées + {{media}}",
+    "imageAttached": "Image importée attachée à l'item",
+    "imageAttachFailed": "L'image n'a pas pu être attachée",
+    "mediaAttachFailed": "Certains médias n'ont pas pu être attachés",
+    "pendingImage": "Image importée prête à être attachée",
+    "pendingImageHint": "L'image sera automatiquement attachée à la création de l'item",
+    "pendingMedia": "Médias importés prêts à être attachés",
+    "pendingMediaHint": "Seront automatiquement attachés à la sauvegarde",
+    "importing": "Importation...",
+    "duplicateWarning": "Un item similaire existe déjà",
+    "duplicateConfirm": "Voulez-vous quand même importer ?"
+  }
+}

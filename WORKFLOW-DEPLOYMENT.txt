@@ -1,0 +1,230 @@
+# Workflow de Déploiement SnowShelf v2
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                     │
+│  DÉVELOPPEUR (Vous)                                                                 │
+│  ════════════════════                                                               │
+│                                                                                     │
+│  ┌─────────────────┐                                                               │
+│  │  Développement  │                                                               │
+│  │  Local          │                                                               │
+│  └────────┬────────┘                                                               │
+│           │                                                                         │
+│           │ make up                                                                 │
+│           │ npm install (local)                                                     │
+│           │ npm run start:dev (hot reload)                                          │
+│           │                                                                         │
+│           ▼                                                                         │
+│  ┌─────────────────┐                                                               │
+│  │  Git Push       │                                                               │
+│  │  + Tag          │                                                               │
+│  └────────┬────────┘                                                               │
+│           │                                                                         │
+│           │ git tag v2.0.0                                                          │
+│           │ git push origin v2.0.0                                                  │
+│           │                                                                         │
+│           ▼                                                                         │
+│  ┌─────────────────┐                                                               │
+│  │ GitHub Actions  │                                                               │
+│  │ Build & Test    │                                                               │
+│  └────────┬────────┘                                                               │
+│           │                                                                         │
+│           │ ✅ Tests backend (lint + coverage)                                      │
+│           │ ✅ Tests frontend (lint + build)                                        │
+│           │ ✅ Build images Docker                                                  │
+│           │    - backend: npm ci + npm run build                                    │
+│           │    - frontend: npm ci + npm run build                                   │
+│           │ ✅ Multi-stage build (optimisé)                                         │
+│           │                                                                         │
+│           ▼                                                                         │
+│  ┌─────────────────┐                                                               │
+│  │  Docker Hub     │                                                               │
+│  │  Push Images    │                                                               │
+│  └────────┬────────┘                                                               │
+│           │                                                                         │
+│           │ nimai24/snowshelf2-backend:latest                                       │
+│           │ nimai24/snowshelf2-frontend:latest                                      │
+│           │                                                                         │
+│           │ ✅ Tout est compilé et prêt                                             │
+│           │ ✅ Images multi-stage (petite taille)                                   │
+│           │ ✅ Utilisateur non-root (sécurité)                                      │
+│           │                                                                         │
+└───────────┼─────────────────────────────────────────────────────────────────────────┘
+            │
+            │ Images publiques sur Docker Hub
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                     │
+│  CLIENT (Déploiement Final)                                                         │
+│  ═══════════════════════════                                                        │
+│                                                                                     │
+│  ┌─────────────────┐                                                               │
+│  │ Télécharge le   │                                                               │
+│  │ package         │                                                               │
+│  └────────┬────────┘                                                               │
+│           │                                                                         │
+│           │ snowshelf-deploy-YYYYMMDD.tar.gz                                        │
+│           │ Contient:                                                               │
+│           │   - docker-compose.yml                                                  │
+│           │   - .env (template)                                                     │
+│           │   - start.sh                                                            │
+│           │   - README.txt                                                          │
+│           │                                                                         │
+│           ▼                                                                         │
+│  ┌─────────────────┐                                                               │
+│  │ Configure       │                                                               │
+│  │ .env            │                                                               │
+│  └────────┬────────┘                                                               │
+│           │                                                                         │
+│           │ nano .env                                                               │
+│           │ Change passwords (DB_PASSWORD, JWT_SECRET, etc.)                        │
+│           │                                                                         │
+│           ▼                                                                         │
+│  ┌─────────────────┐                                                               │
+│  │ Lance           │                                                               │
+│  │ ./start.sh      │                                                               │
+│  └────────┬────────┘                                                               │
+│           │                                                                         │
+│           │ Fait automatiquement:                                                   │
+│           │ 1. docker-compose pull (télécharge les images)                          │
+│           │ 2. docker-compose up -d (démarre)                                       │
+│           │                                                                         │
+│           │ ⚠️  PAS de npm install !                                                │
+│           │ ⚠️  PAS de compilation !                                                │
+│           │ ⚠️  Tout est déjà dans les images Docker !                              │
+│           │                                                                         │
+│           ▼                                                                         │
+│  ┌─────────────────┐                                                               │
+│  │ Application     │                                                               │
+│  │ Démarrée ✅     │                                                               │
+│  └─────────────────┘                                                               │
+│                                                                                     │
+│  🌐 Frontend: http://localhost                                                      │
+│  ⚙️  Backend: http://localhost:3000                                                 │
+│  📖 API Docs: http://localhost:3000/api                                             │
+│                                                                                     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+
+COMPARAISON DEV vs PROD
+════════════════════════
+
+┌──────────────────────┬─────────────────────────────┬──────────────────────────────┐
+│ Aspect               │ DÉVELOPPEMENT               │ PRODUCTION                   │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Dockerfile           │ Dockerfile.dev              │ Dockerfile                   │
+│                      │ (Monte volumes)             │ (Multi-stage)                │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ npm install          │ ✅ Nécessaire (local)        │ ❌ Pas nécessaire             │
+│                      │ Pour l'autocomplétion IDE   │ Déjà dans l'image            │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Compilation          │ À chaque changement         │ 1 fois (dans l'image)        │
+│                      │ (hot reload)                │                              │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Taille image         │ ~800 MB                     │ Backend: ~150 MB             │
+│                      │                             │ Frontend: ~25 MB             │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Utilisateur Docker   │ root                        │ non-root (nestjs/nginx)      │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Health checks        │ Basiques                    │ Avancés + timeouts           │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Outils de debug      │ ✅ Disponibles               │ ❌ Supprimés                  │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Source maps          │ ✅ Activés                   │ ❌ Désactivés                 │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Démarrage            │ make up                     │ ./start.sh                   │
+├──────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ Complexité client    │ Développeur uniquement      │ Ultra simple                 │
+└──────────────────────┴─────────────────────────────┴──────────────────────────────┘
+
+
+IMAGES DOCKER - STRUCTURE MULTI-STAGE
+═══════════════════════════════════════
+
+Backend (NestJS)
+────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 1: Builder (node:20-alpine)                                │
+│ ──────────────────────────────────────────────────────────────── │
+│  1. COPY package*.json                                            │
+│  2. RUN npm ci --include=dev (toutes les deps)                    │
+│  3. COPY src/                                                     │
+│  4. RUN npm run build (compile TypeScript → JavaScript)           │
+│  5. RUN npm prune --production (garde que prod deps)              │
+│                                                                   │
+│  Résultat: dist/ + node_modules/ (prod only)                     │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              │ COPY --from=builder
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 2: Runner (node:20-alpine)                                 │
+│ ──────────────────────────────────────────────────────────────── │
+│  - Image ultra légère                                             │
+│  - Utilisateur non-root (nestjs:1001)                             │
+│  - Seulement dist/ + node_modules/                                │
+│  - Health check intégré                                           │
+│  - CMD: node dist/main.js                                         │
+│                                                                   │
+│  Taille finale: ~150 MB                                           │
+└──────────────────────────────────────────────────────────────────┘
+
+Frontend (React + Vite)
+───────────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 1: Builder (node:20-alpine)                                │
+│ ──────────────────────────────────────────────────────────────── │
+│  1. COPY package*.json                                            │
+│  2. RUN npm ci (toutes les deps)                                  │
+│  3. COPY src/                                                     │
+│  4. ARG VITE_API_URL=https://snowshelf.fr                         │
+│  5. RUN npm run build (compile React → HTML/CSS/JS statique)      │
+│                                                                   │
+│  Résultat: dist/ (fichiers statiques optimisés)                  │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              │ COPY --from=builder
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 2: Runner (nginx:alpine)                                   │
+│ ──────────────────────────────────────────────────────────────── │
+│  - NGINX pour servir les fichiers statiques                       │
+│  - Gzip compression                                               │
+│  - Cache headers optimisés                                        │
+│  - React Router (try_files)                                       │
+│  - Security headers                                               │
+│                                                                   │
+│  Taille finale: ~25 MB                                            │
+└──────────────────────────────────────────────────────────────────┘
+
+
+COMMANDES UTILES
+════════════════
+
+Développeur (vous):
+───────────────────
+make up              # Développement local
+make build-prod      # Build les images Docker de production
+make push-prod       # Build + push sur Docker Hub
+make package         # Créer le package pour le client
+make deploy-info     # Afficher ce workflow
+
+Client:
+───────
+./start.sh           # Démarrer SnowShelf
+./stop.sh            # Arrêter SnowShelf
+docker-compose pull  # Mettre à jour vers la dernière version
+
+
+RÉSUMÉ
+══════
+
+✅ Le développeur fait npm install (pour l'IDE)
+✅ Le développeur build les images Docker
+✅ Les images sont poussées sur Docker Hub
+✅ Le client télécharge les images toutes prêtes
+✅ Le client n'a JAMAIS besoin de npm install
+
+📖 Documentation complète: DEPLOYMENT.md

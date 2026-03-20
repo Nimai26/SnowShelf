@@ -1,0 +1,162 @@
+{
+  "statuses": {
+    "title": "Statuses",
+    "subtitle": "Manage your item statuses",
+    "create": "New status",
+    "empty": "No custom status",
+    "emptyDesc": "System statuses are always available",
+    "system": "System",
+    "custom": "Custom",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g., Under repair",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe this status...",
+      "color": "Color",
+      "icon": "Icon",
+      "ordre": "Display order"
+    },
+    "deleteConfirm": "Delete this status? Associated items will lose this status.",
+    "createSuccess": "Status created",
+    "updateSuccess": "Status updated",
+    "deleteSuccess": "Status deleted",
+    "errors": {
+      "loadFailed": "Error loading statuses",
+      "saveFailed": "Error saving status",
+      "deleteFailed": "Error deleting status",
+      "systemEdit": "System statuses cannot be edited"
+    }
+  },
+  "grades": {
+    "title": "Grades / Conditions",
+    "subtitle": "Manage item condition grades",
+    "create": "New grade",
+    "empty": "No custom grade",
+    "emptyDesc": "System grades are always available",
+    "system": "System",
+    "custom": "Custom",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g., Collector",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe this grade...",
+      "categories": "Associated categories"
+    },
+    "deleteConfirm": "Delete this grade? Associated items will lose this grade.",
+    "createSuccess": "Grade created",
+    "updateSuccess": "Grade updated",
+    "deleteSuccess": "Grade deleted",
+    "errors": {
+      "loadFailed": "Error loading grades",
+      "saveFailed": "Error saving grade",
+      "deleteFailed": "Error deleting grade"
+    }
+  },
+  "storageLocations": {
+    "title": "Storage Locations",
+    "subtitle": "Manage your item storage locations",
+    "create": "New location",
+    "empty": "No location",
+    "emptyDesc": "Create locations to organize where your items are stored",
+    "itemsCount": "{{count}} item(s)",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g., Living room shelf",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe this location..."
+    },
+    "deleteConfirm": "Delete this location? Associated items will lose this reference.",
+    "createSuccess": "Location created",
+    "updateSuccess": "Location updated",
+    "deleteSuccess": "Location deleted",
+    "errors": {
+      "loadFailed": "Error loading locations",
+      "saveFailed": "Error saving location",
+      "deleteFailed": "Error deleting location"
+    }
+  },
+  "media": {
+    "title": "Media",
+    "images": "Images",
+    "videos": "Videos",
+    "audio": "Audio",
+    "documents": "Documents",
+    "upload": "Add files",
+    "uploading": "Uploading...",
+    "noMedia": "No media",
+    "noMediaDesc": "Add files to enrich your item",
+    "deleteConfirm": "Delete this file?",
+    "reorder": "Reorder",
+    "title_label": "Title",
+    "dragDrop": "Drag & drop or click to add",
+    "maxSize": "Max size: {{size}} MB",
+    "allowedTypes": "Types: {{types}}",
+    "uploadSuccess": "{{count}} file(s) uploaded",
+    "deleteSuccess": "File deleted",
+    "saveFirst": "Save the item first to add media",
+    "saveFirstDesc": "The media tab will be available after creating the item.",
+    "errors": {
+      "uploadFailed": "Upload failed",
+      "deleteFailed": "Delete failed",
+      "fileTooLarge": "File too large",
+      "invalidType": "Invalid file type"
+    },
+    "editor": {
+      "title": "Image Editor",
+      "transform": "Transform",
+      "crop": "Crop",
+      "filters": "Filters",
+      "brightness": "Brightness",
+      "contrast": "Contrast",
+      "saturation": "Saturation",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "editImage": "Edit image",
+      "editSuccess": "Image edited"
+    },
+    "camera": {
+      "capture": "Take a photo",
+      "permissionDenied": "Camera access denied",
+      "notAvailable": "Camera not available",
+      "fallbackHint": "You can use file selection instead",
+      "chooseFile": "Choose a file",
+      "device": "Camera"
+    }
+  },
+  "tabs": {
+    "general": "General",
+    "details": "Details",
+    "media": "Media"
+  },
+  "tako": {
+    "searchWeb": "Web search",
+    "title": "Web search",
+    "description": "Search for information via Tako API (32 providers, 11 domains)",
+    "searchPlaceholder": "Search a title, ISBN, name...",
+    "searching": "Searching...",
+    "noResults": "No results found",
+    "searchError": "Search error",
+    "errorLoadingDomains": "Unable to load domains",
+    "resultsCount": "result(s)",
+    "filterProviders": "Filter by provider",
+    "clearProviders": "All",
+    "initialHint": "Select a domain and enter your search",
+    "viewSource": "View source",
+    "import": "Import",
+    "importSuccess": "Data imported from Tako",
+    "importSuccessWithImage": "Data and image imported from Tako",
+    "importSuccessWithMedia": "Data imported + {{media}}",
+    "imageAttached": "Imported image attached to item",
+    "imageAttachFailed": "Image could not be attached",
+    "mediaAttachFailed": "Some media could not be attached",
+    "pendingImage": "Imported image ready to attach",
+    "pendingImageHint": "Image will be automatically attached when item is created",
+    "pendingMedia": "Imported media ready to attach",
+    "pendingMediaHint": "Will be automatically attached on save",
+    "importing": "Importing...",
+    "duplicateWarning": "A similar item already exists",
+    "duplicateConfirm": "Do you still want to import?"
+  }
+}

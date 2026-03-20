@@ -1,0 +1,73 @@
+{
+  "title": "Paramètres",
+  "profile": {
+    "title": "Profil",
+    "description": "Gérez vos informations personnelles",
+    "username": "Nom d'utilisateur",
+    "email": "Email",
+    "bio": "Biographie",
+    "bioPlaceholder": "Parlez-nous de vous...",
+    "avatar": "Photo de profil",
+    "changeAvatar": "Changer la photo",
+    "removeAvatar": "Supprimer",
+    "memberSince": "Membre depuis"
+  },
+  "appearance": {
+    "title": "Apparence",
+    "description": "Personnalisez l'interface",
+    "theme": "Thème",
+    "themeDescription": "Choisissez parmi 43 thèmes",
+    "language": "Langue",
+    "languageDescription": "Langue de l'interface"
+  },
+  "privacy": {
+    "title": "Confidentialité",
+    "description": "Contrôlez la visibilité de vos données",
+    "collectionsVisibility": "Visibilité des collections",
+    "collectionsVisibilityOptions": {
+      "private": "Privé — Moi uniquement",
+      "friends": "Amis — Mes amis uniquement",
+      "public": "Public — Tout le monde"
+    },
+    "showEmail": "Afficher mon email",
+    "showEmailDescription": "Les autres utilisateurs peuvent voir votre email",
+    "friendRequestPolicy": "Demandes d'ami",
+    "friendRequestPolicyOptions": {
+      "everyone": "Tout le monde peut m'envoyer une demande",
+      "nobody": "Personne ne peut m'envoyer de demande"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "description": "Gérez vos préférences de notification",
+    "newsletter": "Newsletter",
+    "newsletterDescription": "Recevoir les actualités et mises à jour de SnowShelf",
+    "pushTitle": "Notifications push",
+    "pushDescription": "Recevez des notifications même lorsque l'application est fermée.",
+    "pushLabel": "Activer les notifications push",
+    "pushHint": "Soyez notifié des mises à jour et événements importants.",
+    "pushEnabled": "Notifications push activées",
+    "pushDisabled": "Notifications push désactivées",
+    "pushDenied": "Permission refusée. Vérifiez les paramètres de votre navigateur.",
+    "pushBlockedHint": "Les notifications sont bloquées par votre navigateur.",
+    "pushNotSupported": "Les notifications push ne sont pas supportées par ce navigateur."
+  },
+  "security": {
+    "title": "Sécurité",
+    "description": "Gérez votre mot de passe et la sécurité de votre compte",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "passwordChanged": "Mot de passe modifié avec succès"
+  },
+  "danger": {
+    "title": "Zone de danger",
+    "description": "Actions irréversibles sur votre compte",
+    "deleteAccount": "Supprimer mon compte",
+    "deleteAccountWarning": "Cette action est irréversible. Toutes vos données seront supprimées.",
+    "confirmDelete": "Tapez votre email pour confirmer"
+  },
+  "saved": "Paramètres enregistrés",
+  "saveError": "Erreur lors de la sauvegarde"
+}

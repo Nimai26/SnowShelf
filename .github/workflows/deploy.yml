@@ -1,0 +1,42 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ env.DEPLOY_PORT }}
+          script: |
+            cd /Projets/SnowShelf
+            git pull origin main
+            docker-compose pull
+            docker-compose up -d --force-recreate
+            docker system prune -f
+
+      - name: Health Check
+        run: |
+          sleep 30
+          curl -f https://snowshelf.fr/api/v1/health || exit 1
+
+      - name: Notify success
+        if: success()
+        run: echo "✅ Déploiement réussi sur https://snowshelf.fr"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "❌ Échec du déploiement"

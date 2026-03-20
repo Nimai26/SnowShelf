@@ -1,0 +1,56 @@
+# Licence
+
+## Propriété intellectuelle
+
+Copyright © 2024 SnowShelf - Tous droits réservés
+
+## Usage
+
+Ce projet est actuellement **privé** et réservé à un usage personnel.
+
+### Restrictions
+
+- ❌ Utilisation commerciale interdite
+- ❌ Distribution publique interdite
+- ❌ Modification et redistribution interdites sans autorisation
+- ❌ Usage en tant que service (SaaS) interdit
+
+### Autorisations pour les contributeurs
+
+Les contributeurs autorisés peuvent :
+- ✅ Cloner le projet pour développement local
+- ✅ Soumettre des contributions via Pull Requests
+- ✅ Consulter le code pour apprentissage personnel
+
+## Contact
+
+Pour toute question concernant l'utilisation ou la licence de ce projet :
+
+- **Email** : admin@snowshelf.fr
+- **GitHub** : https://github.com/Nimai26/SnowShelf2
+
+## Attribution
+
+Ce projet utilise des bibliothèques et frameworks open-source :
+
+### Backend
+- NestJS (MIT License)
+- TypeORM (MIT License)
+- MariaDB (GPL v2)
+- Redis (BSD License)
+
+### Frontend
+- React (MIT License)
+- Vite (MIT License)
+- TailwindCSS (MIT License)
+- TanStack Query (MIT License)
+- Zustand (MIT License)
+
+### APIs externes
+- Tako API (Usage personnel autorisé)
+
+Voir le fichier `package.json` de chaque module pour la liste complète des dépendances.
+
+---
+
+**Note** : Ce projet pourrait être publié sous une licence open-source à l'avenir. Restez informé via le dépôt GitHub.

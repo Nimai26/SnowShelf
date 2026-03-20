@@ -1,0 +1,73 @@
+{
+  "title": "Settings",
+  "profile": {
+    "title": "Profile",
+    "description": "Manage your personal information",
+    "username": "Username",
+    "email": "Email",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell us about yourself...",
+    "avatar": "Profile picture",
+    "changeAvatar": "Change picture",
+    "removeAvatar": "Remove",
+    "memberSince": "Member since"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "description": "Customize the interface",
+    "theme": "Theme",
+    "themeDescription": "Choose from 43 themes",
+    "language": "Language",
+    "languageDescription": "Interface language"
+  },
+  "privacy": {
+    "title": "Privacy",
+    "description": "Control the visibility of your data",
+    "collectionsVisibility": "Collections visibility",
+    "collectionsVisibilityOptions": {
+      "private": "Private — Only me",
+      "friends": "Friends — My friends only",
+      "public": "Public — Everyone"
+    },
+    "showEmail": "Show my email",
+    "showEmailDescription": "Other users can see your email",
+    "friendRequestPolicy": "Friend requests",
+    "friendRequestPolicyOptions": {
+      "everyone": "Anyone can send me a request",
+      "nobody": "No one can send me a request"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "description": "Manage your notification preferences",
+    "newsletter": "Newsletter",
+    "newsletterDescription": "Receive SnowShelf news and updates",
+    "pushTitle": "Push notifications",
+    "pushDescription": "Receive notifications even when the app is closed.",
+    "pushLabel": "Enable push notifications",
+    "pushHint": "Get notified about updates and important events.",
+    "pushEnabled": "Push notifications enabled",
+    "pushDisabled": "Push notifications disabled",
+    "pushDenied": "Permission denied. Check your browser settings.",
+    "pushBlockedHint": "Notifications are blocked by your browser.",
+    "pushNotSupported": "Push notifications are not supported by this browser."
+  },
+  "security": {
+    "title": "Security",
+    "description": "Manage your password and account security",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordChanged": "Password changed successfully"
+  },
+  "danger": {
+    "title": "Danger zone",
+    "description": "Irreversible actions on your account",
+    "deleteAccount": "Delete my account",
+    "deleteAccountWarning": "This action is irreversible. All your data will be deleted.",
+    "confirmDelete": "Type your email to confirm"
+  },
+  "saved": "Settings saved",
+  "saveError": "Error saving settings"
+}

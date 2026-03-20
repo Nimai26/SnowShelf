@@ -1,0 +1,160 @@
+═══════════════════════════════════════════════════════════
+            ❄️  SnowShelf v2 - Installation
+═══════════════════════════════════════════════════════════
+
+PRÉREQUIS
+---------
+✅ Docker 20.10+ installé
+✅ Docker Compose 2.0+ installé
+✅ Connexion internet
+
+INSTALLATION EN 3 ÉTAPES
+-------------------------
+
+1️⃣  CONFIGURATION
+   Éditez le fichier .env et changez tous les mots de passe :
+   
+   nano .env
+   
+   ⚠️  IMPORTANT : Remplacez tous les "CHANGE_ME_*" par des mots de passe forts !
+
+2️⃣  DÉMARRAGE
+   Lancez l'application :
+   
+   docker-compose -f docker-compose.prod.yml up -d
+   
+   ⏳ Première installation : ~5 minutes (téléchargement des images)
+
+3️⃣  VÉRIFICATION
+   Vérifiez que tous les services sont actifs :
+   
+   docker-compose -f docker-compose.prod.yml ps
+   
+   Vous devriez voir 7 services "Up (healthy)"
+
+ACCÈS À L'APPLICATION
+---------------------
+🌐 Application web : http://votre-serveur
+⚙️  API Backend : http://votre-serveur:3000
+📖 Documentation API : http://votre-serveur:3000/api
+
+COMPTES DE TEST
+---------------
+Admin :
+  Email : admin@snowshelf.fr
+  Mot de passe : password123
+
+Utilisateur :
+  Email : john.doe@example.com
+  Mot de passe : password123
+
+⚠️  Changez ces mots de passe après la première connexion !
+
+COMMANDES UTILES
+----------------
+📋 Voir les logs :
+   docker-compose -f docker-compose.prod.yml logs -f
+
+🛑 Arrêter l'application :
+   docker-compose -f docker-compose.prod.yml down
+
+🔄 Redémarrer un service :
+   docker-compose -f docker-compose.prod.yml restart backend
+
+🗄️  Sauvegarder la base de données :
+   docker exec snowshelf_mariadb mysqldump -u root -p snowshelf > backup.sql
+
+🔄 Mettre à jour vers une nouvelle version :
+   docker-compose -f docker-compose.prod.yml pull
+   docker-compose -f docker-compose.prod.yml up -d
+
+NGINX PROXY MANAGER (recommandé)
+---------------------------------
+Si vous utilisez NGINX Proxy Manager pour gérer le SSL :
+
+1. Créez un Proxy Host :
+   - Domain : votre-domaine.fr
+   - Forward to : snowshelf_frontend:80
+   - Activez SSL (Let's Encrypt)
+
+2. Créez un second Proxy Host pour l'API :
+   - Domain : votre-domaine.fr/api
+   - Forward to : snowshelf_backend:3000
+   - Custom location : /api/
+
+STRUCTURE DES SERVICES
+-----------------------
+✅ snowshelf_frontend (NGINX) - Interface web
+✅ snowshelf_backend (NestJS) - API REST
+✅ snowshelf_mariadb (MariaDB) - Base de données
+✅ snowshelf_redis (Redis) - Cache
+✅ snowshelf_tako_api (Node.js) - API de recherche
+✅ snowshelf_tako_postgres (PostgreSQL) - Cache Tako
+✅ snowshelf_flaresolverr - Anti-bot protection
+
+VOLUMES DE DONNÉES
+------------------
+Les données sont stockées dans des volumes Docker persistants :
+- snowshelf_mariadb_data : Base de données principale
+- snowshelf_redis_data : Cache Redis
+- snowshelf_tako_postgres_data : Cache des recherches
+
+Ces volumes sont conservés même si vous supprimez les conteneurs.
+
+PROBLÈMES COURANTS
+------------------
+
+❌ "Cannot connect to database"
+   → Attendez 30 secondes, MariaDB met du temps à démarrer
+   → Vérifiez les mots de passe dans .env
+
+❌ "Port 80 already in use"
+   → Un autre service utilise le port 80
+   → Changez HTTP_PORT dans .env (ex: HTTP_PORT=8080)
+
+❌ Services en "Unhealthy"
+   → Vérifiez les logs : docker-compose -f docker-compose.prod.yml logs SERVICE_NAME
+   → Les services peuvent prendre jusqu'à 1 minute pour devenir "healthy"
+
+❌ "Cannot pull image"
+   → Vérifiez votre connexion internet
+   → Les images sont hébergées sur Docker Hub (publiques)
+
+MISES À JOUR
+------------
+Pour mettre à jour SnowShelf vers une nouvelle version :
+
+1. Sauvegardez votre base de données (voir ci-dessus)
+2. Téléchargez les nouvelles images :
+   docker-compose -f docker-compose.prod.yml pull
+3. Redémarrez :
+   docker-compose -f docker-compose.prod.yml up -d
+
+Vos données seront conservées dans les volumes.
+
+DÉSINSTALLATION
+---------------
+Pour supprimer complètement SnowShelf :
+
+⚠️  ATTENTION : Cela supprimera TOUTES les données !
+
+docker-compose -f docker-compose.prod.yml down -v
+docker rmi nimai24/snowshelf2-backend nimai24/snowshelf2-frontend
+
+SUPPORT
+-------
+📧 Email : admin@snowshelf.fr
+📖 Documentation complète : https://github.com/Nimai26/SnowShelf2
+🐛 Signaler un bug : https://github.com/Nimai26/SnowShelf2/issues
+
+INFORMATIONS TECHNIQUES
+-----------------------
+Version : 2.0.0
+Images Docker :
+  - nimai24/snowshelf2-backend:latest
+  - nimai24/snowshelf2-frontend:latest
+Stack : NestJS + React + MariaDB + Redis + Tako API
+
+═══════════════════════════════════════════════════════════
+        Installation réussie ! Profitez de SnowShelf ❄️
+═══════════════════════════════════════════════════════════
