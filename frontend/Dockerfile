@@ -84,6 +84,26 @@ server {
         expires 0;
     }
 
+    # Proxy API vers le backend (^~ = priorité sur regex)
+    location ^~ /api/ {
+        proxy_pass http://snowshelf_backend:3000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 1G;
+    }
+
+    # Proxy storage vers le backend (^~ = priorité sur regex)
+    location ^~ /storage/ {
+        proxy_pass http://snowshelf_backend:3000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
     # React Router - toutes les routes vers index.html
     location / {
         try_files \$uri \$uri/ /index.html;

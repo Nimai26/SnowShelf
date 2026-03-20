@@ -1150,7 +1150,7 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ──────────────────────────────────────────────
-  // PROXY DOWNLOAD (download and store an external image)
+  // PROXY DOWNLOAD (download and store an external file)
   // ──────────────────────────────────────────────
 
   async proxyDownload(
@@ -1197,7 +1197,7 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
 
     try {
       let response: Response | null = null;
-      const maxRetries = 3;
+      const maxRetries = 5;
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         response = await fetch(url, {
@@ -1205,13 +1205,15 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
             'User-Agent': 'SnowShelf/2.0',
             Accept: '*/*',
           },
-          signal: AbortSignal.timeout(this.timeout),
+          signal: AbortSignal.timeout(60_000),
         });
 
         // Retry on 429 (rate limit) with exponential backoff
         if (response.status === 429 && attempt < maxRetries) {
           const retryAfter = parseInt(response.headers.get('retry-after') || '0', 10);
-          const delay = retryAfter > 0 ? retryAfter * 1000 : (attempt + 1) * 1500;
+          const delay = retryAfter > 0
+            ? retryAfter * 1000
+            : Math.min((attempt + 1) * 3000, 15000);
           this.logger.warn(`Rate limited (429) on ${url}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
           await new Promise(r => setTimeout(r, delay));
           continue;
@@ -1224,7 +1226,7 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
       }
 
       const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
-      const MAX_DOWNLOAD_SIZE = 100 * 1024 * 1024; // 100 MB
+      const MAX_DOWNLOAD_SIZE = 1024 * 1024 * 1024; // 1 GB
       if (contentLength > MAX_DOWNLOAD_SIZE) {
         throw new HttpException(
           `File too large: ${contentLength} bytes (max ${MAX_DOWNLOAD_SIZE})`,
@@ -1244,7 +1246,6 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
         );
       }
 
-      const buffer = Buffer.from(await response.arrayBuffer());
       let ext = this.mimeToExt(contentType);
       // If mime didn't resolve to a specific extension, try extracting from URL
       if (ext === 'bin') {
@@ -1253,9 +1254,6 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
           ext = urlExt;
         }
       }
-      const safeName = filename
-        ? filename.replace(/[^a-zA-Z0-9._-]/g, '_')
-        : `proxy_${Date.now()}`;
       const finalFilename = `temp_${userId}_${Date.now()}_${uuidv4().slice(0, 16)}.${ext}`;
 
       const tempDir = '/app/storage/temp';
@@ -1264,12 +1262,40 @@ export class TakoService implements OnModuleInit, OnModuleDestroy {
       }
 
       const filePath = path.join(tempDir, finalFilename);
-      fs.writeFileSync(filePath, buffer);
+
+      // Stream large files to disk instead of buffering in memory
+      const fileStream = fs.createWriteStream(filePath);
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      let totalSize = 0;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          totalSize += value.length;
+          if (totalSize > MAX_DOWNLOAD_SIZE) {
+            fileStream.destroy();
+            fs.unlinkSync(filePath);
+            throw new HttpException(
+              `File too large: exceeded ${MAX_DOWNLOAD_SIZE} bytes`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          fileStream.write(value);
+        }
+      } finally {
+        fileStream.end();
+      }
+      await new Promise<void>((resolve, reject) => {
+        fileStream.on('finish', resolve);
+        fileStream.on('error', reject);
+      });
 
       return {
         tempPath: filePath,
         url: `/storage/temp/${finalFilename}`,
-        size: buffer.length,
+        size: totalSize,
         mimeType: contentType,
       };
     } catch (e) {

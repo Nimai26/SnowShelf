@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
+import { PrimaryType } from '../entities/primary-type.entity';
 
 @Injectable()
 export class CategorySeedService implements OnModuleInit {
@@ -10,6 +11,8 @@ export class CategorySeedService implements OnModuleInit {
   constructor(
     @InjectRepository(Category)
     private readonly catRepo: Repository<Category>,
+    @InjectRepository(PrimaryType)
+    private readonly primaryTypeRepo: Repository<PrimaryType>,
   ) {}
 
   async onModuleInit() {
@@ -21,6 +24,10 @@ export class CategorySeedService implements OnModuleInit {
 
     this.logger.log('📁 Seeding default categories...');
 
+    // Récupérer les primary types pour mapper par key_name
+    const types = await this.primaryTypeRepo.find();
+    const typeMap = new Map(types.map(t => [t.keyName, t.id]));
+
     const defaults: Partial<Category>[] = [
       {
         name: 'Livres',
@@ -31,6 +38,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('books') ?? null,
+        defaultProviders: ['googlebooks', 'openlibrary', 'comicvine', 'bedetheque'],
       },
       {
         name: 'Jeux vidéo',
@@ -41,6 +50,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('video_games') ?? null,
+        defaultProviders: ['igdb', 'rawg', 'jvc', 'consolevariations'],
       },
       {
         name: 'Musique',
@@ -51,6 +62,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('music') ?? null,
+        defaultProviders: ['discogs', 'deezer', 'musicbrainz', 'itunes'],
       },
       {
         name: 'Films',
@@ -61,6 +74,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('movies') ?? null,
+        defaultProviders: ['tmdb', 'tvdb', 'amazon-media'],
       },
       {
         name: 'Séries',
@@ -71,6 +86,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('series') ?? null,
+        defaultProviders: ['tmdb', 'tvdb'],
       },
       {
         name: 'Figurines',
@@ -81,6 +98,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('toys_fig') ?? null,
+        defaultProviders: ['coleka', 'luluberlu', 'transformerland', 'amazon-collectibles'],
       },
       {
         name: 'Jouets construction',
@@ -91,6 +110,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('toys_construct') ?? null,
+        defaultProviders: ['lego', 'playmobil', 'mega', 'klickypedia', 'kreo'],
       },
       {
         name: 'Jeux de société',
@@ -101,6 +122,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('board_games') ?? null,
+        defaultProviders: ['bgg'],
       },
       {
         name: 'Cartes à collectionner',
@@ -111,6 +134,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
+        defaultProviders: ['pokemon', 'mtg', 'yugioh', 'lorcana', 'digimon', 'onepiece'],
       },
       {
         name: "Albums d'images",
@@ -121,6 +146,8 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('sticker_albums') ?? null,
+        defaultProviders: ['paninimania'],
       },
       {
         name: 'Divers',
@@ -131,6 +158,7 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('divers') ?? null,
       },
       {
         name: 'Consoles & Systèmes',
@@ -141,6 +169,7 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('video_games') ?? null,
       },
       {
         name: 'VHS & LaserDisc',
@@ -151,6 +180,7 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('movies') ?? null,
       },
       {
         name: 'Vinyles',
@@ -161,6 +191,7 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('music') ?? null,
       },
       {
         name: 'CD Audio',
@@ -171,6 +202,7 @@ export class CategorySeedService implements OnModuleInit {
         isDefault: true,
         isPublic: true,
         userId: null,
+        primaryTypeId: typeMap.get('music') ?? null,
       },
     ];
 
