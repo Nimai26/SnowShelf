@@ -87,7 +87,7 @@ import { RolesGuard } from './common/guards/roles.guard';
         database: configService.get('DB_DATABASE'),
         autoLoadEntities: true,
         migrations: [__dirname + '/database/migrations/**/*{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') === 'development',
+        synchronize: configService.get('NODE_ENV') === 'development' || configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('NODE_ENV') === 'development',
         charset: 'utf8mb4',
         timezone: '+00:00',

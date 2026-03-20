@@ -14,7 +14,6 @@ LABEL maintainer="SnowShelf Team"
 LABEL description="SnowShelf Frontend Production Build"
 
 # Variables d'environnement pour le build
-ENV NODE_ENV=production
 ENV NPM_CONFIG_LOGLEVEL=warn
 
 # Définir le répertoire de travail
@@ -29,11 +28,11 @@ COPY postcss.config.js ./
 COPY index.html ./
 
 # Installer TOUTES les dépendances (y compris devDependencies pour le build)
-RUN npm ci --legacy-peer-deps
+RUN npm ci --include=dev --legacy-peer-deps
 
 # Copier le code source
 COPY src/ ./src/
-COPY public/ ./public/ 2>/dev/null || true
+COPY public/ ./public/
 
 # Build argument pour l'URL de l'API
 ARG VITE_API_URL=https://snowshelf.fr
