@@ -954,9 +954,13 @@ export default function ItemFormPage() {
   // Memoize Tako modal props to avoid unstable references
   const takoCategory = categories.find((c) => categoryIds.includes(c.id));
 
+  // Resolve effective primaryType key: category's type first, fallback to form-selected type
+  const effectivePtKey = takoCategory?.primaryType?.key
+    || primaryTypes.find((pt) => pt.id === primaryTypeId)?.key;
+
   const takoInitialDomain = (() => {
-    if (!takoCategory?.primaryType?.key) return undefined;
-    const domains = primaryTypeToDomains[takoCategory.primaryType.key];
+    if (!effectivePtKey) return undefined;
+    const domains = primaryTypeToDomains[effectivePtKey];
     return domains?.[0] as any;
   })();
 
@@ -965,8 +969,8 @@ export default function ItemFormPage() {
     : undefined;
 
   const takoRelatedDomains = (() => {
-    if (!takoCategory?.primaryType?.key) return undefined;
-    const domains = primaryTypeToDomains[takoCategory.primaryType.key];
+    if (!effectivePtKey) return undefined;
+    const domains = primaryTypeToDomains[effectivePtKey];
     return domains?.length ? (domains as any) : undefined;
   })();
 
