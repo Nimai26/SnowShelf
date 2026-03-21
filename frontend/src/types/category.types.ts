@@ -66,6 +66,7 @@ export interface CreateCategoryPayload {
   description?: string;
   notes?: string;
   icon?: string;
+  iconType?: 'emoji' | 'url';
   color?: string;
   defaultProviders?: string[];
   isPublic?: boolean;
@@ -78,6 +79,7 @@ export interface UpdateCategoryPayload {
   description?: string;
   notes?: string;
   icon?: string;
+  iconType?: 'emoji' | 'url';
   color?: string;
   defaultProviders?: string[];
   isPublic?: boolean;

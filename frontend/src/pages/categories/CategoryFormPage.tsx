@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Shield, Image, Check, ChevronDown, ChevronUp, Plus, Trash2, Edit3, Settings2 } from 'lucide-react';
+import { ArrowLeft, Save, Shield, Image, Check, ChevronDown, ChevronUp, Plus, Trash2, Edit3, Settings2, Link } from 'lucide-react';
 import { categoryService, primaryTypeService } from '../../services/category.service';
 import { takoService } from '../../services/tako.service';
 import { useAuthStore } from '../../stores/authStore';
@@ -16,6 +16,7 @@ import {
 } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { MediaListManager } from '../../components/media/MediaListManager';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 const PRESET_ICONS = [
   '📁', '📂', '🎮', '📚', '🎵', '🎬', '📺', '🧸', '🧱',
@@ -166,12 +167,15 @@ export default function CategoryFormPage() {
     description: '',
     notes: '',
     icon: '📁',
+    iconType: 'emoji',
     color: '#3498db',
     defaultProviders: [],
     isPublic: false,
     isDefault: false,
     parentIds: [],
   });
+
+  const [showImageUrlInput, setShowImageUrlInput] = useState(false);
 
   // Load existing category for edit mode + all categories for parent selector
   useEffect(() => {
@@ -280,12 +284,14 @@ export default function CategoryFormPage() {
         description: cat.description || '',
         notes: cat.notes || '',
         icon: cat.icon,
+        iconType: cat.iconType || 'emoji',
         color: cat.color,
         defaultProviders: cat.defaultProviders || [],
         isPublic: cat.isPublic,
         isDefault: cat.isDefault,
         parentIds: cat.parentIds || [],
       });
+      if (cat.iconType === 'url') setShowImageUrlInput(true);
       // Reset the modified flag — we just loaded DB state
       setProvidersModified(false);
     } catch {
@@ -583,22 +589,71 @@ export default function CategoryFormPage() {
               <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
                 {t('form.icon', 'Icône')}
               </label>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_ICONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setForm({ ...form, icon: emoji })}
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-all ${
-                      form.icon === emoji
-                        ? 'ring-2 ring-[var(--color-primary)] bg-[var(--color-primary)]/10 scale-110'
-                        : 'bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-secondary)]/80'
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+
+              {/* Emoji presets */}
+              {!showImageUrlInput && (
+                <div className="flex flex-wrap gap-2">
+                  {PRESET_ICONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setForm({ ...form, icon: emoji, iconType: 'emoji' })}
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-all ${
+                        form.iconType === 'emoji' && form.icon === emoji
+                          ? 'ring-2 ring-[var(--color-primary)] bg-[var(--color-primary)]/10 scale-110'
+                          : 'bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-secondary)]/80'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Image URL input */}
+              {showImageUrlInput && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    {form.iconType === 'url' && form.icon && (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                        <CategoryIcon icon={form.icon} iconType="url" size="lg" />
+                      </div>
+                    )}
+                    <Input
+                      value={form.iconType === 'url' ? form.icon : ''}
+                      onChange={(e) => setForm({ ...form, icon: e.target.value, iconType: 'url' })}
+                      placeholder={t('form.iconUrlPlaceholder', 'URL de l\'image (ex: /storage/..., https://...)')}
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {t('form.iconUrlHint', 'Entrez l\'URL d\'une image pour l\'utiliser comme icône')}
+                  </p>
+                </div>
+              )}
+
+              {/* Toggle between emoji and URL */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (showImageUrlInput) {
+                    // Switch back to emoji
+                    setShowImageUrlInput(false);
+                    if (form.iconType === 'url') {
+                      setForm({ ...form, icon: '📁', iconType: 'emoji' });
+                    }
+                  } else {
+                    // Switch to URL
+                    setShowImageUrlInput(true);
+                  }
+                }}
+                className="mt-2 flex items-center gap-1.5 text-xs text-[var(--color-primary)] hover:underline"
+              >
+                {showImageUrlInput ? (
+                  <><span className="text-sm">🎭</span> {t('form.useEmoji', 'Utiliser un emoji')}</>
+                ) : (
+                  <><Link className="h-3 w-3" /> {t('form.useImageUrl', 'Utiliser une image (URL)')}</>
+                )}
+              </button>
             </div>
 
             {/* Color selector */}
@@ -641,10 +696,10 @@ export default function CategoryFormPage() {
               </label>
               <div className="inline-flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3">
                 <div
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg"
                   style={{ backgroundColor: `${form.color}20` }}
                 >
-                  {form.icon}
+                  <CategoryIcon icon={form.icon || '📁'} iconType={form.iconType} size="lg" />
                 </div>
                 <div>
                   <p className="font-semibold text-[var(--color-text)]">

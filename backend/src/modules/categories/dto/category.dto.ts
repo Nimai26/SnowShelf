@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsArray,
   IsNumber,
+  IsIn,
   MaxLength,
   MinLength,
   Matches,
@@ -38,6 +39,11 @@ export class CreateCategoryDto {
   @IsString()
   @MaxLength(255)
   icon?: string;
+
+  @ApiPropertyOptional({ enum: ['emoji', 'url'], default: 'emoji' })
+  @IsOptional()
+  @IsIn(['emoji', 'url'])
+  iconType?: 'emoji' | 'url';
 
   @ApiPropertyOptional({ example: '#3498db' })
   @IsOptional()
@@ -93,6 +99,11 @@ export class UpdateCategoryDto {
   @IsString()
   @MaxLength(255)
   icon?: string;
+
+  @ApiPropertyOptional({ enum: ['emoji', 'url'], default: 'emoji' })
+  @IsOptional()
+  @IsIn(['emoji', 'url'])
+  iconType?: 'emoji' | 'url';
 
   @ApiPropertyOptional({ example: '#3498db' })
   @IsOptional()

@@ -295,6 +295,7 @@ export class CategoriesService {
       description: dto.description || null,
       notes: dto.notes || null,
       icon: dto.icon || '📁',
+      iconType: dto.iconType || 'emoji',
       color: dto.color || '#3498db',
       defaultProviders: dto.defaultProviders || null,
       isPublic: dto.isPublic || false,
@@ -519,6 +520,7 @@ export class CategoriesService {
     if (dto.description !== undefined) category.description = dto.description || null;
     if (dto.notes !== undefined) category.notes = dto.notes || null;
     if (dto.icon !== undefined) category.icon = dto.icon;
+    if (dto.iconType !== undefined) category.iconType = dto.iconType;
     if (dto.color !== undefined) category.color = dto.color;
     if (dto.defaultProviders !== undefined) category.defaultProviders = dto.defaultProviders.length > 0 ? dto.defaultProviders : null;
     if (dto.isPublic !== undefined) category.isPublic = dto.isPublic;
