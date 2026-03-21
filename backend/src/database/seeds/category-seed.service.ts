@@ -172,11 +172,44 @@ export class CategorySeedService implements OnModuleInit {
         primaryTypeId: typeMap.get('video_games') ?? null,
       },
       {
-        name: 'VHS & LaserDisc',
-        slug: 'vhs-laserdisc',
-        description: 'Cassettes vidéo VHS, Beta, LaserDisc',
-        icon: '📼',
-        color: '#d35400',
+        name: 'Cassettes VHS',
+        slug: 'cassettes-vhs',
+        description: `La VHS (Video Home System) est un standard d'enregistrement vidéo sur bande magnétique développé par JVC (Victor Company of Japan) et lancé en 1976. Ce format a dominé le marché grand public pendant plus de deux décennies.
+
+**Histoire** — Lancée au Japon en septembre 1976 et aux États-Unis en 1977, la VHS s'est imposée face au Betamax de Sony lors de la célèbre « guerre des formats ». Le format a été adopté massivement grâce à sa durée d'enregistrement supérieure (2h puis 4h et 6h en LP/EP) et à la stratégie de licence ouverte de JVC.
+
+**Caractéristiques** — La cassette VHS mesure 187 × 103 × 25 mm et contient une bande magnétique de 12,7 mm de large. La résolution est d'environ 240 lignes horizontales en NTSC et 250 en PAL/SECAM. Le son est enregistré en mono ou Hi-Fi stéréo (à partir de 1984).
+
+**Variantes** — VHS-C (version compacte pour caméscopes), S-VHS (Super VHS, résolution améliorée à 400 lignes), D-VHS (version numérique haute définition), W-VHS (pour la HDTV analogique).
+
+**Âge d'or** — Les années 1980-1990 ont vu l'explosion des vidéoclubs et de la distribution directe en vidéo (DTV). Les films sortaient en VHS plusieurs mois après le cinéma, créant un marché colossal.
+
+**Collection** — Aujourd'hui, les VHS connaissent un regain d'intérêt auprès des collectionneurs, notamment les éditions originales, les films d'horreur rares, les éditions clamshell Disney "Black Diamond", et les copies promotionnelles. Certaines VHS rares atteignent des prix significatifs sur le marché.`,
+        icon: '/storage/default_categories/13/images/vhs_cassette.jpg',
+        iconType: 'url',
+        color: '#2c3e50',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('movies') ?? null,
+      },
+      {
+        name: 'LaserDisc',
+        slug: 'laserdisc',
+        description: `Le LaserDisc (LD) est le premier format de disque optique grand public pour la vidéo, développé par MCA et Philips et commercialisé à partir de 1978 sous le nom de « DiscoVision ». Bien que jamais dominant, il a posé les bases de tous les formats optiques suivants.
+
+**Histoire** — Lancé en décembre 1978 aux États-Unis, le LaserDisc était initialement vendu sous la marque MCA DiscoVision, puis rebaptisé LaserVision et enfin LaserDisc. Pioneer Electronics est devenu le principal fabricant de lecteurs et a propulsé le format. La production a cessé en 2001, avec le dernier titre sorti au Japon.
+
+**Caractéristiques** — Le disque mesure 30 cm de diamètre (comme un vinyle 33 tours), utilise la lecture optique par laser et offre une résolution de 425 lignes horizontales (bien supérieure à la VHS). Le son peut être analogique stéréo ou numérique (PCM, puis Dolby Digital et DTS à partir des années 1990).
+
+**Formats** — CLV (Constant Linear Velocity) pour les films longs (60 min par face) et CAV (Constant Angular Velocity) pour une qualité maximale avec effets spéciaux (30 min par face, pause parfaite, avance image par image).
+
+**Au Japon** — Le LaserDisc a connu un succès significatif au Japon, où il a atteint 10% de pénétration du marché. Les éditions japonaises sont particulièrement recherchées par les collectionneurs, notamment les coffrets anime et les éditions limitées.
+
+**Collection** — Les LaserDisc sont très prisés des cinéphiles pour leurs transferts souvent supervisés par les réalisateurs, leurs suppléments exclusifs (commentaires audio, documentaires) et certaines versions de films jamais rééditées en DVD/Blu-ray. Les éditions Criterion Collection en LD sont particulièrement recherchées.`,
+        icon: '/storage/default_categories/23/images/laserdisc.jpg',
+        iconType: 'url',
+        color: '#c0392b',
         isDefault: true,
         isPublic: true,
         userId: null,
