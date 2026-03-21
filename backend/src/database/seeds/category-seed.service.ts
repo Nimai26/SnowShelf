@@ -218,13 +218,149 @@ export class CategorySeedService implements OnModuleInit {
 **Raretés** — Les cartes se déclinent en 8 niveaux de rareté : Commune, Peu commune, Rare, Super Rare, Légendaire, Épique, Enchantée et Iconique (les deux dernières introduites avec le set Fabled).
 
 **Compétition** — Un circuit compétitif existe avec les Disney Lorcana Challenges organisés dans le monde entier, des championnats régionaux (Europe, Amérique du Nord, Océanie) et un Championnat du Monde inauguré en juin 2025 à Walt Disney World.`,
-        icon: '✨',
+        icon: '/storage/default_categories/15/images/lorcana_enchantee.png',
+        iconType: 'url',
         color: '#1a1a6e',
         isDefault: true,
         isPublic: true,
         userId: null,
         primaryTypeId: typeMap.get('trading_cards') ?? null,
         defaultProviders: ['lorcana'],
+      },
+      {
+        name: 'Pokémon Jeu de Cartes à Collectionner',
+        slug: 'pokemon-jcc',
+        description: `Le Jeu de Cartes à Collectionner Pokémon (Pokémon TCG) est un jeu de cartes stratégique lancé au Japon en 1996 par Media Factory, puis distribué mondialement par Wizards of the Coast (1999-2003) et The Pokémon Company International depuis 2003.
+
+**Concept** — Les joueurs construisent des decks de 60 cartes comprenant des Pokémon, des cartes Dresseur et des cartes Énergie. Le but est de mettre K.O. les Pokémon adverses pour récupérer des cartes Récompense.
+
+**Types de cartes** — Pokémon de base, Évolutions, Pokémon-EX, Pokémon-GX, Pokémon-V, Pokémon-VMAX, Pokémon-ex (Écarlate et Violet), et les Pokémon-ex Téracristal. Les raretés vont de Commune à Illustration Rare Spéciale (SAR).
+
+**Extensions majeures** — Set de Base (1999), Jungle, Fossile, Team Rocket, Neo Genesis, EX Rubis & Saphir, Diamant & Perle, Noir & Blanc, XY, Soleil & Lune, Épée & Bouclier, Écarlate & Violet.
+
+**Compétition** — Les Championnats du Monde Pokémon ont lieu chaque année depuis 2004. Le circuit compétitif comprend des Challenges, des Coupes, des Championnats Régionaux, Internationaux et le Championnat du Monde.
+
+**Collection** — Avec plus de 100 milliards de cartes produites depuis son lancement, le Pokémon TCG est le jeu de cartes le plus vendu au monde. Certaines cartes rares comme le Dracaufeu 1ère Édition holographique du Set de Base atteignent des prix records aux enchères.`,
+        icon: '/storage/default_categories/17/images/card_pikachu.png',
+        iconType: 'url',
+        color: '#f1c40f',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
+        defaultProviders: ['pokemon'],
+      },
+      {
+        name: 'Magic: The Gathering',
+        slug: 'magic-the-gathering',
+        description: `Magic: The Gathering (MTG) est le premier jeu de cartes à collectionner de l'histoire, créé par Richard Garfield et publié par Wizards of the Coast en 1993. Il a posé les fondations du genre TCG et reste l'un des plus populaires au monde.
+
+**Concept** — Chaque joueur incarne un Planeswalker, un puissant mage qui invoque des créatures, lance des sorts et utilise des artefacts pour vaincre son adversaire. Les decks sont construits à partir de cinq couleurs de mana : blanc, bleu, noir, rouge et vert.
+
+**Formats** — Standard, Modern, Legacy, Vintage, Commander (EDH), Pioneer, Pauper, Draft et Sealed. Commander est devenu le format le plus populaire pour le jeu casual.
+
+**Extensions emblématiques** — Alpha/Beta/Unlimited (1993), Arabian Nights, Antiquities, Legends, The Dark, Revised, Ice Age, Mirage, Tempest, Urza's Saga, Invasion, Ravnica, Innistrad, Khans of Tarkir, et les sets récents comme Les Cavernes Oubliées d'Ixalan.
+
+**Le Power Nine** — Les neuf cartes les plus puissantes jamais imprimées : Black Lotus, Ancestral Recall, Time Walk, les cinq Mox et Timetwister. Le Black Lotus est la carte la plus chère du monde.
+
+**Compétition** — Le Pro Tour (désormais Pro Tour), les Grand Prix (MagicFest), le Championnat du Monde et le circuit Arena Championship.`,
+        icon: '/storage/default_categories/18/images/card_black_lotus.jpg',
+        iconType: 'url',
+        color: '#8B6914',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
+        defaultProviders: ['mtg'],
+      },
+      {
+        name: 'Yu-Gi-Oh!',
+        slug: 'yu-gi-oh',
+        description: `Yu-Gi-Oh! est un jeu de cartes à collectionner créé par Kazuki Takahashi, basé sur le manga du même nom publié dans le Weekly Shōnen Jump à partir de 1996. Le jeu de cartes officiel (OCG/TCG) est édité par Konami depuis 1999.
+
+**Concept** — Deux joueurs s'affrontent avec des decks d'au minimum 40 cartes, chacun commençant avec 8000 points de vie. Le jeu utilise des Monstres, des Magies et des Pièges. L'objectif est de réduire les points de vie adverses à zéro.
+
+**Mécaniques** — Invocation Normale, Tribut, Fusion, Rituel, Synchro (5D's), Xyz (ZEXAL), Pendule (ARC-V), Lien (VRAINS). Le jeu a évolué avec l'ajout du Extra Deck et des zones Pendule/Lien.
+
+**Cartes iconiques** — Magicien Sombre, Dragon Blanc aux Yeux Bleus, Dragon Noir aux Yeux Rouges, Exodia le Maudit, Slifer le Dragon du Ciel, Obélisque le Tourmenteur, Dragon Ailé de Râ.
+
+**Raretés** — Commune, Rare, Super Rare, Ultra Rare, Secret Rare, Ultimate Rare, Ghost Rare, Starlight Rare, Quarter Century Secret Rare (25th Anniversary).
+
+**Compétition** — Yu-Gi-Oh! Championship Series (YCS), Championnat du Monde (World Championship), Yu-Gi-Oh! Open Tour.`,
+        icon: '/storage/default_categories/19/images/card_dark_magician.jpg',
+        iconType: 'url',
+        color: '#7D3C98',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
+        defaultProviders: ['yugioh'],
+      },
+      {
+        name: 'Dragon Ball Super Card Game',
+        slug: 'dragon-ball-super-card-game',
+        description: `Le Dragon Ball Super Card Game (DBSCG) est un jeu de cartes à collectionner édité par Bandai depuis 2017, basé sur l'univers de Dragon Ball créé par Akira Toriyama.
+
+**Concept** — Deux joueurs s'affrontent avec des decks de 51 cartes (50 cartes principales + 1 carte Leader). Chaque joueur commence avec 8 points de vie et doit réduire ceux de l'adversaire à zéro en attaquant avec des cartes Combattant.
+
+**Mécaniques** — Le jeu utilise un système d'Énergie pour jouer des cartes, des cartes Combattant pour attaquer et défendre, des cartes Extra pour des effets spéciaux, et des cartes Unisson introduites plus tard. Le Leader peut éveiller (passer en mode dos) quand le joueur a peu de vie.
+
+**Séries** — Le jeu a connu plusieurs séries : les séries classiques (numérotées), les Expansion Sets, les Starter Decks, et le reboot "Fusion World" lancé en 2024.
+
+**Personnages populaires** — Son Goku (toutes transformations), Vegeta, Broly, Frieza, Cell, Gohan, Trunks du Futur, Beerus, Jiren.
+
+**Collection** — Les cartes les plus rares incluent les Special Rare (SPR), les Secret Rare (SCR) et les God Rare, dont certaines atteignent des valeurs significatives sur le marché secondaire.`,
+        icon: '/storage/default_categories/20/images/card_goku.jpg',
+        iconType: 'url',
+        color: '#f39c12',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
+      },
+      {
+        name: 'One Piece Card Game',
+        slug: 'one-piece-card-game',
+        description: `Le One Piece Card Game est un jeu de cartes à collectionner édité par Bandai depuis 2022, basé sur le manga et l'anime One Piece d'Eiichiro Oda, l'une des franchises les plus populaires au monde.
+
+**Concept** — Deux joueurs s'affrontent avec des decks de 50 cartes plus une carte Leader. Chaque joueur a une zone Don!! (énergie), joue des Personnages, des Événements et des Étapes. L'objectif est d'attaquer le Leader adverse et de lui infliger suffisamment de dégâts (retirer toutes ses cartes Vie).
+
+**Mécaniques** — Le système Don!! est unique : 2 Don!! sont ajoutés chaque tour et peuvent être attachés aux personnages pour augmenter leur puissance ou activer des effets. Les cartes Leader ont une puissance de base et des effets spéciaux.
+
+**Personnages populaires** — Monkey D. Luffy, Roronoa Zoro, Nami, Sanji, Portgas D. Ace, Trafalgar Law, Shanks, Barbe Noire, Boa Hancock, Kaido.
+
+**Raretés** — Commune (C), Peu Commune (UC), Rare (R), Super Rare (SR), Secret Rare (SEC), Leader (L), Don!! Parallèle, et les Manga Rare/Art Rare très recherchées.
+
+**Succès** — Le jeu a connu un succès commercial fulgurant dès son lancement, devenant l'un des TCG les plus demandés. Les tournois officiels Bandai (Treasure Cup, Regional) attirent des milliers de joueurs.`,
+        icon: '/storage/default_categories/21/images/card_luffy.jpg',
+        iconType: 'url',
+        color: '#e74c3c',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
+      },
+      {
+        name: 'Digimon Card Game',
+        slug: 'digimon-card-game',
+        description: `Le Digimon Card Game est un jeu de cartes à collectionner édité par Bandai, relancé en 2020 avec un tout nouveau système de jeu. Basé sur la franchise Digimon créée en 1997, il combine stratégie et nostalgie.
+
+**Concept** — Deux joueurs s'affrontent avec des decks de 50 cartes plus un Digi-Egg Deck de 0 à 5 cartes. Chaque joueur commence avec 0 point de Mémoire dans une barre partagée de -10 à +10. Quand un joueur dépasse le seuil, c'est au tour de l'adversaire.
+
+**Mécaniques** — Le système de Digivolution est central : les Digimon évoluent en empilant des cartes, chaque évolution déclenchant des effets et réduisant le coût de jeu. Les effets "When Digivolving", "On Play", "Security" et "On Deletion" créent des interactions stratégiques.
+
+**Types de cartes** — Digi-Egg, Digimon (Rookie, Champion, Ultimate, Mega), Tamer, Option. Les couleurs (Rouge, Bleu, Jaune, Vert, Noir, Violet, Blanc) définissent les stratégies.
+
+**Digimon iconiques** — Agumon, Greymon, MetalGreymon, WarGreymon, Omnimon, Gabumon, Patamon, Angemon, Gallantmon, Beelzemon.
+
+**Compétition** — Bandai organise des tournois officiels, des Regional Championships et des Digimon Card Game World Championships. Le jeu a su se créer une communauté fidèle et compétitive.`,
+        icon: '/storage/default_categories/22/images/card_agumon.jpg',
+        iconType: 'url',
+        color: '#e67e22',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
       },
     ];
 
