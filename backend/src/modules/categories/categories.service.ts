@@ -562,6 +562,106 @@ export class CategoriesService {
   }
 
   // ──────────────────────────────────────────────
+  // ICON UPLOAD
+  // ──────────────────────────────────────────────
+  async uploadIcon(userId: number, categoryId: number, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Aucun fichier fourni');
+    }
+
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException('Format non supporté. Utilisez JPEG, PNG, WebP ou GIF');
+    }
+
+    const category = await this.catRepo.findOne({ where: { id: categoryId } });
+    if (!category) throw new NotFoundException('Catégorie non trouvée');
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const isAdmin = user?.role === UserRole.ADMIN;
+    if (category.userId !== userId && !isAdmin) {
+      throw new ForbiddenException('Accès non autorisé');
+    }
+
+    // Determine storage directory
+    let dir: string;
+    let urlPrefix: string;
+    if (category.isDefault && !category.userId) {
+      dir = path.join(this.storagePath, 'default_categories', String(categoryId));
+      urlPrefix = `/storage/default_categories/${categoryId}`;
+    } else {
+      dir = path.join(this.storagePath, 'users', String(category.userId), 'Categories', String(categoryId));
+      urlPrefix = `/storage/users/${category.userId}/Categories/${categoryId}`;
+    }
+
+    await fs.mkdir(dir, { recursive: true });
+
+    // Remove old icon file if it was a URL icon
+    if (category.iconType === 'url' && category.icon) {
+      try {
+        const oldPath = path.join(this.storagePath, '..', category.icon);
+        const resolvedOld = path.resolve(oldPath);
+        if (resolvedOld.startsWith(path.resolve(this.storagePath))) {
+          await fs.unlink(resolvedOld).catch(() => {});
+        }
+      } catch { /* ignore */ }
+    }
+
+    // Save icon file with fixed name (overwrite on re-upload)
+    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    const filename = `icon${ext}`;
+    const filePath = path.join(dir, filename);
+    await fs.writeFile(filePath, file.buffer);
+
+    const iconUrl = `${urlPrefix}/${filename}`;
+
+    // Update category
+    category.icon = iconUrl;
+    category.iconType = 'url';
+    await this.catRepo.save(category);
+
+    this.logger.log(`Icon uploaded for category ${category.name} (id: ${categoryId})`);
+
+    return {
+      success: true,
+      icon: iconUrl,
+      iconType: 'url' as const,
+    };
+  }
+
+  async removeIcon(userId: number, categoryId: number) {
+    const category = await this.catRepo.findOne({ where: { id: categoryId } });
+    if (!category) throw new NotFoundException('Catégorie non trouvée');
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const isAdmin = user?.role === UserRole.ADMIN;
+    if (category.userId !== userId && !isAdmin) {
+      throw new ForbiddenException('Accès non autorisé');
+    }
+
+    // Remove old icon file
+    if (category.iconType === 'url' && category.icon) {
+      try {
+        const oldPath = path.join(this.storagePath, '..', category.icon);
+        const resolvedOld = path.resolve(oldPath);
+        if (resolvedOld.startsWith(path.resolve(this.storagePath))) {
+          await fs.unlink(resolvedOld).catch(() => {});
+        }
+      } catch { /* ignore */ }
+    }
+
+    category.icon = '📁';
+    category.iconType = 'emoji';
+    await this.catRepo.save(category);
+
+    return {
+      success: true,
+      icon: '📁',
+      iconType: 'emoji' as const,
+    };
+  }
+
+  // ──────────────────────────────────────────────
   // DELETE (soft)
   // ──────────────────────────────────────────────
   async remove(userId: number, categoryId: number) {

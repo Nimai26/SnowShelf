@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Shield, Image, Check, ChevronDown, ChevronUp, Plus, Trash2, Edit3, Settings2, Link } from 'lucide-react';
+import { ArrowLeft, Save, Shield, Image, Check, ChevronDown, ChevronUp, Plus, Trash2, Edit3, Settings2, Upload, X } from 'lucide-react';
 import { categoryService, primaryTypeService } from '../../services/category.service';
 import { takoService } from '../../services/tako.service';
 import { useAuthStore } from '../../stores/authStore';
@@ -175,7 +175,11 @@ export default function CategoryFormPage() {
     parentIds: [],
   });
 
-  const [showImageUrlInput, setShowImageUrlInput] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreviewUrl, setIconPreviewUrl] = useState<string | null>(null);
+  const [draggingIcon, setDraggingIcon] = useState(false);
+  const iconInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing category for edit mode + all categories for parent selector
   useEffect(() => {
@@ -291,7 +295,7 @@ export default function CategoryFormPage() {
         isDefault: cat.isDefault,
         parentIds: cat.parentIds || [],
       });
-      if (cat.iconType === 'url') setShowImageUrlInput(true);
+      if (cat.iconType === 'url') setShowImageUpload(true);
       // Reset the modified flag — we just loaded DB state
       setProvidersModified(false);
     } catch {
@@ -301,6 +305,36 @@ export default function CategoryFormPage() {
       setLoading(false);
     }
   };
+
+  const handleIconFileSelect = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('errors.invalidImageType', 'Type de fichier non supporté'));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t('errors.fileTooLarge', 'Fichier trop volumineux (max 5 Mo)'));
+      return;
+    }
+    setIconFile(file);
+    const url = URL.createObjectURL(file);
+    setIconPreviewUrl(url);
+    setForm((prev) => ({ ...prev, icon: 'pending-upload', iconType: 'url' }));
+  }, [t]);
+
+  const handleRemoveIconFile = useCallback(() => {
+    if (iconPreviewUrl) URL.revokeObjectURL(iconPreviewUrl);
+    setIconFile(null);
+    setIconPreviewUrl(null);
+    setForm((prev) => ({ ...prev, icon: '📁', iconType: 'emoji' }));
+    setShowImageUpload(false);
+  }, [iconPreviewUrl]);
+
+  const handleIconDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggingIcon(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleIconFileSelect(file);
+  }, [handleIconFileSelect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,18 +351,44 @@ export default function CategoryFormPage() {
 
     try {
       setSaving(true);
+      let categoryId: number | undefined;
+
       if (isEditing && id) {
+        categoryId = Number(id);
         const { primaryTypeId, ...updatePayload } = form;
         // Only send defaultProviders if the user explicitly modified them
         if (!providersModified) {
           delete updatePayload.defaultProviders;
         }
-        await categoryService.updateCategory(Number(id), updatePayload);
-        toast.success(t('updateSuccess', 'Catégorie mise à jour'));
+        // Don't send icon='pending-upload' — the upload endpoint handles it
+        if (iconFile && updatePayload.icon === 'pending-upload') {
+          delete updatePayload.icon;
+          delete updatePayload.iconType;
+        }
+        await categoryService.updateCategory(categoryId, updatePayload);
       } else {
-        await categoryService.createCategory(form);
-        toast.success(t('createSuccess', 'Catégorie créée'));
+        const createPayload = { ...form };
+        if (iconFile && createPayload.icon === 'pending-upload') {
+          createPayload.icon = '📁';
+          createPayload.iconType = 'emoji';
+        }
+        const res = await categoryService.createCategory(createPayload);
+        categoryId = res.data?.id;
       }
+
+      // Upload icon file if selected
+      if (iconFile && categoryId) {
+        try {
+          await categoryService.uploadIcon(categoryId, iconFile);
+        } catch {
+          toast.error(t('errors.iconUploadFailed', "L'icône n'a pas pu être envoyée"));
+        }
+      }
+
+      toast.success(isEditing
+        ? t('updateSuccess', 'Catégorie mise à jour')
+        : t('createSuccess', 'Catégorie créée')
+      );
       navigate('/categories');
     } catch (err: any) {
       const msg =
@@ -591,7 +651,7 @@ export default function CategoryFormPage() {
               </label>
 
               {/* Emoji presets */}
-              {!showImageUrlInput && (
+              {!showImageUpload && (
                 <div className="flex flex-wrap gap-2">
                   {PRESET_ICONS.map((emoji) => (
                     <button
@@ -610,48 +670,86 @@ export default function CategoryFormPage() {
                 </div>
               )}
 
-              {/* Image URL input */}
-              {showImageUrlInput && (
+              {/* Image upload (drag & drop) */}
+              {showImageUpload && (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    {form.iconType === 'url' && form.icon && (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-                        <CategoryIcon icon={form.icon} iconType="url" size="lg" />
+                  <input
+                    ref={iconInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleIconFileSelect(file);
+                      e.target.value = '';
+                    }}
+                  />
+
+                  {/* Preview or drop zone */}
+                  {iconPreviewUrl || (form.iconType === 'url' && form.icon && form.icon !== 'pending-upload') ? (
+                    <div className="relative inline-block">
+                      <div className="flex h-24 w-24 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] overflow-hidden">
+                        <img
+                          src={iconPreviewUrl || form.icon}
+                          alt="icon"
+                          className="h-full w-full object-contain"
+                        />
                       </div>
-                    )}
-                    <Input
-                      value={form.iconType === 'url' ? form.icon : ''}
-                      onChange={(e) => setForm({ ...form, icon: e.target.value, iconType: 'url' })}
-                      placeholder={t('form.iconUrlPlaceholder', 'URL de l\'image (ex: /storage/..., https://...)')}
-                    />
-                  </div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">
-                    {t('form.iconUrlHint', 'Entrez l\'URL d\'une image pour l\'utiliser comme icône')}
-                  </p>
+                      <button
+                        type="button"
+                        onClick={handleRemoveIconFile}
+                        className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600 transition"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => iconInputRef.current?.click()}
+                        className="mt-2 text-xs text-[var(--color-primary)] hover:underline"
+                      >
+                        {t('form.changeImage', 'Changer l\'image')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setDraggingIcon(true); }}
+                      onDragLeave={() => setDraggingIcon(false)}
+                      onDrop={handleIconDrop}
+                      onClick={() => iconInputRef.current?.click()}
+                      className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors ${
+                        draggingIcon
+                          ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                          : 'border-[var(--color-border)] hover:border-[var(--color-text-secondary)] hover:bg-[var(--color-hover)]'
+                      }`}
+                    >
+                      <Upload className={`h-8 w-8 ${draggingIcon ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)]'}`} />
+                      <p className="text-sm text-[var(--color-text-secondary)]">
+                        {t('form.dropIconHere', 'Glissez une image ici ou cliquez pour sélectionner')}
+                      </p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        JPEG, PNG, WebP, GIF — max 5 Mo
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Toggle between emoji and URL */}
+              {/* Toggle between emoji and image upload */}
               <button
                 type="button"
                 onClick={() => {
-                  if (showImageUrlInput) {
-                    // Switch back to emoji
-                    setShowImageUrlInput(false);
-                    if (form.iconType === 'url') {
-                      setForm({ ...form, icon: '📁', iconType: 'emoji' });
-                    }
+                  if (showImageUpload) {
+                    handleRemoveIconFile();
                   } else {
-                    // Switch to URL
-                    setShowImageUrlInput(true);
+                    setShowImageUpload(true);
                   }
                 }}
                 className="mt-2 flex items-center gap-1.5 text-xs text-[var(--color-primary)] hover:underline"
               >
-                {showImageUrlInput ? (
+                {showImageUpload ? (
                   <><span className="text-sm">🎭</span> {t('form.useEmoji', 'Utiliser un emoji')}</>
                 ) : (
-                  <><Link className="h-3 w-3" /> {t('form.useImageUrl', 'Utiliser une image (URL)')}</>
+                  <><Upload className="h-3 w-3" /> {t('form.useImage', 'Utiliser une image')}</>
                 )}
               </button>
             </div>
@@ -699,7 +797,7 @@ export default function CategoryFormPage() {
                   className="flex h-10 w-10 items-center justify-center rounded-lg"
                   style={{ backgroundColor: `${form.color}20` }}
                 >
-                  <CategoryIcon icon={form.icon || '📁'} iconType={form.iconType} size="lg" />
+                  <CategoryIcon icon={iconPreviewUrl || form.icon || '📁'} iconType={form.iconType} size="lg" />
                 </div>
                 <div>
                   <p className="font-semibold text-[var(--color-text)]">

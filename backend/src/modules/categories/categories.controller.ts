@@ -10,13 +10,19 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CategoriesService } from './categories.service';
 import {
   CreateCategoryDto,
@@ -157,6 +163,41 @@ export class CategoriesController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     return this.categoriesService.remove(user.id, id);
+  }
+
+  // ── Category Icon Upload ──
+
+  @Post(':id/icon')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Uploader une image comme icône de catégorie" })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }))
+  async uploadIcon(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.categoriesService.uploadIcon(user.id, id, file);
+  }
+
+  @Delete(':id/icon')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Supprimer l'icône image et revenir à l'emoji par défaut" })
+  async removeIcon(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.categoriesService.removeIcon(user.id, id);
   }
 
   // ── Category Fields (admin-only) ──

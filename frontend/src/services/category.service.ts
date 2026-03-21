@@ -56,6 +56,25 @@ export const categoryService = {
     return response.data;
   },
 
+  uploadIcon: async (
+    id: number,
+    file: File,
+  ): Promise<{ success: boolean; icon: string; iconType: 'emoji' | 'url' }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post(`/api/v1/categories/${id}/icon`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  removeIcon: async (
+    id: number,
+  ): Promise<{ success: boolean; icon: string; iconType: 'emoji' | 'url' }> => {
+    const response = await apiClient.delete(`/api/v1/categories/${id}/icon`);
+    return response.data;
+  },
+
   copyCategory: async (
     id: number,
     data: CopyCategoryPayload = {},
