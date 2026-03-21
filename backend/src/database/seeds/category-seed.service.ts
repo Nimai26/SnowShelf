@@ -204,6 +204,28 @@ export class CategorySeedService implements OnModuleInit {
         userId: null,
         primaryTypeId: typeMap.get('music') ?? null,
       },
+      {
+        name: 'Disney Lorcana',
+        slug: 'disney-lorcana',
+        description: `Disney Lorcana est un jeu de cartes à collectionner (TCG) édité par Ravensburger en collaboration avec The Walt Disney Company, lancé en août 2023. Premier TCG de Ravensburger, il représente le plus gros investissement jamais réalisé par l'éditeur allemand.
+
+**Univers et histoire** — Le jeu se déroule dans le monde magique de Lorcana, où des personnages appelés « Illumineurs » utilisent de l'encre magique pour invoquer des « Reflets » (Glimmers), des êtres inspirés des personnages Disney. Le Grand Illuminarium, au cœur des Contrées d'Encre, sert de répertoire à toutes les histoires jamais racontées. Trois types de Reflets existent : les Nés de l'Histoire (Storyborn), les Nés du Rêve (Dreamborn) et les Nés du Déluge (Floodborn).
+
+**Gameplay** — Chaque joueur construit un deck d'au moins 60 cartes parmi quatre types : Personnages, Objets, Actions et Lieux. Six couleurs d'encre (Ambre, Améthyste, Émeraude, Rubis, Saphir, Acier) offrent des stratégies variées. Le premier joueur à accumuler 20 points de Savoir (Lore) remporte la partie. Les mécaniques incluent le Shift (évolution de personnages), les cartes à double encre, et le mode Pack Rush.
+
+**Extensions** — Depuis "The First Chapter" (août 2023), le jeu compte plus de 12 extensions dont Rise of the Floodborn, Into the Inklands, Ursula's Return, Shimmering Skies, Azurite Sea, Archazia's Island, et bien d'autres. Chaque set introduit de nouveaux personnages Disney et des mécaniques innovantes.
+
+**Raretés** — Les cartes se déclinent en 8 niveaux de rareté : Commune, Peu commune, Rare, Super Rare, Légendaire, Épique, Enchantée et Iconique (les deux dernières introduites avec le set Fabled).
+
+**Compétition** — Un circuit compétitif existe avec les Disney Lorcana Challenges organisés dans le monde entier, des championnats régionaux (Europe, Amérique du Nord, Océanie) et un Championnat du Monde inauguré en juin 2025 à Walt Disney World.`,
+        icon: '✨',
+        color: '#1a1a6e',
+        isDefault: true,
+        isPublic: true,
+        userId: null,
+        primaryTypeId: typeMap.get('trading_cards') ?? null,
+        defaultProviders: ['lorcana'],
+      },
     ];
 
     const entities = this.catRepo.create(defaults);
