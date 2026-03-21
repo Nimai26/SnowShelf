@@ -24,6 +24,7 @@ import { takoService } from '../../services/tako.service';
 import type { TakoSearchResult, TakoDomainName } from '../../types/tako.types';
 import type { TakoDownloadedMedia } from './TakoSearchModal';
 import type { Category } from '../../types/category.types';
+import CategoryIcon from './CategoryIcon';
 
 /** Domains that support barcode/ISBN/EAN lookup */
 const BARCODE_DOMAINS = new Set<string>([
@@ -278,7 +279,7 @@ export function ScanAddModal({
                     }
                   >
                     {isSelected && <Check className="h-3 w-3" />}
-                    {cat.iconType === 'emoji' && <span>{cat.icon}</span>}
+                    <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" />
                     <span>{cat.name}</span>
                     {barcodeOk && (
                       <BarcodeIcon className="h-3 w-3 opacity-50" />

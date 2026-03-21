@@ -46,7 +46,7 @@ export interface ItemCompact {
   dateObtained: string | null;
   searchState: 'looking' | 'owned' | null;
   status: ItemStatus | null;
-  categories: { id: number; name: string; icon: string }[];
+  categories: { id: number; name: string; icon: string; iconType?: 'emoji' | 'url' }[];
   thumbnailUrl: string | null;
   imageUrl: string | null;
   createdAt: string;
@@ -63,6 +63,7 @@ export interface ItemCategory {
   id: number;
   name: string;
   icon: string;
+  iconType?: 'emoji' | 'url';
   color?: string;
 }
 

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, X, ChevronDown, ChevronRight, Shield, Globe, User, Filter } from 'lucide-react';
 import type { Category, PrimaryType } from '../../types/category.types';
 import { useAuthStore } from '../../stores/authStore';
+import CategoryIcon from './CategoryIcon';
 
 type SourceFilter = 'default' | 'public' | 'mine';
 
@@ -171,7 +172,7 @@ export function CategorySelector({
               className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-white transition hover:opacity-80"
               style={{ backgroundColor: cat.color }}
             >
-              {cat.icon} {cat.name}
+              <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" /> {cat.name}
               <X className="h-3 w-3 ml-0.5" />
             </button>
           ))}
@@ -354,7 +355,7 @@ function CategoryChip({
       style={isSelected ? { backgroundColor: cat.color } : undefined}
       title={cat.description || undefined}
     >
-      {cat.icon} {cat.name}
+      <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" /> {cat.name}
       {cat.isDefault && !isSelected && (
         <Shield className="h-2.5 w-2.5 opacity-40" />
       )}

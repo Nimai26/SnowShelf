@@ -17,13 +17,14 @@ export interface SearchItemResult extends SearchResult {
   marketValue: number | null;
   searchState: 'looking' | 'owned' | null;
   status: { id: number; name: string; color: string; icon: string } | null;
-  categories: { id: number; name: string; icon: string }[];
+  categories: { id: number; name: string; icon: string; iconType?: 'emoji' | 'url' }[];
   createdAt: string;
 }
 
 export interface SearchCategoryResult extends SearchResult {
   type: 'category';
   color: string;
+  iconType?: 'emoji' | 'url';
   itemsCount: number;
 }
 
@@ -59,7 +60,7 @@ export interface SuggestResponse {
   success: boolean;
   data: {
     items: { id: number; name: string; icon: string; type: 'item' }[];
-    categories: { id: number; name: string; icon: string; type: 'category' }[];
+    categories: { id: number; name: string; icon: string; iconType?: 'emoji' | 'url'; type: 'category' }[];
     history: string[];
   };
 }

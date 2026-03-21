@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { searchService } from '../../services/search.service';
 import type { SuggestResponse } from '../../types/search.types';
+import CategoryIcon from './CategoryIcon';
 
 interface GlobalSearchBarProps {
   className?: string;
@@ -247,7 +248,7 @@ export default function GlobalSearchBar({ className = '' }: GlobalSearchBarProps
                   onClick={() => handleCategoryClick(cat.id)}
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
                 >
-                  <span className="text-base">{cat.icon}</span>
+                  <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" className="text-base" />
                   <span className="flex-1 text-left truncate">{cat.name}</span>
                   <FolderOpen className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
                 </button>

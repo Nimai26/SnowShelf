@@ -45,6 +45,7 @@ import { StaggerContainer, StaggerItem } from '../../components/ui/Animations';
 import type { ItemCompact } from '../../types/item.types';
 import type { PrimaryType } from '../../types/category.types';
 import { getMediaUrl } from '../../utils/url';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 export default function PublicProfilePage() {
   const { t } = useTranslation('common');
@@ -508,7 +509,7 @@ export default function PublicProfilePage() {
                 { value: '', label: tItems('filters.allCategories') },
                 ...categories.map((cat) => ({
                   value: String(cat.id),
-                  label: `${cat.icon} ${cat.name}`,
+                  label: cat.iconType === 'url' ? cat.name : `${cat.icon} ${cat.name}`,
                 })),
               ]}
             />
@@ -720,7 +721,7 @@ export default function PublicProfilePage() {
                           key={cat.id}
                           className="inline-flex items-center gap-1 rounded-full bg-[var(--color-hover)] px-2 py-0.5 text-[10px] text-[var(--color-text-secondary)]"
                         >
-                          {cat.icon} {cat.name}
+                          <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" /> {cat.name}
                         </span>
                       ))}
                       {item.categories.length > 2 && (

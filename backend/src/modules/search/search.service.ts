@@ -168,6 +168,7 @@ export class SearchService {
           id: c.id,
           name: c.name,
           icon: c.icon,
+          iconType: c.iconType,
         })),
         createdAt: item.createdAt,
         type: 'item' as const,
@@ -208,6 +209,7 @@ export class SearchService {
         slug: cat.slug,
         description: cat.description,
         icon: cat.icon,
+        iconType: cat.iconType,
         color: cat.color,
         itemsCount: cat.itemsCount,
         type: 'category' as const,
@@ -245,7 +247,7 @@ export class SearchService {
     // Get category suggestions
     const categories = await this.catRepo
       .createQueryBuilder('cat')
-      .select(['cat.id', 'cat.name', 'cat.icon', 'cat.slug'])
+      .select(['cat.id', 'cat.name', 'cat.icon', 'cat.iconType', 'cat.slug'])
       .where('cat.deletedAt IS NULL')
       .andWhere('(cat.userId = :userId OR cat.userId IS NULL)', { userId })
       .andWhere('cat.name LIKE :search', { search: `%${searchTerm}%` })
@@ -272,6 +274,7 @@ export class SearchService {
           id: c.id,
           name: c.name,
           icon: c.icon,
+          iconType: c.iconType,
           type: 'category' as const,
         })),
         history: historySuggestions,

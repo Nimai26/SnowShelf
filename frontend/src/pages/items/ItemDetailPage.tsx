@@ -36,6 +36,7 @@ import type { Item, MediaItem } from '../../types/item.types';
 import { StickerChecklist, type ChecklistData } from '../../components/common/StickerChecklist';
 import { DocumentViewer } from '../../components/media/DocumentViewer';
 import { getMediaUrl } from '../../utils/url';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 // ──────────────────────────────────────────────
 // Image Lightbox component
@@ -641,7 +642,7 @@ export default function ItemDetailPage() {
                     className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-80"
                     style={{ backgroundColor: cat.color || '#3498db' }}
                   >
-                    {cat.icon} {cat.name}
+                    <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" /> {cat.name}
                   </Link>
                 ))}
               </div>

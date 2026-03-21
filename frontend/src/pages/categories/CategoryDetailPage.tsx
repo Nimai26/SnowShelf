@@ -31,6 +31,7 @@ import {
 } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { MediaListManager } from '../../components/media/MediaListManager';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 export default function CategoryDetailPage() {
   const { t } = useTranslation('categories');
@@ -115,7 +116,7 @@ export default function CategoryDetailPage() {
             className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl"
             style={{ backgroundColor: `${category.color}20` }}
           >
-            {category.icon}
+            <CategoryIcon icon={category.icon} iconType={category.iconType} size="lg" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text)]">
@@ -178,7 +179,7 @@ export default function CategoryDetailPage() {
                 <p className="text-xs font-medium uppercase text-[var(--color-text-secondary)]">
                   {t('form.description', 'Description')}
                 </p>
-                <p className="text-sm text-[var(--color-text)]">
+                <p className="max-h-40 overflow-y-auto text-sm text-[var(--color-text)] whitespace-pre-line">
                   {category.description}
                 </p>
               </div>

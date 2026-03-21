@@ -28,6 +28,7 @@ import {
 } from '../../components/ui';
 import { StaggerContainer, StaggerItem } from '../../components/ui/Animations';
 import toast from 'react-hot-toast';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 export default function CategoriesPage() {
   const { t } = useTranslation('categories');
@@ -169,7 +170,7 @@ export default function CategoriesPage() {
                       className="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
                       style={{ backgroundColor: `${cat.color}20` }}
                     >
-                      {cat.icon}
+                      <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="lg" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="truncate font-semibold text-[var(--color-text)]">

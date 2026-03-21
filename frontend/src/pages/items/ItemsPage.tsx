@@ -24,6 +24,7 @@ import { StaggerContainer, StaggerItem } from '../../components/ui/Animations';
 import type { ItemCompact, ItemQueryParams } from '../../types/item.types';
 import { getMediaUrl } from '../../utils/url';
 import type { Category, PrimaryType } from '../../types/category.types';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 export default function ItemsPage() {
   const { t } = useTranslation('items');
@@ -277,7 +278,7 @@ export default function ItemsPage() {
                 { value: '', label: t('filters.allCategories') },
                 ...categories.map((cat) => ({
                   value: String(cat.id),
-                  label: `${cat.icon} ${cat.name}`,
+                  label: cat.iconType === 'url' ? cat.name : `${cat.icon} ${cat.name}`,
                 })),
               ]}
             />
@@ -524,7 +525,7 @@ export default function ItemsPage() {
                           key={cat.id}
                           className="inline-flex items-center gap-1 rounded-full bg-[var(--color-hover)] px-2 py-0.5 text-[10px] text-[var(--color-text-secondary)]"
                         >
-                          {cat.icon} {cat.name}
+                          <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" /> {cat.name}
                         </span>
                       ))}
                       {item.categories.length > 2 && (

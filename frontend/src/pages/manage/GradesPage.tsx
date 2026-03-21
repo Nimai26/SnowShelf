@@ -14,6 +14,7 @@ import {
   Modal,
 } from '../../components/ui';
 import toast from 'react-hot-toast';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 export default function GradesPage() {
   const { t } = useTranslation('manage');
@@ -231,7 +232,7 @@ export default function GradesPage() {
                   }`}
                   style={categoryIds.includes(cat.id) ? { backgroundColor: cat.color } : undefined}
                 >
-                  {cat.icon} {cat.name}
+                  <CategoryIcon icon={cat.icon} iconType={cat.iconType} size="sm" /> {cat.name}
                 </button>
               ))}
             </div>

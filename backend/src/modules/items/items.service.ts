@@ -160,6 +160,7 @@ export class ItemsService implements OnModuleInit {
       id: c.id,
       name: c.name,
       icon: c.icon,
+      iconType: c.iconType,
       color: c.color,
     }));
 
@@ -369,6 +370,7 @@ export class ItemsService implements OnModuleInit {
         id: c.id,
         name: c.name,
         icon: c.icon,
+        iconType: c.iconType,
       })),
       status: item.status
         ? { id: item.status.id, name: item.status.name, color: item.status.color, icon: item.status.icon }

@@ -5,6 +5,7 @@ import { Search, Package, FolderOpen, Star, ArrowLeft } from 'lucide-react';
 import { searchService } from '../../services/search.service';
 import { Button, Card, Spinner, Badge, EmptyState, Input } from '../../components/ui';
 import type { SearchItemResult, SearchCategoryResult } from '../../types/search.types';
+import CategoryIcon from '../../components/common/CategoryIcon';
 
 type Tab = 'all' | 'items' | 'categories';
 
@@ -174,7 +175,7 @@ export default function SearchResultsPage() {
                               key={cat.id}
                               className="inline-flex items-center gap-1 rounded-full bg-[var(--color-hover)] px-2 py-0.5 text-[10px] text-[var(--color-text-secondary)]"
                             >
-                              {cat.icon} {cat.name}
+                              <CategoryIcon icon={cat.icon || '📁'} iconType={cat.iconType} size="sm" /> {cat.name}
                             </span>
                           ))}
                         </div>
@@ -222,7 +223,7 @@ export default function SearchResultsPage() {
                 {categories.map((cat) => (
                   <Link key={cat.id} to={`/categories/${cat.id}`}>
                     <Card className="group flex cursor-pointer items-center gap-3 p-4 transition hover:shadow-md hover:border-[var(--color-primary)]">
-                      <span className="text-3xl">{cat.icon}</span>
+                      <CategoryIcon icon={cat.icon || '📁'} iconType={cat.iconType} size="xl" className="text-3xl" />
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-[var(--color-text)] group-hover:text-[var(--color-primary)]">
                           {cat.name}
