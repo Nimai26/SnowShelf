@@ -116,7 +116,7 @@ export default function CategoryDetailPage() {
             className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl"
             style={{ backgroundColor: `${category.color}20` }}
           >
-            <CategoryIcon icon={category.icon} iconType={category.iconType} size="lg" />
+            <CategoryIcon icon={category.icon} iconType={category.iconType} size="xl" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text)]">
