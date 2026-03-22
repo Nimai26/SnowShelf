@@ -910,7 +910,7 @@ export default function CategoryFormPage() {
                 .filter((c) => c.id !== Number(id))
                 .map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
+                    {c.iconType === 'url' ? c.name : `${c.icon} ${c.name}`}
                   </option>
                 ))}
             </select>
