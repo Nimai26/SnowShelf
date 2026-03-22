@@ -8,42 +8,11 @@
 
 services:
   # ──────────────────────────────────────────────────────────
-  # Base de données MariaDB
+  # NOTE: MariaDB est fourni par un container partagé externe
+  # (container_name: mariadb) sur le réseau Docker principal.
+  # La DB 'snowshelf' et le user 'snowshelf_user' doivent
+  # exister sur cette instance.
   # ──────────────────────────────────────────────────────────
-  mariadb:
-    image: mariadb:10.11
-    container_name: snowshelf_mariadb
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_CHARSET: utf8mb4
-      MYSQL_COLLATION: utf8mb4_unicode_ci
-    volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-    networks:
-      - snowshelf_backend_net
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
   # ──────────────────────────────────────────────────────────
   # Cache Redis
@@ -232,8 +201,6 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@snowshelf.fr}
     depends_on:
-      mariadb:
-        condition: service_healthy
       redis:
         condition: service_healthy
       tako_api:
@@ -326,8 +293,6 @@ services:
 # Volumes persistants
 # ════════════════════════════════════════════════════════════
 volumes:
-  mariadb_data:
-    name: snowshelf_mariadb_data
   redis_data:
     name: snowshelf_redis_data
   tako_postgres_data:
