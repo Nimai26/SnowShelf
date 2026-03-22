@@ -240,7 +240,7 @@ export function ScanAddModal({
             <label className="text-xs font-medium text-[var(--color-text-secondary)]">
               {t('scanner.selectCategory', 'Catégorie cible')}
             </label>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
               {/* "All categories" chip */}
               <button
                 type="button"
