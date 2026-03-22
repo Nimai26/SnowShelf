@@ -50,7 +50,7 @@ export function Modal({ open, onClose, children, className, title, description }
           >
             <div
               className={cn(
-                'w-full max-w-lg max-h-full pointer-events-auto',
+                'w-full max-w-lg max-h-full flex flex-col pointer-events-auto',
                 'rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-xl',
                 className,
               )}
@@ -74,7 +74,7 @@ export function Modal({ open, onClose, children, className, title, description }
               </button>
             </div>
             {/* Content */}
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {children}
             </div>
             </div>
