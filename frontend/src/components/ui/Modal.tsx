@@ -56,7 +56,7 @@ export function Modal({ open, onClose, children, className, title, description }
               )}
             >
             {/* Header */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-4 shrink-0">
               <div>
                 {title && (
                   <h2 className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
@@ -74,7 +74,9 @@ export function Modal({ open, onClose, children, className, title, description }
               </button>
             </div>
             {/* Content */}
-            {children}
+            <div className="min-h-0 flex-1">
+              {children}
+            </div>
             </div>
           </motion.div>
         </>
