@@ -105,21 +105,21 @@ export default function CategoryDetailPage() {
   const canDelete = !category.isDefault || isAdmin;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" onClick={() => navigate('/categories')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div
-            className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
             style={{ backgroundColor: `${category.color}20` }}
           >
             <CategoryIcon icon={category.icon} iconType={category.iconType} size="xl" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text)]">
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-bold text-[var(--color-text)]">
               {category.name}
             </h1>
             <div className="flex items-center gap-2">
@@ -138,29 +138,29 @@ export default function CategoryDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2 pl-11 sm:pl-0">
           <Button
             variant="secondary"
             onClick={handleCopy}
             disabled={copying}
             title={t('copyTitle', 'Copier cette catégorie')}
           >
-            <Copy className="mr-2 h-4 w-4" />
-            {t('copy', 'Copier')}
+            <Copy className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('copy', 'Copier')}</span>
           </Button>
           {canEdit && (
             <Button
               variant="secondary"
               onClick={() => navigate(`/categories/${category.id}/edit`)}
             >
-              <Edit2 className="mr-2 h-4 w-4" />
-              {t('edit', 'Modifier')}
+              <Edit2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('edit', 'Modifier')}</span>
             </Button>
           )}
           {canDelete && (
             <Button variant="danger" onClick={() => setShowDelete(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t('delete', 'Supprimer')}
+              <Trash2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('delete', 'Supprimer')}</span>
             </Button>
           )}
         </div>

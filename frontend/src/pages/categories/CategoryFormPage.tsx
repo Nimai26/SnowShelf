@@ -407,7 +407,7 @@ export default function CategoryFormPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" onClick={() => navigate('/categories')}>
@@ -966,7 +966,7 @@ export default function CategoryFormPage() {
               {showFieldForm && (
                 <div className="rounded-md border bg-muted/30 p-4 space-y-3">
                   <h4 className="text-sm font-semibold">{editingField ? 'Modifier le champ' : 'Nouveau champ'}</h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium">Clé technique *</label>
                       <input
@@ -998,6 +998,8 @@ export default function CategoryFormPage() {
                         placeholder="ex: Couleur"
                       />
                     </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium">Nom EN</label>
                       <input
@@ -1019,7 +1021,7 @@ export default function CategoryFormPage() {
                       />
                     </div>
                   )}
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-medium">Icône</label>
                       <input
