@@ -50,7 +50,7 @@ export function Modal({ open, onClose, children, className, title, description }
           >
             <div
               className={cn(
-                'w-full max-w-lg pointer-events-auto',
+                'w-full max-w-lg max-h-full pointer-events-auto',
                 'rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-xl',
                 className,
               )}

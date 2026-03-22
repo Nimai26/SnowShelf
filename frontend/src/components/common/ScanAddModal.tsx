@@ -231,9 +231,9 @@ export function ScanAddModal({
       onClose={onClose}
       title={t('scanner.title', 'Scanner / Photo')}
       description={t('scanner.description', 'Scannez un code-barres ou prenez une photo pour identifier un objet')}
-      className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+      className="max-w-lg max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden flex flex-col"
     >
-      <div className="flex flex-col gap-4 min-h-0">
+      <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
         {/* Category selector */}
         {categories && categories.length > 0 && (
           <div className="space-y-2">
@@ -302,7 +302,7 @@ export function ScanAddModal({
 
         <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
 
-        <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
+        <div className="flex-1 min-h-0 -mx-6 px-6">
           {/* ── Barcode Tab ── */}
           {activeTab === 'barcode' && (
             <div className="space-y-4">
