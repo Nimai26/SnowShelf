@@ -18,9 +18,10 @@ export class CreateCategoryDto {
   @MaxLength(100)
   name: string;
 
-  @ApiProperty({ description: "ID du type d'objet (obligatoire)", example: 2 })
+  @ApiPropertyOptional({ description: "ID du type d'objet", example: 2 })
+  @IsOptional()
   @IsNumber()
-  primaryTypeId: number;
+  primaryTypeId?: number;
 
   @ApiPropertyOptional({ example: 'Ma collection de jeux rétro' })
   @IsOptional()

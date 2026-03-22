@@ -62,7 +62,7 @@ export interface CategorySummary {
 
 export interface CreateCategoryPayload {
   name: string;
-  primaryTypeId: number;
+  primaryTypeId?: number;
   description?: string;
   notes?: string;
   icon?: string;

@@ -345,11 +345,6 @@ export default function CategoryFormPage() {
       return;
     }
 
-    if (!form.primaryTypeId) {
-      toast.error(t('errors.typeRequired', "Le type d'objet est obligatoire"));
-      return;
-    }
-
     try {
       setSaving(true);
       let categoryId: number | undefined;
@@ -369,6 +364,9 @@ export default function CategoryFormPage() {
         await categoryService.updateCategory(categoryId, updatePayload);
       } else {
         const createPayload = { ...form };
+        if (!createPayload.primaryTypeId) {
+          delete createPayload.primaryTypeId;
+        }
         if (iconFile && createPayload.icon === 'pending-upload') {
           createPayload.icon = '📁';
           createPayload.iconType = 'emoji';

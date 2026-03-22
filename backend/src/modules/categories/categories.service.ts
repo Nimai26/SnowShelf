@@ -262,13 +262,13 @@ export class CategoriesService {
     // For default categories, userId is null (global)
     const categoryUserId = isDefault ? null : userId;
 
-    // Validate primaryTypeId
-    if (!dto.primaryTypeId) {
-      throw new BadRequestException("Le type d'objet est obligatoire");
-    }
-    const primaryType = await this.primaryTypeRepo.findOne({ where: { id: dto.primaryTypeId } });
-    if (!primaryType) {
-      throw new BadRequestException("Type d'objet introuvable");
+    // Validate primaryTypeId if provided
+    let primaryType = null;
+    if (dto.primaryTypeId) {
+      primaryType = await this.primaryTypeRepo.findOne({ where: { id: dto.primaryTypeId } });
+      if (!primaryType) {
+        throw new BadRequestException("Type d'objet introuvable");
+      }
     }
 
     // Vérifier unicité nom pour cet utilisateur (ou parmi les defaults)
@@ -289,7 +289,7 @@ export class CategoriesService {
     const category = this.catRepo.create({
       userId: categoryUserId,
       originalCreatorId: userId,
-      primaryTypeId: dto.primaryTypeId,
+      primaryTypeId: dto.primaryTypeId || null,
       name: dto.name,
       slug,
       description: dto.description || null,
