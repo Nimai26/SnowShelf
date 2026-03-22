@@ -1,10 +1,8 @@
-import { useTranslation } from 'react-i18next';
 import { Download, Smartphone, Shield, Wifi } from 'lucide-react';
 import { Card, CardContent, Button } from '../../components/ui';
 import logoImg from '../../assets/images/logo.png';
 
 export default function DownloadPage() {
-  const { t } = useTranslation('common');
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-12 text-center">
