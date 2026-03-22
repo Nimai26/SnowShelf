@@ -396,7 +396,7 @@ export function TakoSearchModal({
       onClose={onClose}
       title={t('tako.title', 'Recherche web')}
       description={t('tako.description', 'Recherchez des informations via Tako API')}
-      className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+      className="w-full sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
     >
       <div className="flex flex-col gap-4 min-h-0">
         {/* ── Barre de recherche ── */}

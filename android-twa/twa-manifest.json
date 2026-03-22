@@ -1,0 +1,50 @@
+{
+  "packageId": "fr.snowshelf.app",
+  "host": "snowshelf.fr",
+  "name": "SnowShelf — Gestionnaire de Collections",
+  "launcherName": "SnowShelf",
+  "display": "standalone",
+  "themeColor": "#1E293B",
+  "themeColorDark": "#0F172A",
+  "navigationColor": "#0F172A",
+  "navigationColorDark": "#0F172A",
+  "navigationDividerColor": "#0F172A",
+  "navigationDividerColorDark": "#0F172A",
+  "backgroundColor": "#0F172A",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://snowshelf.fr/pwa-512x512.png",
+  "maskableIconUrl": "https://snowshelf.fr/pwa-maskable-512x512.png",
+  "monochromeIconUrl": "",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./snowshelf.keystore",
+    "alias": "snowshelf"
+  },
+  "appVersionName": "y",
+  "appVersionCode": 2,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://snowshelf.fr/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 19,
+  "orientation": "portrait",
+  "fingerprints": [
+    {
+      "name": "snowshelf",
+      "value": "60:5B:6F:C3:A3:14:3C:5B:3D:2F:45:30:49:85:DF:1D:50:3B:57:BA:8A:FE:AB:BC:90:F6:2F:E7:38:5C:03:AC"
+    }
+  ],
+  "serviceAccountJsonFile": "",
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "displayOverride": [],
+  "appVersion": "y"
+}

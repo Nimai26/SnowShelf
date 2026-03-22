@@ -364,7 +364,7 @@ export function TakoImportPreview({
               onSelectAll={() => setSelectedImages(new Set(media.images.map((_, i) => i)))}
               onSelectNone={() => setSelectedImages(new Set())}
             />
-            <div className="grid grid-cols-5 gap-2 mt-2">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
               {media.images.map((imgUrl, i) => (
                 <button
                   key={i}

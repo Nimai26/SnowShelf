@@ -104,6 +104,18 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
+    # .well-known (Digital Asset Links pour TWA Android)
+    location /.well-known/ {
+        default_type application/json;
+        add_header Cache-Control "public, max-age=86400";
+    }
+
+    # APK downloads
+    location /downloads/ {
+        add_header Content-Disposition "attachment";
+        add_header Cache-Control "public, max-age=3600";
+    }
+
     # React Router - toutes les routes vers index.html
     location / {
         try_files \$uri \$uri/ /index.html;

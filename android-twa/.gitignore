@@ -1,0 +1,14 @@
+# Build outputs
+app/build/
+build/
+.gradle/
+
+# Keystore (ne jamais committer)
+*.keystore
+*.jks
+
+# Temporary files
+*.exp
+build.log
+store_icon.png
+manifest-checksum.txt

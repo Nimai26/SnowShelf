@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "fr.snowshelf.app",
+      "sha256_cert_fingerprints": [
+        "60:5B:6F:C3:A3:14:3C:5B:3D:2F:45:30:49:85:DF:1D:50:3B:57:BA:8A:FE:AB:BC:90:F6:2F:E7:38:5C:03:AC"
+      ]
+    }
+  }
+]

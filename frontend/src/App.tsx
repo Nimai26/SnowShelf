@@ -34,6 +34,7 @@ const ExplorePage = lazy(() => import('./pages/explore/ExplorePage'));
 const PublicProfilePage = lazy(() => import('./pages/explore/PublicProfilePage'));
 const PublicItemDetailPage = lazy(() => import('./pages/explore/PublicItemDetailPage'));
 const FriendsPage = lazy(() => import('./pages/friends/FriendsPage'));
+const DownloadPage = lazy(() => import('./pages/download/DownloadPage'));
 
 function App() {
   const { isInitializing, initializeAuth } = useAuthStore();
@@ -62,6 +63,7 @@ function App() {
             <Route path="register" element={<RegisterPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="verify-email" element={<VerifyEmailPage />} />
+            <Route path="download" element={<DownloadPage />} />
 
             {/* Pages protégées */}
             <Route
