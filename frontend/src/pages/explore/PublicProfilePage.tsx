@@ -46,6 +46,7 @@ import type { ItemCompact } from '../../types/item.types';
 import type { PrimaryType } from '../../types/category.types';
 import { getMediaUrl } from '../../utils/url';
 import CategoryIcon from '../../components/common/CategoryIcon';
+import CategorySelect from '../../components/common/CategorySelect';
 
 export default function PublicProfilePage() {
   const { t } = useTranslation('common');
@@ -501,17 +502,12 @@ export default function PublicProfilePage() {
         <Card className="mb-6 p-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Category */}
-            <Select
+            <CategorySelect
               label={tItems('filters.category')}
               value={categoryId?.toString() || ''}
-              onChange={(e) => updateParam('categoryId', e.target.value || undefined)}
-              options={[
-                { value: '', label: tItems('filters.allCategories') },
-                ...categories.map((cat) => ({
-                  value: String(cat.id),
-                  label: cat.iconType === 'url' ? cat.name : `${cat.icon} ${cat.name}`,
-                })),
-              ]}
+              onChange={(val) => updateParam('categoryId', val || undefined)}
+              options={categories}
+              placeholder={tItems('filters.allCategories')}
             />
 
             {/* Primary Type */}

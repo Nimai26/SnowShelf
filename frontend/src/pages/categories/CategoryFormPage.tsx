@@ -17,6 +17,7 @@ import {
 import toast from 'react-hot-toast';
 import { MediaListManager } from '../../components/media/MediaListManager';
 import CategoryIcon from '../../components/common/CategoryIcon';
+import CategorySelect from '../../components/common/CategorySelect';
 
 const PRESET_ICONS = [
   '📁', '📂', '🎮', '📚', '🎵', '🎬', '📺', '🧸', '🧱',
@@ -892,28 +893,12 @@ export default function CategoryFormPage() {
             <CardTitle>{t('form.parentCategory', 'Catégorie parente')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <select
-              value={form.parentIds?.[0] || ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                setForm({
-                  ...form,
-                  parentIds: val ? [Number(val)] : [],
-                });
-              }}
-              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-primary)] focus:outline-none"
-            >
-              <option value="">
-                {t('form.noParent', 'Aucune (catégorie racine)')}
-              </option>
-              {allCategories
-                .filter((c) => c.id !== Number(id))
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.iconType === 'url' ? c.name : `${c.icon} ${c.name}`}
-                  </option>
-                ))}
-            </select>
+            <CategorySelect
+              value={String(form.parentIds?.[0] || '')}
+              onChange={(val) => setForm({ ...form, parentIds: val ? [Number(val)] : [] })}
+              options={allCategories.filter((c) => c.id !== Number(id))}
+              placeholder={t('form.noParent', 'Aucune (catégorie racine)')}
+            />
           </CardContent>
         </Card>
 

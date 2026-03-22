@@ -22,6 +22,7 @@ import { storageLocationService, type StorageLocation } from '../../services/sto
 import { Button, Card, Badge, EmptyState, Input, Select, GridSkeleton, ListSkeleton } from '../../components/ui';
 import { StaggerContainer, StaggerItem } from '../../components/ui/Animations';
 import type { ItemCompact, ItemQueryParams } from '../../types/item.types';
+import CategorySelect from '../../components/common/CategorySelect';
 import { getMediaUrl } from '../../utils/url';
 import type { Category, PrimaryType } from '../../types/category.types';
 import CategoryIcon from '../../components/common/CategoryIcon';
@@ -270,17 +271,12 @@ export default function ItemsPage() {
           {/* Row 1: Main filters */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Category */}
-            <Select
+            <CategorySelect
               label={t('filters.category')}
               value={categoryId?.toString() || ''}
-              onChange={(e) => updateParam('categoryId', e.target.value || undefined)}
-              options={[
-                { value: '', label: t('filters.allCategories') },
-                ...categories.map((cat) => ({
-                  value: String(cat.id),
-                  label: cat.iconType === 'url' ? cat.name : `${cat.icon} ${cat.name}`,
-                })),
-              ]}
+              onChange={(val) => updateParam('categoryId', val || undefined)}
+              options={categories}
+              placeholder={t('filters.allCategories')}
             />
 
             {/* Primary Type */}
