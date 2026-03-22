@@ -7,7 +7,7 @@
 # ────────────────────────────────────────────────────────────
 # Stage 1: Builder - Installation et compilation
 # ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Métadonnées
 LABEL maintainer="SnowShelf Team"
