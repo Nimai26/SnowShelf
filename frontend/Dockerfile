@@ -72,16 +72,23 @@ server {
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
     add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https:; media-src 'self' blob:; object-src 'self'; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" always;
 
-    # Cache statique agressif
+    # Service Worker — jamais mis en cache (sw.js)
+    location = /sw.js {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        expires 0;
+    }
+
+    # Workbox chunks — courte durée de cache
+    location ~* ^/workbox-.*\.js$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        expires 0;
+    }
+
+    # Cache statique agressif (exclut sw.js et workbox via les locations ci-dessus)
     location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
-    }
-
-    # Service Worker - pas de cache
-    location /service-worker.js {
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-        expires 0;
     }
 
     # Proxy API vers le backend (^~ = priorité sur regex)
