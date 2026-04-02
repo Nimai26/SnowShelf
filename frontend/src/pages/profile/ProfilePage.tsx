@@ -1,7 +1,24 @@
 import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Camera, Calendar, Package, FolderOpen, Crown } from 'lucide-react';
+import {
+  Camera,
+  Calendar,
+  Package,
+  FolderOpen,
+  Crown,
+  Settings,
+  Bell,
+  SlidersHorizontal,
+  Tag,
+  Award,
+  MapPin,
+  Users,
+  Compass,
+  LogOut,
+  ChevronRight,
+} from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { userService } from '../../services/user.service';
 import { Avatar, Badge, Card, CardContent, Skeleton } from '../../components/ui';
@@ -9,7 +26,7 @@ import type { UserProfile } from '../../services/user.service';
 
 export default function ProfilePage() {
   const { t } = useTranslation(['settings', 'common']);
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -161,6 +178,94 @@ export default function ProfilePage() {
               {profile.totalValue ? `${profile.totalValue}€` : '—'}
             </span>
             <span className="text-xs text-[var(--color-text-secondary)]">Valeur totale</span>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick links — visible on mobile only (desktop has Header nav) */}
+      <div className="space-y-3 sm:hidden">
+        {/* Gestion */}
+        <Card>
+          <CardContent className="py-2">
+            <p className="px-1 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+              <SlidersHorizontal className="mr-1.5 inline h-3.5 w-3.5" />
+              {t('common:nav.manage', 'Gestion')}
+            </p>
+            <Link
+              to="/manage/statuses"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
+            >
+              <Tag className="h-4 w-4 text-[var(--color-primary)]" />
+              <span className="flex-1">{t('common:nav.statuses', 'Statuts')}</span>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            </Link>
+            <Link
+              to="/manage/grades"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
+            >
+              <Award className="h-4 w-4 text-[var(--color-primary)]" />
+              <span className="flex-1">{t('common:nav.grades', 'Grades')}</span>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            </Link>
+            <Link
+              to="/manage/storage-locations"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
+            >
+              <MapPin className="h-4 w-4 text-[var(--color-primary)]" />
+              <span className="flex-1">{t('common:nav.storageLocations', 'Emplacements')}</span>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Navigation */}
+        <Card>
+          <CardContent className="py-2">
+            <Link
+              to="/explore"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
+            >
+              <Compass className="h-4 w-4 text-[var(--color-primary)]" />
+              <span className="flex-1">{t('common:nav.explore', 'Explorer')}</span>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            </Link>
+            <Link
+              to="/friends"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
+            >
+              <Users className="h-4 w-4 text-[var(--color-primary)]" />
+              <span className="flex-1">{t('common:nav.friends', 'Amis')}</span>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            </Link>
+            <Link
+              to="/notifications"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
+            >
+              <Bell className="h-4 w-4 text-[var(--color-primary)]" />
+              <span className="flex-1">{t('common:nav.notifications', 'Notifications')}</span>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            </Link>
+            <Link
+              to="/settings"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-hover)] transition"
+            >
+              <Settings className="h-4 w-4 text-[var(--color-primary)]" />
+              <span className="flex-1">{t('common:nav.settings', 'Paramètres')}</span>
+              <ChevronRight className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Logout */}
+        <Card>
+          <CardContent className="py-2">
+            <button
+              onClick={() => logout()}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-400 hover:bg-[var(--color-hover)] transition"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="flex-1 text-left">{t('common:nav.logout', 'Déconnexion')}</span>
+            </button>
           </CardContent>
         </Card>
       </div>
