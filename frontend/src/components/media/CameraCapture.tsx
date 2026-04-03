@@ -363,7 +363,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       </div>
 
       {/* Bottom controls */}
-      <div className="absolute bottom-0 inset-x-0 z-10 pb-8 pt-4 bg-gradient-to-t from-black/80 to-transparent">
+      <div className="absolute bottom-0 inset-x-0 z-10 pb-20 sm:pb-8 pt-4 bg-gradient-to-t from-black/80 to-transparent">
         {/* Zoom slider */}
         {maxZoom > 1 && (
           <div className="flex items-center justify-center gap-2 mb-4 px-12">

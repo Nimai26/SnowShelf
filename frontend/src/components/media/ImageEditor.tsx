@@ -98,6 +98,7 @@ export function ImageEditor({ src, onSave, onCancel, filename }: ImageEditorProp
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchIdRef = useRef<number | null>(null);
 
   // ── Load image ──
   useEffect(() => {
@@ -210,8 +211,9 @@ export function ImageEditor({ src, onSave, onCancel, filename }: ImageEditorProp
       ctx.stroke();
     }
 
-    // Handles
-    const handleSize = 10;
+    // Handles (larger on touch devices)
+    const isTouchDevice = 'ontouchstart' in window;
+    const handleSize = isTouchDevice ? 16 : 10;
     ctx.fillStyle = '#ffffff';
     const handles = getCropHandlePositions(screen);
     for (const pos of Object.values(handles)) {
@@ -382,6 +384,100 @@ export function ImageEditor({ src, onSave, onCancel, filename }: ImageEditorProp
   };
 
   const handleMouseUp = () => {
+    setActiveHandle(null);
+    setDragStart(null);
+    setIsPanning(false);
+  };
+
+  // ── Touch event helpers (for crop & pan on mobile) ──
+  const getTouchOffset = (e: React.TouchEvent, touch: React.Touch) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    return { offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top };
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    touchIdRef.current = touch.identifier;
+    const { offsetX, offsetY } = getTouchOffset(e, touch);
+
+    if (cropping && cropRect) {
+      const screen = imageToScreen(cropRect);
+      const handles = getCropHandlePositions(screen);
+      const threshold = 24; // larger for touch
+      for (const [key, pos] of Object.entries(handles)) {
+        if (Math.abs(offsetX - pos.x) < threshold && Math.abs(offsetY - pos.y) < threshold) {
+          e.preventDefault();
+          setActiveHandle(key as CropHandle);
+          setDragStart({ x: offsetX, y: offsetY, cropRect: { ...cropRect } });
+          return;
+        }
+      }
+      if (
+        offsetX >= screen.x && offsetX <= screen.x + screen.width &&
+        offsetY >= screen.y && offsetY <= screen.y + screen.height
+      ) {
+        e.preventDefault();
+        setActiveHandle('move');
+        setDragStart({ x: offsetX, y: offsetY, cropRect: { ...cropRect } });
+        return;
+      }
+    }
+
+    // Pan
+    setIsPanning(true);
+    setPanStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const touch = Array.from(e.touches).find((t) => t.identifier === touchIdRef.current);
+    if (!touch) return;
+    const { offsetX, offsetY } = getTouchOffset(e, touch);
+
+    if (activeHandle && dragStart && cropRect && image) {
+      e.preventDefault();
+      const dx = (offsetX - dragStart.x) / zoom;
+      const dy = (offsetY - dragStart.y) / zoom;
+      const orig = dragStart.cropRect;
+      const iw = image.naturalWidth;
+      const ih = image.naturalHeight;
+      let newRect = { ...orig };
+
+      if (activeHandle === 'move') {
+        newRect.x = Math.max(0, Math.min(iw - orig.width, orig.x + dx));
+        newRect.y = Math.max(0, Math.min(ih - orig.height, orig.y + dy));
+      } else {
+        switch (activeHandle) {
+          case 'br': newRect.width = Math.max(MIN_CROP_SIZE, orig.width + dx); newRect.height = Math.max(MIN_CROP_SIZE, orig.height + dy); break;
+          case 'bl': newRect.x = orig.x + dx; newRect.width = Math.max(MIN_CROP_SIZE, orig.width - dx); newRect.height = Math.max(MIN_CROP_SIZE, orig.height + dy); break;
+          case 'tr': newRect.y = orig.y + dy; newRect.width = Math.max(MIN_CROP_SIZE, orig.width + dx); newRect.height = Math.max(MIN_CROP_SIZE, orig.height - dy); break;
+          case 'tl': newRect.x = orig.x + dx; newRect.y = orig.y + dy; newRect.width = Math.max(MIN_CROP_SIZE, orig.width - dx); newRect.height = Math.max(MIN_CROP_SIZE, orig.height - dy); break;
+          case 'tm': newRect.y = orig.y + dy; newRect.height = Math.max(MIN_CROP_SIZE, orig.height - dy); break;
+          case 'bm': newRect.height = Math.max(MIN_CROP_SIZE, orig.height + dy); break;
+          case 'ml': newRect.x = orig.x + dx; newRect.width = Math.max(MIN_CROP_SIZE, orig.width - dx); break;
+          case 'mr': newRect.width = Math.max(MIN_CROP_SIZE, orig.width + dx); break;
+        }
+        if (cropRatio > 0) {
+          if (['br', 'tr', 'mr'].includes(activeHandle)) { newRect.height = newRect.width / cropRatio; }
+          else { newRect.width = newRect.height * cropRatio; }
+        }
+      }
+      newRect.x = Math.max(0, newRect.x);
+      newRect.y = Math.max(0, newRect.y);
+      newRect.width = Math.min(newRect.width, iw - newRect.x);
+      newRect.height = Math.min(newRect.height, ih - newRect.y);
+      setCropRect(newRect);
+      return;
+    }
+
+    if (isPanning) {
+      e.preventDefault();
+      setPan({ x: touch.clientX - panStart.x, y: touch.clientY - panStart.y });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchIdRef.current = null;
     setActiveHandle(null);
     setDragStart(null);
     setIsPanning(false);
@@ -746,6 +842,10 @@ export function ImageEditor({ src, onSave, onCancel, filename }: ImageEditorProp
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         style={{ touchAction: 'none' }}
       >
         <canvas
@@ -755,7 +855,7 @@ export function ImageEditor({ src, onSave, onCancel, filename }: ImageEditorProp
       </div>
 
       {/* Bottom bar */}
-      <div className="px-4 py-2">
+      <div className="px-4 py-2 pb-20 sm:pb-2">
         {renderBottomBar()}
       </div>
     </div>
