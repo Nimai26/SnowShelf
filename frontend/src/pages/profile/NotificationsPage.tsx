@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, ExternalLink } from 'lucide-react';
 import { userService } from '../../services/user.service';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { setAppBadge } from '../../utils/badging';
@@ -127,6 +128,16 @@ export default function NotificationsPage() {
                   <p className={`mt-0.5 text-xs text-[var(--color-text-secondary)] whitespace-pre-line ${expandedId === notif.id ? '' : 'line-clamp-2'}`}>
                     {notif.message}
                   </p>
+                  {expandedId === notif.id && notif.metadata?.newsletterId && (
+                    <Link
+                      to="/newsletters"
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--color-primary)] hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Lire la newsletter complète
+                    </Link>
+                  )}
                   <p className="mt-1 text-[10px] text-[var(--color-text-secondary)]">
                     {new Date(notif.createdAt).toLocaleDateString(undefined, {
                       day: 'numeric',

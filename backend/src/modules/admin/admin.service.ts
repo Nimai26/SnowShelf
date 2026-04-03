@@ -403,9 +403,7 @@ export class AdminService {
           userId: user.id,
           type: NotificationType.NEWSLETTER,
           title: `📰 ${newsletter.title}`,
-          message: newsletter.content.length > 200
-            ? newsletter.content.substring(0, 200) + '…'
-            : newsletter.content,
+          message: newsletter.content,
           metadata: { newsletterId: newsletter.id },
         }),
       );
