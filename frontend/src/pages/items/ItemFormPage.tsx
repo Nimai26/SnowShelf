@@ -1049,6 +1049,24 @@ export default function ItemFormPage() {
           </div>
         )}
 
+        {/* Quick action buttons (top) */}
+        <div className="flex items-center gap-2 justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+          >
+            {t('form.cancel')}
+          </Button>
+          <Button type="submit" variant="primary" size="sm" disabled={submitting}>
+            <Save className="mr-1.5 h-3.5 w-3.5" />
+            {submitting
+              ? isEdit ? t('form.saving') : t('form.creating')
+              : isEdit ? t('form.update') : t('form.create')}
+          </Button>
+        </div>
+
         {/* ═══════════════════════════════════════════ */}
         {/* TAB 1: Général */}
         {/* ═══════════════════════════════════════════ */}
