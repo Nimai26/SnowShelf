@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
@@ -6,11 +7,13 @@ import {
   BarChart3,
   ArrowRight,
   Sparkles,
+  Camera,
 } from 'lucide-react';
 import logoImg from '../../assets/images/logo.png';
 import { useAuthStore } from '../../stores/authStore';
 import { Card, CardContent, Button, Badge } from '../../components/ui';
 import { FadeIn, StaggerContainer, StaggerItem } from '../../components/ui/Animations';
+import { QuickAddModal } from '../../components/common/QuickAddModal';
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuthStore();
@@ -81,6 +84,7 @@ function LandingPage() {
 
 function Dashboard({ user }: { user: any }) {
   const { t } = useTranslation('common');
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   const stats = [
     { label: t('stats.items', 'Articles'), value: user.itemsCount ?? 0, icon: Library },
@@ -161,6 +165,13 @@ function Dashboard({ user }: { user: any }) {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
+            <Button variant="secondary" className="w-full justify-between" onClick={() => setShowQuickAdd(true)}>
+              <span className="flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                {t('dashboard.quickAdd', 'Ajout rapide')}
+              </span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
             <Link to="/categories">
               <Button variant="secondary" className="w-full justify-between">
                 {t('dashboard.myCategories', 'Mes catégories')}
@@ -189,6 +200,8 @@ function Dashboard({ user }: { user: any }) {
         </CardContent>
       </Card>
       </FadeIn>
+
+      <QuickAddModal open={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
     </div>
   );
 }

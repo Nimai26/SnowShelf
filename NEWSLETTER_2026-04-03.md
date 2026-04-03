@@ -14,6 +14,9 @@ Le menu **Gestion** (Statuts, Grades, Emplacements) était uniquement accessible
 ### Boutons d'action visibles sur le formulaire d'item
 Lors de la création ou modification d'un item — en particulier après un import web ou un scan — les boutons **Annuler** et **Créer / Modifier** sont maintenant affichés **en haut du formulaire** en plus du bas de page. Fini le scroll pour trouver comment sauvegarder !
 
+### Ajout rapide depuis une photo
+Nouveau bouton **"Ajout rapide"** sur la page Items ! Prenez une photo, recadrez-la si besoin, renseignez un nom et une catégorie, et c'est enregistré. Idéal pour cataloguer rapidement vos objets sans passer par le formulaire complet.
+
 ---
 
 ## 🐛 Corrections de bugs
@@ -38,6 +41,7 @@ Les boutons **Annuler** et **Enregistrer** de l'éditeur d'image étaient pouss�
 |------|-------------|
 | ✨ Nouveau | Navigation Gestion accessible sur mobile |
 | ✨ Nouveau | Boutons Créer/Modifier visibles en haut du formulaire |
+| ✨ Nouveau | Ajout rapide d'item depuis une photo |
 | 🔧 Corrigé | Cache Service Worker bloquant les mises à jour |
 | 🔧 Corrigé | Contrôles caméra cachés sur mobile |
 | 🔧 Corrigé | Recadrage tactile dans l'éditeur d'image |
