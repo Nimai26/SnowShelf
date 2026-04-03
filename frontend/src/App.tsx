@@ -30,6 +30,8 @@ const AdminFieldsPage = lazy(() => import('./pages/admin/AdminFieldsPage'));
 const AdminPlatformsPage = lazy(() => import('./pages/admin/AdminPlatformsPage'));
 const AdminTypesDomainsPage = lazy(() => import('./pages/admin/AdminTypesDomainsPage'));
 const AdminTakoConfigPage = lazy(() => import('./pages/admin/AdminTakoConfigPage'));
+const AdminNewsletterPage = lazy(() => import('./pages/admin/AdminNewsletterPage'));
+const NewslettersPage = lazy(() => import('./pages/newsletters/NewslettersPage'));
 const ExplorePage = lazy(() => import('./pages/explore/ExplorePage'));
 const PublicProfilePage = lazy(() => import('./pages/explore/PublicProfilePage'));
 const PublicItemDetailPage = lazy(() => import('./pages/explore/PublicItemDetailPage'));
@@ -265,6 +267,22 @@ function App() {
               element={
                 <ProtectedRoute roles={['admin']}>
                   <AdminTakoConfigPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/newsletters"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <AdminNewsletterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="newsletters"
+              element={
+                <ProtectedRoute>
+                  <NewslettersPage />
                 </ProtectedRoute>
               }
             />

@@ -4,7 +4,9 @@ import { Repository } from 'typeorm';
 import { User, UserRole } from '../../database/entities/user.entity';
 import { Item } from '../../database/entities/item.entity';
 import { Category } from '../../database/entities/category.entity';
-import { Notification } from '../../database/entities/notification.entity';
+import { Notification, NotificationType } from '../../database/entities/notification.entity';
+import { Newsletter, NewsletterStatus } from '../../database/entities/newsletter.entity';
+import { PushService } from '../notifications/push.service';
 
 @Injectable()
 export class AdminService {
@@ -17,6 +19,9 @@ export class AdminService {
     private readonly categoryRepo: Repository<Category>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    @InjectRepository(Newsletter)
+    private readonly newsletterRepo: Repository<Newsletter>,
+    private readonly pushService: PushService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -283,5 +288,159 @@ export class AdminService {
     await this.notificationRepo.save(notifications, { chunk: 100 });
 
     return { sent: notifications.length };
+  }
+
+  // ──────────────────────────────────────────────
+  // NEWSLETTERS
+  // ──────────────────────────────────────────────
+
+  async getNewsletters(page = 1, limit = 20) {
+    const [newsletters, total] = await this.newsletterRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      relations: ['author'],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      newsletters: newsletters.map((n) => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        status: n.status,
+        publishedAt: n.publishedAt,
+        notificationSent: n.notificationSent,
+        author: n.author
+          ? { id: n.author.id, username: n.author.username }
+          : null,
+        createdAt: n.createdAt,
+        updatedAt: n.updatedAt,
+      })),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getNewsletterById(id: number) {
+    const n = await this.newsletterRepo.findOne({
+      where: { id },
+      relations: ['author'],
+    });
+    if (!n) throw new NotFoundException('Newsletter not found');
+    return {
+      id: n.id,
+      title: n.title,
+      content: n.content,
+      status: n.status,
+      publishedAt: n.publishedAt,
+      notificationSent: n.notificationSent,
+      author: n.author
+        ? { id: n.author.id, username: n.author.username }
+        : null,
+      createdAt: n.createdAt,
+      updatedAt: n.updatedAt,
+    };
+  }
+
+  async createNewsletter(authorId: number, title: string, content: string) {
+    const newsletter = this.newsletterRepo.create({
+      title,
+      content,
+      authorId,
+      status: NewsletterStatus.DRAFT,
+    });
+    const saved = await this.newsletterRepo.save(newsletter);
+    return { id: saved.id, title: saved.title, status: saved.status };
+  }
+
+  async updateNewsletter(id: number, title?: string, content?: string) {
+    const newsletter = await this.newsletterRepo.findOne({ where: { id } });
+    if (!newsletter) throw new NotFoundException('Newsletter not found');
+
+    if (title !== undefined) newsletter.title = title;
+    if (content !== undefined) newsletter.content = content;
+
+    await this.newsletterRepo.save(newsletter);
+    return { id: newsletter.id, title: newsletter.title, status: newsletter.status };
+  }
+
+  async deleteNewsletter(id: number) {
+    const newsletter = await this.newsletterRepo.findOne({ where: { id } });
+    if (!newsletter) throw new NotFoundException('Newsletter not found');
+    await this.newsletterRepo.remove(newsletter);
+    return { deleted: true };
+  }
+
+  async publishNewsletter(id: number, sendNotification: boolean) {
+    const newsletter = await this.newsletterRepo.findOne({ where: { id } });
+    if (!newsletter) throw new NotFoundException('Newsletter not found');
+
+    newsletter.status = NewsletterStatus.PUBLISHED;
+    newsletter.publishedAt = new Date();
+
+    let notifCount = 0;
+
+    if (sendNotification) {
+      const users = await this.userRepo.find({ select: ['id'] });
+
+      // Create in-app notifications
+      const notifications = users.map((user) =>
+        this.notificationRepo.create({
+          userId: user.id,
+          type: NotificationType.NEWSLETTER,
+          title: `📰 ${newsletter.title}`,
+          message: newsletter.content.length > 200
+            ? newsletter.content.substring(0, 200) + '…'
+            : newsletter.content,
+          metadata: { newsletterId: newsletter.id },
+        }),
+      );
+      await this.notificationRepo.save(notifications, { chunk: 100 });
+
+      // Send push notifications
+      const userIds = users.map((u) => u.id);
+      await this.pushService.sendToUsers(userIds, {
+        title: `📰 ${newsletter.title}`,
+        body: newsletter.content.length > 100
+          ? newsletter.content.substring(0, 100) + '…'
+          : newsletter.content,
+        url: `/newsletters`,
+      });
+
+      newsletter.notificationSent = true;
+      notifCount = notifications.length;
+    }
+
+    await this.newsletterRepo.save(newsletter);
+
+    return {
+      id: newsletter.id,
+      status: newsletter.status,
+      publishedAt: newsletter.publishedAt,
+      notificationSent: newsletter.notificationSent,
+      notifCount,
+    };
+  }
+
+  async getPublishedNewsletters(page = 1, limit = 10) {
+    const [newsletters, total] = await this.newsletterRepo.findAndCount({
+      where: { status: NewsletterStatus.PUBLISHED },
+      order: { publishedAt: 'DESC' },
+      relations: ['author'],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      newsletters: newsletters.map((n) => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        publishedAt: n.publishedAt,
+        author: n.author
+          ? { id: n.author.id, username: n.author.username }
+          : null,
+      })),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
   }
 }

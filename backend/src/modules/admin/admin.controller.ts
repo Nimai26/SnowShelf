@@ -11,6 +11,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '../../database/entities/user.entity';
 import { AdminService } from './admin.service';
 
@@ -74,5 +75,73 @@ export class AdminController {
     @Body('message') message: string,
   ) {
     return this.adminService.sendSystemNotification(title, message);
+  }
+
+  // ──── Newsletters ────
+
+  @Get('newsletters')
+  getNewsletters(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getNewsletters(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
+  @Get('newsletters/:id')
+  getNewsletter(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.getNewsletterById(id);
+  }
+
+  @Post('newsletters')
+  createNewsletter(
+    @Req() req: any,
+    @Body('title') title: string,
+    @Body('content') content: string,
+  ) {
+    return this.adminService.createNewsletter(req.user.id, title, content);
+  }
+
+  @Put('newsletters/:id')
+  updateNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('title') title?: string,
+    @Body('content') content?: string,
+  ) {
+    return this.adminService.updateNewsletter(id, title, content);
+  }
+
+  @Delete('newsletters/:id')
+  deleteNewsletter(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deleteNewsletter(id);
+  }
+
+  @Post('newsletters/:id/publish')
+  publishNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('sendNotification') sendNotification: boolean,
+  ) {
+    return this.adminService.publishNewsletter(id, sendNotification ?? false);
+  }
+}
+
+// ──── Public endpoint for published newsletters ────
+
+@Controller('newsletters')
+export class NewslettersPublicController {
+  constructor(private readonly adminService: AdminService) {}
+
+  @Public()
+  @Get()
+  getPublishedNewsletters(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getPublishedNewsletters(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
   }
 }

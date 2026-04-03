@@ -10,6 +10,7 @@ import {
   UserPlus,
   Bell,
   ChevronRight,
+  Newspaper,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -126,6 +127,12 @@ export default function AdminDashboardPage() {
           <Link to="/admin/tako-config">
             <Badge variant="secondary" className="cursor-pointer">
               {t('nav.takoConfig')} <ChevronRight className="w-3 h-3 ml-1 inline" />
+            </Badge>
+          </Link>
+          <Link to="/admin/newsletters">
+            <Badge variant="secondary" className="cursor-pointer">
+              <Newspaper className="w-3 h-3 mr-1 inline" />
+              {t('nav.newsletters', 'Newsletters')} <ChevronRight className="w-3 h-3 ml-1 inline" />
             </Badge>
           </Link>
         </div>

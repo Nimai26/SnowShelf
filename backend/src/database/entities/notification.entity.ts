@@ -17,6 +17,7 @@ export enum NotificationType {
   INFO = 'info',
   FRIEND_REQUEST = 'friend_request',
   FRIEND_ACCEPTED = 'friend_accepted',
+  NEWSLETTER = 'newsletter',
 }
 
 @Entity('notifications')

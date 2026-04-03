@@ -18,6 +18,9 @@ import type {
   UpdateProviderPayload,
   TakoApiConfig,
   UpdateTakoConfigPayload,
+  Newsletter,
+  NewslettersPaginated,
+  PublishedNewsletter,
 } from '../types/admin.types';
 import type { PrimaryType } from '../types/category.types';
 
@@ -189,5 +192,42 @@ export const adminService = {
   triggerTakoHealthCheck: async (): Promise<{ status: string; version?: string; uptime?: number }> => {
     const { data } = await apiClient.post('/api/v1/admin/tako/config/health-check');
     return data.data || data;
+  },
+
+  // ──── Newsletters ────
+
+  getNewsletters: async (page = 1, limit = 20): Promise<NewslettersPaginated> => {
+    const { data } = await apiClient.get('/api/v1/admin/newsletters', { params: { page, limit } });
+    return data;
+  },
+
+  getNewsletter: async (id: number): Promise<Newsletter> => {
+    const { data } = await apiClient.get(`/api/v1/admin/newsletters/${id}`);
+    return data;
+  },
+
+  createNewsletter: async (title: string, content: string): Promise<{ id: number; title: string; status: string }> => {
+    const { data } = await apiClient.post('/api/v1/admin/newsletters', { title, content });
+    return data;
+  },
+
+  updateNewsletter: async (id: number, title?: string, content?: string): Promise<{ id: number; title: string; status: string }> => {
+    const { data } = await apiClient.put(`/api/v1/admin/newsletters/${id}`, { title, content });
+    return data;
+  },
+
+  deleteNewsletter: async (id: number): Promise<{ deleted: boolean }> => {
+    const { data } = await apiClient.delete(`/api/v1/admin/newsletters/${id}`);
+    return data;
+  },
+
+  publishNewsletter: async (id: number, sendNotification: boolean): Promise<{ id: number; status: string; notifCount: number }> => {
+    const { data } = await apiClient.post(`/api/v1/admin/newsletters/${id}/publish`, { sendNotification });
+    return data;
+  },
+
+  getPublishedNewsletters: async (page = 1, limit = 10): Promise<{ newsletters: PublishedNewsletter[]; pagination: any }> => {
+    const { data } = await apiClient.get('/api/v1/newsletters', { params: { page, limit } });
+    return data;
   },
 };

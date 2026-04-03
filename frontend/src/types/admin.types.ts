@@ -248,3 +248,37 @@ export interface UpdateTakoConfigPayload {
   maxRetries?: number;
   isActive?: boolean;
 }
+
+// ──────────────────────────────────────────────
+// Newsletter Types
+// ──────────────────────────────────────────────
+
+export interface Newsletter {
+  id: number;
+  title: string;
+  content: string;
+  status: 'draft' | 'published';
+  publishedAt: string | null;
+  notificationSent: boolean;
+  author: { id: number; username: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewslettersPaginated {
+  newsletters: Newsletter[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface PublishedNewsletter {
+  id: number;
+  title: string;
+  content: string;
+  publishedAt: string;
+  author: { id: number; username: string } | null;
+}
