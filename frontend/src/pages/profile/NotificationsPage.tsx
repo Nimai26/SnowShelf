@@ -19,6 +19,7 @@ export default function NotificationsPage() {
   const { t } = useTranslation('common');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const { setUnreadCount: setStoreUnreadCount } = useNotificationStore();
 
   useEffect(() => {
@@ -115,14 +116,15 @@ export default function NotificationsPage() {
           {notifications.map((notif) => (
             <Card
               key={notif.id}
-              className={`transition ${!notif.isRead ? 'border-l-4 border-l-[var(--color-primary)]' : 'opacity-75'}`}
+              className={`transition cursor-pointer ${!notif.isRead ? 'border-l-4 border-l-[var(--color-primary)]' : 'opacity-75'}`}
+              onClick={() => setExpandedId(expandedId === notif.id ? null : notif.id)}
             >
               <CardContent className="flex items-start gap-3 py-4">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className={`text-sm ${!notif.isRead ? 'font-semibold' : ''} text-[var(--color-text)]`}>
                     {notif.title}
                   </p>
-                  <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                  <p className={`mt-0.5 text-xs text-[var(--color-text-secondary)] whitespace-pre-line ${expandedId === notif.id ? '' : 'line-clamp-2'}`}>
                     {notif.message}
                   </p>
                   <p className="mt-1 text-[10px] text-[var(--color-text-secondary)]">
@@ -134,10 +136,10 @@ export default function NotificationsPage() {
                     })}
                   </p>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                   {!notif.isRead && (
                     <button
-                      onClick={() => markRead(notif.id)}
+                      onClick={(e) => { e.stopPropagation(); markRead(notif.id); }}
                       title={t('notifications.markRead', 'Marquer comme lu')}
                       className="rounded p-1.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-primary)] transition"
                     >
@@ -145,7 +147,7 @@ export default function NotificationsPage() {
                     </button>
                   )}
                   <button
-                    onClick={() => deleteNotif(notif.id)}
+                    onClick={(e) => { e.stopPropagation(); deleteNotif(notif.id); }}
                     title={t('actions.delete')}
                     className="rounded p-1.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-hover)] hover:text-red-400 transition"
                   >

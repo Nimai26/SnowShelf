@@ -2,11 +2,18 @@
 
 Bonjour à tous ! 👋
 
-Voici un résumé des dernières améliorations et corrections déployées sur **SnowShelf** ces dernières heures. Cette mise à jour se concentre principalement sur l'**expérience mobile** et la **fiabilité de l'application**.
+Voici un résumé des dernières améliorations et corrections déployées sur **SnowShelf** ces dernières heures. Cette mise à jour se concentre sur l'**expérience mobile**, la **communication** et la **fiabilité de l'application**.
 
 ---
 
 ## 🚀 Nouvelles fonctionnalités
+
+### Système de newsletters
+Les administrateurs peuvent désormais créer, éditer et publier des **newsletters** directement depuis l'espace admin. Chaque newsletter peut cibler une **audience spécifique** (Tous, Free, Premium, Admin) et être diffusée via :
+- **Notification in-app + push** (cloche)
+- **Email** aux abonnés newsletter de l'audience cible
+
+Les newsletters publiées sont consultables par tous les utilisateurs depuis la page **/newsletters**.
 
 ### Navigation mobile complète
 Le menu **Gestion** (Statuts, Grades, Emplacements) était uniquement accessible depuis la version bureau. Il est désormais disponible directement depuis votre **page Profil** sur mobile, accompagné de raccourcis vers toutes les sections principales : Explorer, Amis, Notifications et Paramètres.
@@ -20,6 +27,9 @@ Nouveau bouton **"Ajout rapide"** sur la page Items ! Prenez une photo, recadrez
 ---
 
 ## 🐛 Corrections de bugs
+
+### Cloche de notifications en temps réel
+Le badge de la cloche de notifications ne se mettait à jour qu'au rechargement de la page. Il est désormais **synchronisé en temps réel** : les nouvelles notifications apparaissent automatiquement (polling toutes les 30 secondes) et le compteur se met à jour instantanément quand vous marquez une notification comme lue ou la supprimez.
 
 ### Mises à jour bloquées par le cache
 Un problème empêchait l'application de charger les nouvelles versions : le fichier Service Worker était mis en cache pendant 1 an par le navigateur. Ce comportement a été corrigé — les mises à jour sont désormais appliquées immédiatement.
@@ -39,9 +49,11 @@ Les boutons **Annuler** et **Enregistrer** de l'éditeur d'image étaient pouss�
 
 | Type | Description |
 |------|-------------|
+| ✨ Nouveau | Système de newsletters admin (audience ciblée + email) |
 | ✨ Nouveau | Navigation Gestion accessible sur mobile |
 | ✨ Nouveau | Boutons Créer/Modifier visibles en haut du formulaire |
 | ✨ Nouveau | Ajout rapide d'item depuis une photo |
+| 🔧 Corrigé | Cloche de notifications synchronisée en temps réel |
 | 🔧 Corrigé | Cache Service Worker bloquant les mises à jour |
 | 🔧 Corrigé | Contrôles caméra cachés sur mobile |
 | 🔧 Corrigé | Recadrage tactile dans l'éditeur d'image |
