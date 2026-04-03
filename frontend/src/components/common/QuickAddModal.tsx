@@ -260,9 +260,6 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
 
             {/* Category selector */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[var(--color-text)]">
-                {t('form.categories')} *
-              </label>
               <CategorySelector
                 categories={categories}
                 primaryTypes={primaryTypes}
