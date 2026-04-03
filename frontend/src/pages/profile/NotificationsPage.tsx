@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
 import { userService } from '../../services/user.service';
+import { useNotificationStore } from '../../stores/notificationStore';
 import { setAppBadge } from '../../utils/badging';
 import {
   Button,
@@ -18,6 +19,7 @@ export default function NotificationsPage() {
   const { t } = useTranslation('common');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const { setUnreadCount: setStoreUnreadCount } = useNotificationStore();
 
   useEffect(() => {
     loadNotifications();
@@ -66,9 +68,10 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  // Update PWA app badge with unread count
+  // Update PWA app badge and store with unread count
   useEffect(() => {
     setAppBadge(unreadCount);
+    setStoreUnreadCount(unreadCount);
   }, [unreadCount]);
 
   if (loading) {

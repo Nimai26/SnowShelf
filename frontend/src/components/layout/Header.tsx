@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import logoImg from '../../assets/images/logo.png';
 import { useAuthStore } from '../../stores/authStore';
-import { userService } from '../../services/user.service';
+import { useNotificationStore } from '../../stores/notificationStore';
 import { Avatar } from '../ui';
 import GlobalSearchBar from '../common/GlobalSearchBar';
 
@@ -25,13 +25,14 @@ export default function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount, refresh: refreshNotifs } = useNotificationStore();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      userService.getUnreadCount().then(setUnreadCount).catch(() => {});
-    }
+    if (!isAuthenticated) return;
+    refreshNotifs();
+    const interval = setInterval(refreshNotifs, 30_000);
+    return () => clearInterval(interval);
   }, [isAuthenticated]);
 
   // Close menu on click outside
