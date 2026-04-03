@@ -403,7 +403,7 @@ export class AdminService {
         body: newsletter.content.length > 100
           ? newsletter.content.substring(0, 100) + '…'
           : newsletter.content,
-        url: `/newsletters`,
+        data: { url: '/newsletters' },
       });
 
       newsletter.notificationSent = true;
