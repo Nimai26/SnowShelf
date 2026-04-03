@@ -13,6 +13,7 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
+  Camera,
 } from 'lucide-react';
 import PullToRefresh from '../../components/common/PullToRefresh';
 import { itemService } from '../../services/item.service';
@@ -26,6 +27,7 @@ import CategorySelect from '../../components/common/CategorySelect';
 import { getMediaUrl } from '../../utils/url';
 import type { Category, PrimaryType } from '../../types/category.types';
 import CategoryIcon from '../../components/common/CategoryIcon';
+import { QuickAddModal } from '../../components/common/QuickAddModal';
 
 export default function ItemsPage() {
   const { t } = useTranslation('items');
@@ -43,6 +45,7 @@ export default function ItemsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   // Query state from URL params
   const currentPage = Number(searchParams.get('page')) || 1;
@@ -146,6 +149,7 @@ export default function ItemsPage() {
 
   // ─── RENDER ──────────────────────────────────
   return (
+    <>
     <PullToRefresh onRefresh={loadItems}>
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -154,12 +158,18 @@ export default function ItemsPage() {
           <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('title')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)]">{t('subtitle')}</p>
         </div>
-        <Link to="/items/new">
-          <Button variant="primary">
-            <Plus className="mr-2 h-4 w-4" />
-            {t('addItem')}
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setShowQuickAdd(true)}>
+            <Camera className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">{t('quickAdd.button', 'Photo rapide')}</span>
           </Button>
-        </Link>
+          <Link to="/items/new">
+            <Button variant="primary">
+              <Plus className="mr-2 h-4 w-4" />
+              {t('addItem')}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats bar */}
@@ -653,5 +663,12 @@ export default function ItemsPage() {
       )}
     </div>
     </PullToRefresh>
+
+    {/* Quick Add Modal */}
+    <QuickAddModal
+      open={showQuickAdd}
+      onClose={() => { setShowQuickAdd(false); loadItems(); }}
+    />
+    </>
   );
 }
