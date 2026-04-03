@@ -14,6 +14,13 @@ export enum NewsletterStatus {
   PUBLISHED = 'published',
 }
 
+export enum NewsletterAudience {
+  ALL = 'all',
+  FREE = 'free',
+  PREMIUM = 'premium',
+  ADMIN = 'admin',
+}
+
 @Entity('newsletters')
 export class Newsletter {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -35,8 +42,19 @@ export class Newsletter {
   @Column({ name: 'published_at', type: 'timestamp', nullable: true })
   publishedAt: Date | null;
 
+  @Column({
+    name: 'target_audience',
+    type: 'enum',
+    enum: NewsletterAudience,
+    default: NewsletterAudience.ALL,
+  })
+  targetAudience: NewsletterAudience;
+
   @Column({ name: 'notification_sent', type: 'boolean', default: false })
   notificationSent: boolean;
+
+  @Column({ name: 'email_sent', type: 'boolean', default: false })
+  emailSent: boolean;
 
   @Column({ name: 'author_id', type: 'int', unsigned: true })
   authorId: number;

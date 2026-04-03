@@ -253,13 +253,17 @@ export interface UpdateTakoConfigPayload {
 // Newsletter Types
 // ──────────────────────────────────────────────
 
+export type NewsletterAudience = 'all' | 'free' | 'premium' | 'admin';
+
 export interface Newsletter {
   id: number;
   title: string;
   content: string;
   status: 'draft' | 'published';
+  targetAudience: NewsletterAudience;
   publishedAt: string | null;
   notificationSent: boolean;
+  emailSent: boolean;
   author: { id: number; username: string } | null;
   createdAt: string;
   updatedAt: string;

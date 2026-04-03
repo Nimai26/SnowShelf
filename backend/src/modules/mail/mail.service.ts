@@ -193,4 +193,89 @@ export class MailService {
       this.logger.error(`❌ Échec envoi email de réinitialisation à ${email}`, error.stack);
     }
   }
+
+  // ──────────────────────────────────────────────
+  // EMAIL NEWSLETTER
+  // ──────────────────────────────────────────────
+  async sendNewsletterEmail(email: string, username: string, title: string, content: string): Promise<void> {
+    // Basic markdown to HTML conversion
+    const htmlContent = content
+      .split('\n')
+      .map((line) => {
+        if (line.startsWith('### ')) return `<h3 style="color: #f1f5f9; font-size: 16px; margin: 16px 0 8px 0;">${line.slice(4)}</h3>`;
+        if (line.startsWith('## ')) return `<h2 style="color: #f1f5f9; font-size: 18px; margin: 20px 0 8px 0;">${line.slice(3)}</h2>`;
+        if (line.startsWith('# ')) return `<h1 style="color: #f1f5f9; font-size: 22px; margin: 24px 0 8px 0;">${line.slice(2)}</h1>`;
+        if (line.startsWith('- ')) return `<li style="color: #94a3b8; margin: 4px 0;">${line.slice(2)}</li>`;
+        if (line.startsWith('---')) return `<hr style="border: none; border-top: 1px solid #334155; margin: 16px 0;">`;
+        if (line.trim() === '') return '<br>';
+        return `<p style="color: #94a3b8; font-size: 15px; line-height: 1.6; margin: 8px 0;">${line.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #f1f5f9;">$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</p>`;
+      })
+      .join('\n');
+
+    const html = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 32px;">
+          <h1 style="color: #38bdf8; font-size: 28px; margin: 0;">❄️ SnowShelf</h1>
+        </div>
+
+        <!-- Card -->
+        <div style="background-color: #1e293b; border-radius: 12px; padding: 32px; border: 1px solid #334155;">
+          <h2 style="color: #f1f5f9; font-size: 22px; margin: 0 0 8px 0;">
+            📰 ${title}
+          </h2>
+
+          <p style="color: #64748b; font-size: 13px; margin: 0 0 20px 0;">
+            Bonjour <strong style="color: #f1f5f9;">${username}</strong>,
+          </p>
+
+          <div>
+            ${htmlContent}
+          </div>
+
+          <!-- CTA -->
+          <div style="text-align: center; margin: 32px 0 16px 0;">
+            <a href="${this.frontendUrl}/newsletters"
+               style="display: inline-block; background-color: #38bdf8; color: #0f172a; font-weight: 600;
+                      padding: 12px 28px; border-radius: 8px; text-decoration: none; font-size: 15px;">
+              📖 Lire sur SnowShelf
+            </a>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 32px;">
+          <p style="color: #475569; font-size: 12px; margin: 0;">
+            Vous recevez cet email car vous êtes abonné à la newsletter SnowShelf.<br>
+            Pour vous désabonner, rendez-vous dans les paramètres de votre profil.
+          </p>
+          <p style="color: #475569; font-size: 13px; margin: 12px 0 0 0;">
+            Made with ❤️ by Nimai — SnowShelf v2
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+
+    try {
+      await this.transporter.sendMail({
+        from: `"SnowShelf" <${this.fromAddress}>`,
+        to: email,
+        subject: `📰 SnowShelf — ${title}`,
+        html,
+      });
+
+      this.logger.log(`📧 Newsletter envoyée à ${email}`);
+    } catch (error) {
+      this.logger.error(`❌ Échec envoi newsletter à ${email}`, error.stack);
+    }
+  }
 }

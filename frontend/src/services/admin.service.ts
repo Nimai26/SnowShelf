@@ -21,6 +21,7 @@ import type {
   Newsletter,
   NewslettersPaginated,
   PublishedNewsletter,
+  NewsletterAudience,
 } from '../types/admin.types';
 import type { PrimaryType } from '../types/category.types';
 
@@ -206,13 +207,13 @@ export const adminService = {
     return data;
   },
 
-  createNewsletter: async (title: string, content: string): Promise<{ id: number; title: string; status: string }> => {
-    const { data } = await apiClient.post('/api/v1/admin/newsletters', { title, content });
+  createNewsletter: async (title: string, content: string, targetAudience?: NewsletterAudience): Promise<{ id: number; title: string; status: string }> => {
+    const { data } = await apiClient.post('/api/v1/admin/newsletters', { title, content, targetAudience });
     return data;
   },
 
-  updateNewsletter: async (id: number, title?: string, content?: string): Promise<{ id: number; title: string; status: string }> => {
-    const { data } = await apiClient.put(`/api/v1/admin/newsletters/${id}`, { title, content });
+  updateNewsletter: async (id: number, title?: string, content?: string, targetAudience?: NewsletterAudience): Promise<{ id: number; title: string; status: string }> => {
+    const { data } = await apiClient.put(`/api/v1/admin/newsletters/${id}`, { title, content, targetAudience });
     return data;
   },
 
@@ -221,8 +222,8 @@ export const adminService = {
     return data;
   },
 
-  publishNewsletter: async (id: number, sendNotification: boolean): Promise<{ id: number; status: string; notifCount: number }> => {
-    const { data } = await apiClient.post(`/api/v1/admin/newsletters/${id}/publish`, { sendNotification });
+  publishNewsletter: async (id: number, sendNotification: boolean, sendEmail: boolean): Promise<{ id: number; status: string; notifCount: number; emailCount: number }> => {
+    const { data } = await apiClient.post(`/api/v1/admin/newsletters/${id}/publish`, { sendNotification, sendEmail });
     return data;
   },
 

@@ -100,8 +100,9 @@ export class AdminController {
     @Req() req: any,
     @Body('title') title: string,
     @Body('content') content: string,
+    @Body('targetAudience') targetAudience?: string,
   ) {
-    return this.adminService.createNewsletter(req.user.id, title, content);
+    return this.adminService.createNewsletter(req.user.id, title, content, targetAudience as any);
   }
 
   @Put('newsletters/:id')
@@ -109,8 +110,9 @@ export class AdminController {
     @Param('id', ParseIntPipe) id: number,
     @Body('title') title?: string,
     @Body('content') content?: string,
+    @Body('targetAudience') targetAudience?: string,
   ) {
-    return this.adminService.updateNewsletter(id, title, content);
+    return this.adminService.updateNewsletter(id, title, content, targetAudience as any);
   }
 
   @Delete('newsletters/:id')
@@ -122,8 +124,9 @@ export class AdminController {
   publishNewsletter(
     @Param('id', ParseIntPipe) id: number,
     @Body('sendNotification') sendNotification: boolean,
+    @Body('sendEmail') sendEmail: boolean,
   ) {
-    return this.adminService.publishNewsletter(id, sendNotification ?? false);
+    return this.adminService.publishNewsletter(id, sendNotification ?? false, sendEmail ?? false);
   }
 }
 

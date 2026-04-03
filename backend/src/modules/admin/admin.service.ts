@@ -5,8 +5,9 @@ import { User, UserRole } from '../../database/entities/user.entity';
 import { Item } from '../../database/entities/item.entity';
 import { Category } from '../../database/entities/category.entity';
 import { Notification, NotificationType } from '../../database/entities/notification.entity';
-import { Newsletter, NewsletterStatus } from '../../database/entities/newsletter.entity';
+import { Newsletter, NewsletterStatus, NewsletterAudience } from '../../database/entities/newsletter.entity';
 import { PushService } from '../notifications/push.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AdminService {
@@ -22,6 +23,7 @@ export class AdminService {
     @InjectRepository(Newsletter)
     private readonly newsletterRepo: Repository<Newsletter>,
     private readonly pushService: PushService,
+    private readonly mailService: MailService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -308,8 +310,10 @@ export class AdminService {
         title: n.title,
         content: n.content,
         status: n.status,
+        targetAudience: n.targetAudience,
         publishedAt: n.publishedAt,
         notificationSent: n.notificationSent,
+        emailSent: n.emailSent,
         author: n.author
           ? { id: n.author.id, username: n.author.username }
           : null,
@@ -331,8 +335,10 @@ export class AdminService {
       title: n.title,
       content: n.content,
       status: n.status,
+      targetAudience: n.targetAudience,
       publishedAt: n.publishedAt,
       notificationSent: n.notificationSent,
+      emailSent: n.emailSent,
       author: n.author
         ? { id: n.author.id, username: n.author.username }
         : null,
@@ -341,23 +347,25 @@ export class AdminService {
     };
   }
 
-  async createNewsletter(authorId: number, title: string, content: string) {
+  async createNewsletter(authorId: number, title: string, content: string, targetAudience?: NewsletterAudience) {
     const newsletter = this.newsletterRepo.create({
       title,
       content,
       authorId,
+      targetAudience: targetAudience || NewsletterAudience.ALL,
       status: NewsletterStatus.DRAFT,
     });
     const saved = await this.newsletterRepo.save(newsletter);
     return { id: saved.id, title: saved.title, status: saved.status };
   }
 
-  async updateNewsletter(id: number, title?: string, content?: string) {
+  async updateNewsletter(id: number, title?: string, content?: string, targetAudience?: NewsletterAudience) {
     const newsletter = await this.newsletterRepo.findOne({ where: { id } });
     if (!newsletter) throw new NotFoundException('Newsletter not found');
 
     if (title !== undefined) newsletter.title = title;
     if (content !== undefined) newsletter.content = content;
+    if (targetAudience !== undefined) newsletter.targetAudience = targetAudience;
 
     await this.newsletterRepo.save(newsletter);
     return { id: newsletter.id, title: newsletter.title, status: newsletter.status };
@@ -370,7 +378,7 @@ export class AdminService {
     return { deleted: true };
   }
 
-  async publishNewsletter(id: number, sendNotification: boolean) {
+  async publishNewsletter(id: number, sendNotification: boolean, sendEmail: boolean) {
     const newsletter = await this.newsletterRepo.findOne({ where: { id } });
     if (!newsletter) throw new NotFoundException('Newsletter not found');
 
@@ -378,9 +386,16 @@ export class AdminService {
     newsletter.publishedAt = new Date();
 
     let notifCount = 0;
+    let emailCount = 0;
+
+    // Build audience filter
+    const audienceWhere: any = {};
+    if (newsletter.targetAudience !== NewsletterAudience.ALL) {
+      audienceWhere.role = newsletter.targetAudience as unknown as UserRole;
+    }
 
     if (sendNotification) {
-      const users = await this.userRepo.find({ select: ['id'] });
+      const users = await this.userRepo.find({ where: audienceWhere, select: ['id'] });
 
       // Create in-app notifications
       const notifications = users.map((user) =>
@@ -410,6 +425,26 @@ export class AdminService {
       notifCount = notifications.length;
     }
 
+    if (sendEmail) {
+      const emailWhere: any = { ...audienceWhere, newsletter: true };
+      const emailUsers = await this.userRepo.find({
+        where: emailWhere,
+        select: ['id', 'email', 'username'],
+      });
+
+      for (const user of emailUsers) {
+        await this.mailService.sendNewsletterEmail(
+          user.email,
+          user.username,
+          newsletter.title,
+          newsletter.content,
+        );
+      }
+
+      newsletter.emailSent = true;
+      emailCount = emailUsers.length;
+    }
+
     await this.newsletterRepo.save(newsletter);
 
     return {
@@ -417,7 +452,9 @@ export class AdminService {
       status: newsletter.status,
       publishedAt: newsletter.publishedAt,
       notificationSent: newsletter.notificationSent,
+      emailSent: newsletter.emailSent,
       notifCount,
+      emailCount,
     };
   }
 

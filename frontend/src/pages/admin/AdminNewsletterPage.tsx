@@ -10,13 +10,114 @@ import {
   Bell,
   Eye,
   FileText,
+  Mail,
+  Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminService } from '../../services/admin.service';
-import type { Newsletter } from '../../types/admin.types';
+import type { Newsletter, NewsletterAudience } from '../../types/admin.types';
 import { Button, Card, CardContent, CardHeader, CardTitle, Spinner, Badge } from '../../components/ui';
 
 type View = 'list' | 'edit';
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  all: 'Tous les utilisateurs',
+  free: 'Utilisateurs Free',
+  premium: 'Utilisateurs Premium',
+  admin: 'Administrateurs',
+};
+
+function PublishDialog({
+  targetAudience,
+  publishing,
+  onPublish,
+  onClose,
+}: {
+  targetAudience: NewsletterAudience;
+  publishing: boolean;
+  onPublish: (notif: boolean, email: boolean) => void;
+  onClose: () => void;
+}) {
+  const [sendNotif, setSendNotif] = useState(true);
+  const [sendEmail, setSendEmail] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="p-6 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
+              <Send className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[var(--color-text)]">
+                Publier cette newsletter ?
+              </h3>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Cible : <strong>{AUDIENCE_LABELS[targetAudience]}</strong>
+              </p>
+            </div>
+          </div>
+
+          {/* Options */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)] cursor-pointer hover:border-[var(--color-primary)] transition">
+              <input
+                type="checkbox"
+                checked={sendNotif}
+                onChange={(e) => setSendNotif(e.target.checked)}
+                className="h-4 w-4 rounded accent-[var(--color-primary)]"
+              />
+              <Bell className="h-4 w-4 text-[var(--color-text-secondary)]" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[var(--color-text)]">Notification in-app + push</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Envoyer une notification à {targetAudience === 'all' ? 'tous les utilisateurs' : `les utilisateurs ${targetAudience}`}
+                </p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)] cursor-pointer hover:border-[var(--color-primary)] transition">
+              <input
+                type="checkbox"
+                checked={sendEmail}
+                onChange={(e) => setSendEmail(e.target.checked)}
+                className="h-4 w-4 rounded accent-[var(--color-primary)]"
+              />
+              <Mail className="h-4 w-4 text-[var(--color-text-secondary)]" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[var(--color-text)]">Envoyer par email</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Uniquement aux abonnés newsletter de l'audience cible
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="primary"
+              className="w-full"
+              onClick={() => onPublish(sendNotif, sendEmail)}
+              disabled={publishing}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              {publishing ? '...' : 'Publier'}
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={onClose}
+              disabled={publishing}
+            >
+              Annuler
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function AdminNewsletterPage() {
   const { t } = useTranslation('admin');
@@ -29,6 +130,7 @@ export default function AdminNewsletterPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [targetAudience, setTargetAudience] = useState<NewsletterAudience>('all');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
@@ -53,6 +155,7 @@ export default function AdminNewsletterPage() {
     setEditId(null);
     setTitle('');
     setContent('');
+    setTargetAudience('all');
     setView('edit');
   }
 
@@ -62,6 +165,7 @@ export default function AdminNewsletterPage() {
       setEditId(nl.id);
       setTitle(nl.title);
       setContent(nl.content);
+      setTargetAudience(nl.targetAudience || 'all');
       setView('edit');
     } catch {
       toast.error('Erreur de chargement');
@@ -76,10 +180,10 @@ export default function AdminNewsletterPage() {
     try {
       setSaving(true);
       if (editId) {
-        await adminService.updateNewsletter(editId, title, content);
+        await adminService.updateNewsletter(editId, title, content, targetAudience);
         toast.success('Newsletter mise à jour');
       } else {
-        const res = await adminService.createNewsletter(title, content);
+        const res = await adminService.createNewsletter(title, content, targetAudience);
         setEditId(res.id);
         toast.success('Newsletter créée');
       }
@@ -105,16 +209,19 @@ export default function AdminNewsletterPage() {
     }
   }
 
-  async function handlePublish(sendNotif: boolean) {
+  async function handlePublish(sendNotif: boolean, sendEmail: boolean) {
     if (!editId) return;
     try {
       setPublishing(true);
       // Save first
-      await adminService.updateNewsletter(editId, title, content);
-      const res = await adminService.publishNewsletter(editId, sendNotif);
+      await adminService.updateNewsletter(editId, title, content, targetAudience);
+      const res = await adminService.publishNewsletter(editId, sendNotif, sendEmail);
+      const parts: string[] = [];
+      if (sendNotif) parts.push(`notification envoyée à ${res.notifCount} utilisateur(s)`);
+      if (sendEmail) parts.push(`email envoyé à ${res.emailCount} abonné(s)`);
       toast.success(
-        sendNotif
-          ? `Newsletter publiée et notification envoyée à ${res.notifCount} utilisateur(s)`
+        parts.length > 0
+          ? `Newsletter publiée — ${parts.join(', ')}`
           : 'Newsletter publiée',
       );
       setShowPublishConfirm(false);
@@ -177,12 +284,22 @@ export default function AdminNewsletterPage() {
                             Notifié
                           </Badge>
                         )}
+                        {nl.emailSent && (
+                          <Badge variant="default">
+                            <Mail className="h-3 w-3 mr-1" />
+                            Emailé
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
                         {nl.content.substring(0, 150)}{nl.content.length > 150 && '…'}
                       </p>
                       <div className="flex items-center gap-3 mt-2 text-xs text-[var(--color-text-secondary)]">
                         {nl.author && <span>Par {nl.author.username}</span>}
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {nl.targetAudience === 'all' ? 'Tous' : nl.targetAudience === 'free' ? 'Free' : nl.targetAudience === 'premium' ? 'Premium' : 'Admin'}
+                        </span>
                         <span>
                           {nl.publishedAt
                             ? `Publiée le ${new Date(nl.publishedAt).toLocaleDateString('fr-FR')}`
@@ -267,6 +384,33 @@ export default function AdminNewsletterPage() {
               className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             />
           </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-[var(--color-text)]">
+              Audience cible
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { value: 'all', label: 'Tous les utilisateurs' },
+                { value: 'free', label: 'Free' },
+                { value: 'premium', label: 'Premium' },
+                { value: 'admin', label: 'Admin' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTargetAudience(opt.value)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium border transition ${
+                    targetAudience === opt.value
+                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                      : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-primary)] hover:text-[var(--color-text)]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="mb-1.5 block text-sm font-medium text-[var(--color-text)]">
               {t('newsletter.contentLabel', 'Contenu')}
@@ -309,54 +453,12 @@ export default function AdminNewsletterPage() {
 
       {/* Publish confirmation dialog */}
       {showPublishConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
-                  <Send className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-[var(--color-text)]">
-                    {t('newsletter.publishConfirm.title', 'Publier cette newsletter ?')}
-                  </h3>
-                  <p className="text-sm text-[var(--color-text-secondary)]">
-                    {t('newsletter.publishConfirm.desc', 'La newsletter sera visible par tous les utilisateurs.')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="primary"
-                  className="w-full"
-                  onClick={() => handlePublish(true)}
-                  disabled={publishing}
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  {publishing ? '...' : t('newsletter.publishConfirm.withNotif', 'Publier + Envoyer une notification')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => handlePublish(false)}
-                  disabled={publishing}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  {t('newsletter.publishConfirm.withoutNotif', 'Publier sans notification')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setShowPublishConfirm(false)}
-                  disabled={publishing}
-                >
-                  {t('common:cancel', 'Annuler')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <PublishDialog
+          targetAudience={targetAudience}
+          publishing={publishing}
+          onPublish={handlePublish}
+          onClose={() => setShowPublishConfirm(false)}
+        />
       )}
     </div>
   );
