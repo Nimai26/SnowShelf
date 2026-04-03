@@ -748,59 +748,61 @@ export function ImageEditor({ src, onSave, onCancel, filename }: ImageEditorProp
   );
 
   const renderBottomBar = () => (
-    <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface)] p-2 shadow-lg border border-[var(--color-border)]">
-      {/* Format & quality */}
-      <div className="flex items-center gap-3">
-        <div className="flex gap-0.5">
-          {FORMAT_OPTIONS.map((fmt) => (
-            <button
-              key={fmt.value}
-              type="button"
-              onClick={() => setOutputFormat(fmt.value)}
-              className={`rounded px-2 py-1 text-xs font-medium transition ${
-                outputFormat === fmt.value
-                  ? 'bg-[var(--color-primary)] text-white'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
-              }`}
-            >
-              {fmt.label}
-            </button>
-          ))}
-        </div>
-        {outputFormat !== 'image/png' && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[var(--color-text-secondary)]">Qualité</span>
-            <input
-              type="range"
-              min={10}
-              max={100}
-              value={quality}
-              onChange={(e) => setQuality(Number(e.target.value))}
-              className="h-1 w-20 accent-[var(--color-primary)]"
-            />
-            <span className="text-[10px] font-medium text-[var(--color-text)]">{quality}%</span>
+    <div className="flex flex-col gap-2 rounded-lg bg-[var(--color-surface)] p-2 shadow-lg border border-[var(--color-border)]">
+      {/* Format & quality row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-0.5">
+            {FORMAT_OPTIONS.map((fmt) => (
+              <button
+                key={fmt.value}
+                type="button"
+                onClick={() => setOutputFormat(fmt.value)}
+                className={`rounded px-2 py-1 text-xs font-medium transition ${
+                  outputFormat === fmt.value
+                    ? 'bg-[var(--color-primary)] text-white'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
+                }`}
+              >
+                {fmt.label}
+              </button>
+            ))}
           </div>
-        )}
+          {outputFormat !== 'image/png' && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[var(--color-text-secondary)]">Qualité</span>
+              <input
+                type="range"
+                min={10}
+                max={100}
+                value={quality}
+                onChange={(e) => setQuality(Number(e.target.value))}
+                className="h-1 w-20 accent-[var(--color-primary)]"
+              />
+              <span className="text-[10px] font-medium text-[var(--color-text)]">{quality}%</span>
+            </div>
+          )}
+        </div>
         {image && (
-          <span className="text-[10px] text-[var(--color-text-secondary)]">
+          <span className="text-[10px] text-[var(--color-text-secondary)] shrink-0">
             {image.naturalWidth} × {image.naturalHeight}
           </span>
         )}
       </div>
 
-      {/* Actions */}
+      {/* Actions row */}
       <div className="flex items-center gap-2">
-        <Button variant="ghost" onClick={onCancel} size="sm">
+        <Button variant="ghost" onClick={onCancel} size="sm" className="flex-1 sm:flex-none">
           {t('media.editor.cancel', 'Annuler')}
         </Button>
-        <Button onClick={handleSave} size="sm" disabled={saving}>
+        <Button onClick={handleSave} size="sm" disabled={saving} className="flex-1 sm:flex-none">
           {saving ? (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center justify-center gap-1">
               <Download className="h-3.5 w-3.5 animate-bounce" />
               {t('media.editor.saving', 'Enregistrement...')}
             </span>
           ) : (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center justify-center gap-1">
               <Check className="h-3.5 w-3.5" />
               {t('media.editor.save', 'Enregistrer')}
             </span>
