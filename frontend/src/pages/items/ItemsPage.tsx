@@ -161,7 +161,7 @@ export default function ItemsPage() {
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => setShowQuickAdd(true)}>
             <Camera className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">{t('quickAdd.button', 'Photo rapide')}</span>
+            <span className="hidden sm:inline">{t('quickAdd.button', 'Ajout rapide')}</span>
           </Button>
           <Link to="/items/new">
             <Button variant="primary">
