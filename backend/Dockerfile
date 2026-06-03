@@ -7,7 +7,7 @@
 # ────────────────────────────────────────────────────────────
 # Stage 1: Builder - Installation et compilation
 # ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 
 # Métadonnées
 LABEL maintainer="SnowShelf Team"
@@ -40,7 +40,7 @@ RUN npm prune --production --legacy-peer-deps
 # ────────────────────────────────────────────────────────────
 # Stage 2: Runner - Image finale légère
 # ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 
 # Installer dumb-init pour gérer correctement les signaux
 RUN apk add --no-cache dumb-init
